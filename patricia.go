@@ -10,13 +10,17 @@ import (
 // Errors ----------------------------------------------------------------------
 
 var (
-	SkipSubtree  = errors.New("Skip this subtree")
+	// ErrSkipSubtree is to notify skipping this subtree
+	ErrSkipSubtree = errors.New("Skip this subtree")
+	// ErrNilFilterString notifies nil fs passing
 	ErrNilFilterString = errors.New("Nil filterString passed into a method call")
+	// ErrNilOffset notifies nil o passing
 	ErrNilOffset = errors.New("Nil offset passed into a method call")
 )
 
+// Trie defines a struct for Trie element
 type Trie struct {
-	filter *Filter
+	filter   *Filter
 	children *FilterList
 }
 
@@ -38,7 +42,7 @@ func (t tries) Len() int {
 // NewTrie constructs Trie
 func NewTrie(f *Filter) *Trie {
 	return &Trie{
-		filter: f,
+		filter:   f,
 		children: newFilterList(0),
 	}
 }

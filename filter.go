@@ -6,10 +6,13 @@ import (
 )
 
 const (
+	// DefaultMaxChildren defines a default number of children in a node
 	DefaultMaxChildren = 10
-	ByteLength         = 8
+	// ByteLength defines a bit length of one byte
+	ByteLength = 8
 )
 
+// Filter type is a struct for filter element
 type Filter struct {
 	stringFilter string
 	offset       int
@@ -17,11 +20,12 @@ type Filter struct {
 	paddedOffset int
 }
 
+// newFilter creates a new Filter struct
 func newFilter(fs string, o int) *Filter {
 	return &Filter{
 		stringFilter: "",
-		offset: 0,
-		byteFilter: []byte{},
+		offset:       0,
+		byteFilter:   []byte{},
 		paddedOffset: 0,
 	}
 }
@@ -65,10 +69,12 @@ func makeFilter(bs []rune, offset int) ([]rune, []rune) {
 	return f, m
 }
 
+// FilterList defines a set of tries
 type FilterList struct {
 	children tries
 }
 
+// newFilterList creates a new set of FilterList
 func newFilterList(maxChildren int) *FilterList {
 	if maxChildren == 0 {
 		maxChildren = DefaultMaxChildren
@@ -91,11 +97,10 @@ func (list *FilterList) add(child *Trie) *FilterList {
 	if len(list.children) != cap(list.children) {
 		list.children = append(list.children, child)
 		return list
-	} else {
-		newList := newFilterList(cap(list.children) + 1)
-		newList.children = append(list.children, child)
-		return newList
 	}
+	newList := newFilterList(cap(list.children) + 1)
+	newList.children = append(list.children, child)
+	return newList
 }
 
 func (list *FilterList) next(sf string, o int) *Trie {
