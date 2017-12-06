@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -14,6 +15,7 @@ const (
 // Filter type is a struct for filter element
 type Filter struct {
 	stringFilter string
+	filterSize   int
 	offset       int
 	byteFilter   []byte
 	byteMask     []byte
@@ -24,10 +26,16 @@ type Filter struct {
 func (f *Filter) match(id []byte) bool {
 	for i := 0; i < f.checkSize; i++ {
 		if (id[i]|f.byteMask[i])^f.byteFilter[i] != byte(0) {
+			fmt.Println(f.ToString())
 			return false
 		}
 	}
 	return true
+}
+
+// ToString returns a string representation of Filter
+func (f *Filter) ToString() string {
+	return fmt.Sprintf("%s(%d %d)", f.stringFilter, f.offset, f.filterSize)
 }
 
 // makeFilter returns padded filter and mask in rune slices
@@ -77,6 +85,7 @@ func NewFilter(sf string, o int) *Filter {
 
 	return &Filter{
 		stringFilter: sf,
+		filterSize:   len(sf),
 		offset:       o,
 		byteFilter:   bf,
 		byteMask:     bm,

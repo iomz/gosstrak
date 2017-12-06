@@ -47,6 +47,7 @@ func Test_makeFilter(t *testing.T) {
 func TestFilter_match(t *testing.T) {
 	type fields struct {
 		stringFilter string
+		filterSize   int
 		offset       int
 		byteFilter   []byte
 		byteMask     []byte
@@ -62,17 +63,18 @@ func TestFilter_match(t *testing.T) {
 		args   args
 		want   bool
 	}{
-		{"01010101", fields{"0", 2, []byte{223}, []byte{223}, 0, 1}, args{[]byte{85}}, true},
-		{"01010101", fields{"1100", 0, []byte{207}, []byte{15}, 0, 1}, args{[]byte{85}}, false},
-		{"0000000011110000", fields{"0000000011111111", 0, []byte{0, 255}, []byte{0, 15}, 0, 2}, args{[]byte{0, 240}}, true},
-		{"000000001111000000000000", fields{"00111100", 6, []byte{252, 243}, []byte{252, 3}, 0, 2}, args{[]byte{0, 240, 0}}, true},
-		{"000000001111111100000000", fields{"0000", 19, []byte{15}, []byte{15}, 2, 1}, args{[]byte{0, 255, 0}}, true},
+		{"01010101", fields{"0", 1, 2, []byte{223}, []byte{223}, 0, 1}, args{[]byte{85}}, true},
+		{"01010101", fields{"1100", 4, 0, []byte{207}, []byte{15}, 0, 1}, args{[]byte{85}}, false},
+		{"0000000011110000", fields{"0000000011111111", 16, 0, []byte{0, 255}, []byte{0, 15}, 0, 2}, args{[]byte{0, 240}}, true},
+		{"000000001111000000000000", fields{"00111100", 8, 6, []byte{252, 243}, []byte{252, 3}, 0, 2}, args{[]byte{0, 240, 0}}, true},
+		{"000000001111111100000000", fields{"0000", 4, 19, []byte{15}, []byte{15}, 2, 1}, args{[]byte{0, 255, 0}}, true},
 		//{"", fields{"", 0, []byte{}, []byte{}, 0, 1}, args{[]byte{}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Filter{
 				stringFilter: tt.fields.stringFilter,
+				filterSize:   tt.fields.filterSize,
 				offset:       tt.fields.offset,
 				byteFilter:   tt.fields.byteFilter,
 				byteMask:     tt.fields.byteMask,

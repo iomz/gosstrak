@@ -6,8 +6,9 @@ import (
 	"io"
 	"os"
 
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak-fc/filter"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -24,11 +25,24 @@ var (
 	filterFile = patricia.Flag("filterFile", "A CSV file contains filter and notify.").Default("filters.csv").String()
 )
 
+func filterByPatriciaTrie(ids [][]byte, head *filter.PatriciaTrie) {
+	for _, id := range ids {
+		n := head.Match(id)
+		if len(n) != 0 {
+			fmt.Println()
+		}
+	}
+}
+
 func runPatricia(f string) {
 	fm := loadFiltersFromCSVFile(f)
 	head := filter.BuildPatriciaTrie(fm)
 	fmt.Println(head.Dump())
-	return
+	ids := new([][]byte)
+	if err := binutil.Load("ids.gob", ids); err != nil {
+		panic(err)
+	}
+	filterByPatriciaTrie(*ids, head)
 }
 
 func loadFiltersFromCSVFile(f string) filter.FilterMap {

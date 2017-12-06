@@ -14,7 +14,22 @@ type PatriciaTrie struct {
 	notify string
 }
 
-func (pt *PatriciaTrie) Match(id []byte) {
+func (pt *PatriciaTrie) Match(id []byte) string {
+	// if not match, return empty string immediately
+	if !pt.filter.match(id) {
+		return ""
+	}
+
+	// if the id matched with this node, return notify
+	if len(pt.notify) != 0 {
+		fmt.Println("match!")
+		return pt.notify
+	}
+
+	if pt.filter.stringFilter[pt.filter.filterSize-1] == '0' {
+		return pt.one.Match(id)
+	}
+	return pt.zero.Match(id)
 }
 
 func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
@@ -88,7 +103,7 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	if len(pt.notify) != 0 {
 		n = "-> " + pt.notify
 	}
-	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filter.stringFilter, n)
+	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filter.ToString(), n)
 	if pt.one != nil {
 		pt.one.print(writer, indent+2)
 	}
