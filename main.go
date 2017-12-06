@@ -49,23 +49,27 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
 	zeroPrefixBranch := ""
 	fks := fm.keys()
 	for i := 0; i < len(fks); i++ {
+		// if the prefix is already longer than the testee
 		if len(fks[i]) < len(prefix) {
 			continue
 		}
+		// ignore the testee without the prefix
 		if !strings.HasPrefix(fks[i], prefix) {
-			//fmt.Printf("x%s\n", fks[i])
 			continue
 		}
 		p := fks[i][len(prefix):]
+		// ignore if no remainder
 		if len(p) == 0 {
 			continue
 		}
+		// if the remainder starts with 1
 		if strings.HasPrefix(p, "1") {
 			if len(onePrefixBranch) == 0 {
 				onePrefixBranch = p
 			} else {
 				onePrefixBranch = lcp([]string{p, onePrefixBranch})
 			}
+		// if the remainder starts with 0
 		} else if strings.HasPrefix(p, "0") {
 			if len(zeroPrefixBranch) == 0 {
 				zeroPrefixBranch = p
@@ -74,8 +78,8 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
 			}
 		}
 	}
-	//fmt.Printf("opb: %s(%d), zpb: %s(%d)\n", onePrefixBranch, len(onePrefixBranch), zeroPrefixBranch, len(zeroPrefixBranch))
 	cumulativePrefix := ""
+	// if there's a branch starts with 1
 	if len(onePrefixBranch) != 0 {
 		pt.one = &PatriciaTrie{}
 		pt.one.prefix = onePrefixBranch
@@ -86,6 +90,7 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
 		}
 		pt.one.constructTrie(cumulativePrefix, fm)
 	}
+	// if there's a branch starts with 0
 	if len(zeroPrefixBranch) != 0 {
 		pt.zero = &PatriciaTrie{}
 		pt.zero.prefix = zeroPrefixBranch
