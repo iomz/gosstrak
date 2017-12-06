@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"reflect"
@@ -24,8 +24,8 @@ func Test_makeFilter(t *testing.T) {
 		{"000000000 from 1", args{[]rune("000000000"), 1}, 0, []rune("1000000000111111"), []rune("1000000000111111")},
 		{"00000000000000000000 from 4", args{[]rune("00000000000000000000"), 4}, 0, []rune("111100000000000000000000"), []rune("111100000000000000000000")},
 		{"000000000000000 from 7", args{[]rune("000000000000000"), 7}, 0, []rune("111111100000000000000011"), []rune("111111100000000000000011")},
-		{"0000000000 from 17", args{[]rune("0000000000"), 17}, 16, []rune("1000000000011111"), []rune("1000000000011111")},
-		{"00000 from 9", args{[]rune("00000"), 9}, 8, []rune("10000011"), []rune("10000011")},
+		{"0000000000 from 17", args{[]rune("0000000000"), 17}, 2, []rune("1000000000011111"), []rune("1000000000011111")},
+		{"00000 from 9", args{[]rune("00000"), 9}, 1, []rune("10000011"), []rune("10000011")},
 		//{" from ", args{[]rune(""), 0}, 0, []rune(""), []rune("")},
 	}
 	for _, tt := range tests {
@@ -39,6 +39,43 @@ func Test_makeFilter(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("makeFilter() got2 = %v, want %v", got2, tt.want2)
+			}
+		})
+	}
+}
+
+func TestFilter_match(t *testing.T) {
+	type fields struct {
+		stringFilter string
+		offset       int
+		byteFilter   []byte
+		byteMask     []byte
+		paddedOffset int
+		checkSize    int
+	}
+	type args struct {
+		id []byte
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{"", fields{"", 0, []byte{}, []byte{}, 0, 1}, args{[]byte{}}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &Filter{
+				stringFilter: tt.fields.stringFilter,
+				offset:       tt.fields.offset,
+				byteFilter:   tt.fields.byteFilter,
+				byteMask:     tt.fields.byteMask,
+				paddedOffset: tt.fields.paddedOffset,
+				checkSize:    tt.fields.checkSize,
+			}
+			if got := f.match(tt.args.id); got != tt.want {
+				t.Errorf("Filter.match() = %v, want %v", got, tt.want)
 			}
 		})
 	}

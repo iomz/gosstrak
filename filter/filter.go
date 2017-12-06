@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"strings"
@@ -18,6 +18,16 @@ type Filter struct {
 	byteFilter   []byte
 	byteMask     []byte
 	paddedOffset int
+	checkSize    int
+}
+
+func (f *Filter) match(id []byte) bool {
+	for i:=0; i< f.checkSize; i++ {
+		if (id[0] | f.byteMask[i]) ^ f.byteFilter[i] != byte(0) {
+			return false
+		}
+	}
+	return true
 }
 
 // makeFilter returns padded filter and mask in rune slices
@@ -56,7 +66,7 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 		m = append(m, mc...)
 	}
 
-	return (offset / ByteLength) * ByteLength, f, m
+	return offset / ByteLength, f, m
 }
 
 // NewFilter constructs Filter
@@ -71,5 +81,6 @@ func NewFilter(sf string, o int) *Filter {
 		byteFilter:   bf,
 		byteMask:     bm,
 		paddedOffset: po,
+		checkSize:    len(bf),
 	}
 }
