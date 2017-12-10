@@ -13,7 +13,7 @@ func Test_lcp(t *testing.T) {
 		args args
 		want string
 	}{
-		{"0001,0010,0011,0000", args{[]string{"0001","0010","0011","0000"}}, "00"},
+		{"0001,0010,0011,0000", args{[]string{"0001", "0010", "0011", "0000"}}, "00"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

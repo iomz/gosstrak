@@ -25,8 +25,7 @@ type Filter struct {
 
 func (f *Filter) match(id []byte) bool {
 	for i := 0; i < f.checkSize; i++ {
-		if (id[i]|f.byteMask[i])^f.byteFilter[i] != byte(0) {
-			fmt.Println(f.ToString())
+		if (id[f.paddedOffset+i]|f.byteMask[i])^f.byteFilter[i] != byte(0) {
 			return false
 		}
 	}

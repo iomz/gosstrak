@@ -2,6 +2,7 @@ package filter
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -22,11 +23,16 @@ func (pt *PatriciaTrie) Match(id []byte) string {
 
 	// if the id matched with this node, return notify
 	if len(pt.notify) != 0 {
-		fmt.Println("match!")
 		return pt.notify
 	}
 
-	if pt.filter.stringFilter[pt.filter.filterSize-1] == '0' {
+	// Determine next filter
+	next_bit_offset := pt.filter.offset + pt.filter.filterSize
+	nb, err := get_next_bit(id, next_bit_offset)
+	if err != nil {
+		panic(err)
+	}
+	if nb == '1' {
 		return pt.one.Match(id)
 	}
 	return pt.zero.Match(id)
@@ -122,6 +128,17 @@ func BuildPatriciaTrie(fm FilterMap) *PatriciaTrie {
 	head.constructTrie(p1, fm)
 
 	return head
+}
+
+func get_next_bit(id []byte, nbo int) (rune, error) {
+	o := nbo / ByteLength
+	if len(id) < o {
+		return '?', errors.New("get_next_bit error")
+	}
+	if (uint8(id[o])>>uint8((7-(nbo%ByteLength))))%2 == 0 {
+		return '0', nil
+	}
+	return '1', nil
 }
 
 // lcp finds the longest common prefix of the input strings.

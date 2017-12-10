@@ -29,7 +29,9 @@ func filterByPatriciaTrie(ids [][]byte, head *filter.PatriciaTrie) {
 	for _, id := range ids {
 		n := head.Match(id)
 		if len(n) != 0 {
-			fmt.Println()
+			fmt.Println(n)
+		} else {
+			fmt.Println("None matched")
 		}
 	}
 }
