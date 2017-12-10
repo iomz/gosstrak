@@ -16,3 +16,6 @@
 
 # Test csv file
 *.csv
+
+# exp dir
+exp/
