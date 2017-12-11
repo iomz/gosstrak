@@ -35,8 +35,8 @@ func runDumb(fm filter.FilterMap) {
 	}
 	matched := make([]string, 0, len(*ids))
 	for _, id := range *ids {
+		i := binutil.ParseByteSliceToBinString(id)
 		for f, n := range fm {
-			i := binutil.ParseByteSliceToBinString(id)
 			if strings.HasPrefix(i, f) {
 				matched = append(matched, n)
 			}
