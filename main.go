@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -22,7 +23,8 @@ var (
 	filterFile = app.Flag("filterFile", "A CSV file contains filter and notify.").Default("filters.csv").String()
 
 	// kingpin patricia command
-	patricia = app.Command("patricia", "Run in Patricia Trie filtering mode.")
+	patricia         = app.Command("patricia", "Run in Patricia Trie filtering mode.")
+	patriciaShowTrie = patricia.Flag("patriciaShowTrie", "Show the Patricia Trie.").Short('p').Default("false").Bool()
 
 	// kingpin dumb command
 	dumb = app.Command("dumb", "Run in dumb filter mode.")
@@ -46,7 +48,9 @@ func runDumb(fm filter.FilterMap) {
 }
 
 func runPatricia(head *filter.PatriciaTrie) {
-	//fmt.Println(head.Dump())
+	if *patriciaShowTrie {
+		fmt.Println(head.Dump())
+	}
 	ids := new([][]byte)
 	if err := binutil.Load("ids.gob", ids); err != nil {
 		panic(err)
