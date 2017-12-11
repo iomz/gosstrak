@@ -133,6 +133,10 @@ func BuildPatriciaTrie(fm FilterMap) *PatriciaTrie {
 
 func get_next_bit(id []byte, nbo int) (rune, error) {
 	o := nbo / ByteLength
+	// No more bit in the ID
+	if len(id) == o {
+		return 'x', nil
+	}
 	if len(id) < o {
 		return '?', errors.New("get_next_bit error")
 	}
