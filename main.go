@@ -45,8 +45,7 @@ func runDumb(fm filter.FilterMap) {
 	//fmt.Printf("Matched ids: %v\n", len(matched))
 }
 
-func runPatricia(fm filter.FilterMap) {
-	head := filter.BuildPatriciaTrie(fm)
+func runPatricia(head *filter.PatriciaTrie) {
 	//fmt.Println(head.Dump())
 	ids := new([][]byte)
 	if err := binutil.Load("ids.gob", ids); err != nil {
@@ -89,7 +88,8 @@ func main() {
 	switch parse {
 	case patricia.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
-		runPatricia(fm)
+		head := filter.BuildPatriciaTrie(fm)
+		runPatricia(head)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
 		runDumb(fm)

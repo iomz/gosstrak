@@ -7,16 +7,23 @@ import (
 	"github.com/iomz/gosstrak-fc/filter"
 )
 
+func Benchmark_BuildPatriciaTrie(b *testing.B) {
+	fm := loadFiltersFromCSVFile("filters.csv")
+	b.ResetTimer()
+	filter.BuildPatriciaTrie(fm)
+}
+
 func Benchmark_runDumb(b *testing.B) {
-		fm := loadFiltersFromCSVFile("filters.csv")
-		b.ResetTimer()
-		runDumb(fm)
+	fm := loadFiltersFromCSVFile("filters.csv")
+	b.ResetTimer()
+	runDumb(fm)
 }
 
 func Benchmark_runPatricia(b *testing.B) {
-		fm := loadFiltersFromCSVFile("filters.csv")
-		b.ResetTimer()
-		runPatricia(fm)
+	fm := loadFiltersFromCSVFile("filters.csv")
+	head := filter.BuildPatriciaTrie(fm)
+	b.ResetTimer()
+	runPatricia(head)
 }
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {
