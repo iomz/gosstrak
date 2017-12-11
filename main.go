@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak-fc/filter"
@@ -13,38 +13,50 @@ import (
 
 var (
 	// Current Version
-	version = "0.1.0"
+	version = "0.1.1"
 
 	// kingpin app
 	app = kingpin.New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
 	// kingpin verbose mode flag
-	verbose = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
+	verbose    = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
+	filterFile = app.Flag("filterFile", "A CSV file contains filter and notify.").Default("filters.csv").String()
 
 	// kingpin patricia command
-	patricia   = app.Command("patricia", "Run in Patricia Trie filtering mode.")
-	filterFile = patricia.Flag("filterFile", "A CSV file contains filter and notify.").Default("filters.csv").String()
+	patricia = app.Command("patricia", "Run in Patricia Trie filtering mode.")
+
+	// kingpin dumb command
+	dumb = app.Command("dumb", "Run in dumb filter mode.")
 )
 
-func filterByPatriciaTrie(ids [][]byte, head *filter.PatriciaTrie) {
-	for _, id := range ids {
-		n := head.Match(id)
-		if len(n) != 0 {
-			fmt.Println(n)
-		} else {
-			fmt.Println("None matched")
-		}
-	}
-}
-
-func runPatricia(f string) {
-	fm := loadFiltersFromCSVFile(f)
-	head := filter.BuildPatriciaTrie(fm)
-	fmt.Println(head.Dump())
+func runDumb(fm filter.FilterMap) {
 	ids := new([][]byte)
 	if err := binutil.Load("ids.gob", ids); err != nil {
 		panic(err)
 	}
-	filterByPatriciaTrie(*ids, head)
+	matched := make([]string, 0, len(*ids))
+	for _, id := range *ids {
+		i := binutil.ParseByteSliceToBinString(id)
+		for f, n := range fm {
+			if strings.HasPrefix(i, f) {
+				matched = append(matched, n)
+			}
+		}
+	}
+	//fmt.Printf("Matched ids: %v\n", len(matched))
+}
+
+func runPatricia(fm filter.FilterMap) {
+	head := filter.BuildPatriciaTrie(fm)
+	//fmt.Println(head.Dump())
+	ids := new([][]byte)
+	if err := binutil.Load("ids.gob", ids); err != nil {
+		panic(err)
+	}
+	matched := make([]string, 0, len(*ids))
+	for _, id := range *ids {
+		head.Match(id, &matched)
+	}
+	//fmt.Printf("Matched ids: %v\n", len(matched))
 }
 
 func loadFiltersFromCSVFile(f string) filter.FilterMap {
@@ -76,6 +88,10 @@ func main() {
 
 	switch parse {
 	case patricia.FullCommand():
-		runPatricia(*filterFile)
+		fm := loadFiltersFromCSVFile(*filterFile)
+		runPatricia(fm)
+	case dumb.FullCommand():
+		fm := loadFiltersFromCSVFile(*filterFile)
+		runDumb(fm)
 	}
 }

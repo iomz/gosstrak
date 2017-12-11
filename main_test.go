@@ -7,6 +7,18 @@ import (
 	"github.com/iomz/gosstrak-fc/filter"
 )
 
+func Benchmark_runDumb(b *testing.B) {
+		fm := loadFiltersFromCSVFile("filters.csv")
+		b.ResetTimer()
+		runDumb(fm)
+}
+
+func Benchmark_runPatricia(b *testing.B) {
+		fm := loadFiltersFromCSVFile("filters.csv")
+		b.ResetTimer()
+		runPatricia(fm)
+}
+
 func Test_loadFiltersFromCSVFile(t *testing.T) {
 	type args struct {
 		f string
