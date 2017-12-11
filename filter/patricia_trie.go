@@ -15,15 +15,15 @@ type PatriciaTrie struct {
 	notify string
 }
 
-func (pt *PatriciaTrie) Match(id []byte) string {
+func (pt *PatriciaTrie) Match(id []byte, matched *[]string) {
 	// if not match, return empty string immediately
 	if !pt.filter.match(id) {
-		return ""
+		return
 	}
 
 	// if the id matched with this node, return notify
 	if len(pt.notify) != 0 {
-		return pt.notify
+		*matched = append(*matched, pt.notify)
 	}
 
 	// Determine next filter
@@ -32,10 +32,11 @@ func (pt *PatriciaTrie) Match(id []byte) string {
 	if err != nil {
 		panic(err)
 	}
-	if nb == '1' {
-		return pt.one.Match(id)
+	if nb == '1' && pt.one != nil {
+		pt.one.Match(id, matched)
+	} else if nb == '0' && pt.zero != nil {
+		pt.zero.Match(id, matched)
 	}
-	return pt.zero.Match(id)
 }
 
 func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
