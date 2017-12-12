@@ -35,16 +35,16 @@ func runDumb(fm filter.FilterMap) {
 	if err := binutil.Load("ids.gob", ids); err != nil {
 		panic(err)
 	}
-	matched := make([]string, 0, len(*ids))
+	fmt.Printf("Loaded %v ids from ids.gob\n", len(*ids))
+	matches := map[string]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
 		for f, n := range fm {
 			if strings.HasPrefix(i, f) {
-				matched = append(matched, n)
+				matches[i] = n
 			}
 		}
 	}
-	//fmt.Printf("Matched ids: %v\n", len(matched))
 }
 
 func runPatricia(head *filter.PatriciaTrie) {
