@@ -80,7 +80,8 @@ func loadFiltersFromCSVFile(f string) filter.FilterMap {
 		} else if err != nil {
 			panic(err)
 		}
-		fm[record[0]] = record[1]
+		// prefix as key, notify string as value
+		fm[record[1]] = record[0]
 	}
 	return fm
 }
