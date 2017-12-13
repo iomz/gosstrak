@@ -20,7 +20,8 @@ var (
 	app = kingpin.New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
 	// kingpin verbose mode flag
 	verbose    = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
-	filterFile = app.Flag("filterFile", "A CSV file contains filter and notify.").Default("filters.csv").String()
+	filterFile = app.Flag("filterFile", "A CSV file contains filter and notify.").Short('f').Default("filters.csv").String()
+	idFile     = app.Flag("idFile", "A gob file contains ids.").Short('i').Default("ids.gob").String()
 
 	// kingpin patricia command
 	patricia         = app.Command("patricia", "Run in Patricia Trie filtering mode.")
@@ -32,19 +33,26 @@ var (
 
 func runDumb(fm filter.FilterMap) {
 	ids := new([][]byte)
-	if err := binutil.Load("ids.gob", ids); err != nil {
+	if err := binutil.Load(*idFile, ids); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Loaded %v ids from ids.gob\n", len(*ids))
-	matches := map[string]string{}
+	fmt.Printf("Loaded %v ids from %v\n", len(*ids), *idFile)
+	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
 		for f, n := range fm {
 			if strings.HasPrefix(i, f) {
-				matches[i] = n
+				if _, ok := matches[n]; !ok {
+					matches[n] = []string{}
+				}
+				matches[n] = append(matches[n], i)
 			}
 		}
 	}
+
+	//for n, m := range matches {
+	//	fmt.Printf("%v: %v\n", n, len(m))
+	//}
 }
 
 func runPatricia(head *filter.PatriciaTrie) {
@@ -52,7 +60,7 @@ func runPatricia(head *filter.PatriciaTrie) {
 		fmt.Println(head.Dump())
 	}
 	ids := new([][]byte)
-	if err := binutil.Load("ids.gob", ids); err != nil {
+	if err := binutil.Load(*idFile, ids); err != nil {
 		panic(err)
 	}
 	matched := make([]string, 0, len(*ids))
@@ -97,6 +105,7 @@ func main() {
 		runPatricia(head)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
+		fmt.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
 		runDumb(fm)
 	}
 }
