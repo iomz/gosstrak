@@ -16,14 +16,14 @@ func Benchmark_BuildPatriciaTrie(b *testing.B) {
 func Benchmark_runDumb(b *testing.B) {
 	fm := loadFiltersFromCSVFile("filters.csv")
 	b.ResetTimer()
-	runDumb(fm)
+	runDumb("ids.gob", fm)
 }
 
 func Benchmark_runPatricia(b *testing.B) {
 	fm := loadFiltersFromCSVFile("filters.csv")
 	head := filter.BuildPatriciaTrie(fm)
 	b.ResetTimer()
-	runPatricia(head)
+	runPatricia("ids.gob", head)
 }
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {

@@ -31,12 +31,12 @@ var (
 	dumb = app.Command("dumb", "Run in dumb filter mode.")
 )
 
-func runDumb(fm filter.FilterMap) {
+func runDumb(idFile string, fm filter.FilterMap) {
 	ids := new([][]byte)
-	if err := binutil.Load(*idFile, ids); err != nil {
+	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Loaded %v ids from %v\n", len(*ids), *idFile)
+	fmt.Printf("Loaded %v ids from %v\n", len(*ids), idFile)
 	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
@@ -55,12 +55,12 @@ func runDumb(fm filter.FilterMap) {
 	//}
 }
 
-func runPatricia(head *filter.PatriciaTrie) {
+func runPatricia(idFile string, head *filter.PatriciaTrie) {
 	if *patriciaShowTrie {
 		fmt.Println(head.Dump())
 	}
 	ids := new([][]byte)
-	if err := binutil.Load(*idFile, ids); err != nil {
+	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
 	matched := make([]string, 0, len(*ids))
@@ -102,10 +102,10 @@ func main() {
 	case patricia.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
 		head := filter.BuildPatriciaTrie(fm)
-		runPatricia(head)
+		runPatricia(*idFile, head)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
 		fmt.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
-		runDumb(fm)
+		runDumb(*idFile, fm)
 	}
 }
