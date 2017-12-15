@@ -14,8 +14,9 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-# Test csv file
+# Test data file
 *.csv
+*.json
 
 # exp dir
 exp/
