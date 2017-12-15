@@ -46,13 +46,13 @@ func Test_makeFilter(t *testing.T) {
 
 func TestFilter_match(t *testing.T) {
 	type fields struct {
-		stringFilter string
-		filterSize   int
-		offset       int
-		byteFilter   []byte
-		byteMask     []byte
-		paddedOffset int
-		checkSize    int
+		String     string
+		Size       int
+		Offset     int
+		ByteFilter []byte
+		ByteMask   []byte
+		ByteOffset int
+		ByteSize   int
 	}
 	type args struct {
 		id []byte
@@ -74,13 +74,13 @@ func TestFilter_match(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &Filter{
-				stringFilter: tt.fields.stringFilter,
-				filterSize:   tt.fields.filterSize,
-				offset:       tt.fields.offset,
-				byteFilter:   tt.fields.byteFilter,
-				byteMask:     tt.fields.byteMask,
-				paddedOffset: tt.fields.paddedOffset,
-				checkSize:    tt.fields.checkSize,
+				String:     tt.fields.String,
+				Size:       tt.fields.Size,
+				Offset:     tt.fields.Offset,
+				ByteFilter: tt.fields.ByteFilter,
+				ByteMask:   tt.fields.ByteMask,
+				ByteOffset: tt.fields.ByteOffset,
+				ByteSize:   tt.fields.ByteSize,
 			}
 			if got := f.match(tt.args.id); got != tt.want {
 				t.Errorf("Filter.match() = %v, want %v", got, tt.want)

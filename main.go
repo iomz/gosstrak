@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
+	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -20,12 +23,14 @@ var (
 	app = kingpin.New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
 	// kingpin verbose mode flag
 	verbose    = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
-	filterFile = app.Flag("filterFile", "A CSV file contains filter and notify.").Short('f').Default("filters.csv").String()
-	idFile     = app.Flag("idFile", "A gob file contains ids.").Short('i').Default("ids.gob").String()
+	filterFile = app.Flag("filter-file", "A CSV file contains filter and notify.").Short('f').Default("filters.csv").String()
+	idFile     = app.Flag("id-file", "A gob file contains ids.").Short('i').Default("ids.gob").String()
+	treeFile   = app.Flag("tree-file", "Indicate the filename for the Trie.").Short('t').Default("tree.gob").String()
 
 	// kingpin patricia command
 	patricia         = app.Command("patricia", "Run in Patricia Trie filtering mode.")
-	patriciaShowTrie = patricia.Flag("patriciaShowTrie", "Show the Patricia Trie.").Short('p').Default("false").Bool()
+	patriciaShowTrie = patricia.Flag("print", "Show the Patricia Trie.").Short('p').Default("false").Bool()
+	patriciaRebuild  = patricia.Flag("rebuild", "Rebuild the Patricia Trie.").Short('r').Default("false").Bool()
 
 	// kingpin dumb command
 	dumb = app.Command("dumb", "Run in dumb filter mode.")
@@ -36,7 +41,7 @@ func runDumb(idFile string, fm filter.FilterMap) {
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
-	fmt.Printf("Loaded %v ids from %v\n", len(*ids), idFile)
+	//fmt.Printf("Loaded %v ids from %v\n", len(*ids), idFile)
 	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
@@ -101,11 +106,36 @@ func main() {
 	switch parse {
 	case patricia.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
-		head := filter.BuildPatriciaTrie(fm)
+		var head *filter.PatriciaTrie
+
+		// Tree encode
+		_, err := os.Stat(*treeFile)
+		if *patriciaRebuild || os.IsNotExist(err) {
+			var tree bytes.Buffer
+			head = filter.BuildPatriciaTrie(fm)
+			enc := gob.NewEncoder(&tree)
+			err = enc.Encode(head)
+			if err != nil {
+				log.Fatal("encode:", err)
+			}
+			// Save to file
+			file, err := os.Create(*treeFile)
+			if err != nil {
+				log.Fatal("file:", err)
+			}
+			file.Write(tree.Bytes())
+			file.Close()
+			log.Print("Saved the Patricia Trie to ", *treeFile)
+		} else {
+			// Tree decode
+			binutil.Load(*treeFile, &head)
+			log.Print("Loaded the Patricia Trie from ", *treeFile)
+		}
+
 		runPatricia(*idFile, head)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
-		fmt.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
 		runDumb(*idFile, fm)
 	}
 }

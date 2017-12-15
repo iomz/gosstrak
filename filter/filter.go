@@ -14,18 +14,18 @@ const (
 
 // Filter type is a struct for filter element
 type Filter struct {
-	stringFilter string
-	filterSize   int
-	offset       int
-	byteFilter   []byte
-	byteMask     []byte
-	paddedOffset int
-	checkSize    int
+	String     string
+	Size       int
+	Offset     int
+	ByteFilter []byte
+	ByteMask   []byte
+	ByteOffset int
+	ByteSize   int
 }
 
 func (f *Filter) match(id []byte) bool {
-	for i := 0; i < f.checkSize; i++ {
-		if (id[f.paddedOffset+i]|f.byteMask[i])^f.byteFilter[i] != byte(0) {
+	for i := 0; i < f.ByteSize; i++ {
+		if (id[f.ByteOffset+i]|f.ByteMask[i])^f.ByteFilter[i] != byte(0) {
 			return false
 		}
 	}
@@ -34,7 +34,7 @@ func (f *Filter) match(id []byte) bool {
 
 // ToString returns a string representation of Filter
 func (f *Filter) ToString() string {
-	return fmt.Sprintf("%s(%d %d)", f.stringFilter, f.offset, f.filterSize)
+	return fmt.Sprintf("%s(%d %d)", f.String, f.Offset, f.Size)
 }
 
 // makeFilter returns padded filter and mask in rune slices
@@ -77,18 +77,18 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 }
 
 // NewFilter constructs Filter
-func NewFilter(sf string, o int) *Filter {
-	po, f, m := makeFilter([]rune(sf), o)
+func NewFilter(s string, o int) *Filter {
+	bo, f, m := makeFilter([]rune(s), o)
 	bf, _ := binutil.ParseBinRuneSliceToUint8Slice(f)
 	bm, _ := binutil.ParseBinRuneSliceToUint8Slice(m)
 
 	return &Filter{
-		stringFilter: sf,
-		filterSize:   len(sf),
-		offset:       o,
-		byteFilter:   bf,
-		byteMask:     bm,
-		paddedOffset: po,
-		checkSize:    len(bf),
+		String:     s,
+		Size:       len(s),
+		Offset:     o,
+		ByteFilter: bf,
+		ByteMask:   bm,
+		ByteOffset: bo,
+		ByteSize:   len(bf),
 	}
 }
