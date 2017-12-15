@@ -40,7 +40,7 @@ var (
 	analyze       = app.Command("analyze", "Analyze the tree node reference locality.")
 	analyzeEngine = analyze.Flag("engine", "Used filtering engine for the target.").Default("patricia").String()
 	analyzeInput  = analyze.Flag("analyze-input", "A gob file contains results in NotifyMap.").Default("out.gob").String()
-	analyzeOutput = analyze.Flag("analyze-output", "A JSON file for d3.js.").Default("exp/patricia_locality/locality.json").String()
+	analyzeOutput = analyze.Flag("analyze-output", "A JSON file for d3.js.").Default("public/patricia/locality.json").String()
 )
 
 func runAnalyzePatricia(head *filter.PatriciaTrie, inFile string, outFile string) {
