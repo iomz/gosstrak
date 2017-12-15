@@ -43,8 +43,8 @@ func (ptld *PatriciaTrieLocalityData) JSON() PTLDJSON {
 		}
 	}
 	children := []PTLDJSON{}
-	for i := 0; i < len(ptld.children); i++ {
-		children = append(children, ptld.children[i].JSON())
+	for _, child := range ptld.children {
+		children = append(children, child.JSON())
 	}
 	return PTLDJSON{
 		Name:     ptld.name,
@@ -70,10 +70,10 @@ func (ptld *PatriciaTrieLocalityData) InsertLocality(path []string, locality flo
 
 	// If this node has any child
 	if len(ptld.children) != 0 {
-		for i := 0; i < len(ptld.children); i++ {
+		for _, child := range ptld.children {
 			// If found
-			if ptld.children[i].name == path[0] {
-				ptld.children[i].InsertLocality(path, locality)
+			if child.name == path[0] {
+				child.InsertLocality(path, locality)
 				return
 			}
 		}

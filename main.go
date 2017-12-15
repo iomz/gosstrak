@@ -48,7 +48,7 @@ func runAnalyzePatricia(head *filter.PatriciaTrie, inFile string, outFile string
 	if err := binutil.Load(inFile, matches); err != nil {
 		panic(err)
 	}
-	log.Printf("Loaded %v filters from %s\n", len(*matches), inFile)
+	log.Printf("Loaded %v notifies from %s\n", len(*matches), inFile)
 	ptlm := filter.PatriciaTrieLocalityMap{}
 	for _, ids := range *matches {
 		for _, id := range ids {
@@ -97,11 +97,17 @@ func runPatricia(idFile string, head *filter.PatriciaTrie, outFile string) {
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
-	matches := filter.NotifyMap{}
+	notifies := filter.NotifyMap{}
 	for _, id := range *ids {
-		head.Match(id, &matches)
+		matches := head.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
 	}
-	binutil.Save(outFile, matches)
+	binutil.Save(outFile, notifies)
 	log.Print("Saved the result to ", outFile)
 }
 

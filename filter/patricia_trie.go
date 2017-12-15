@@ -129,19 +129,16 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *Patricia
 	}
 }
 
-// Match needs to be changed
-func (pt *PatriciaTrie) Match(id []byte, matches *NotifyMap) {
-	// if not match, return empty string immediately
+// Search returns a slice of notify
+func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
+	// if not match, return empty slice immediately
 	if !pt.Filter.match(id) {
 		return
 	}
 
 	// if the id matched with this node, return notify
 	if len(pt.Notify) != 0 {
-		if _, ok := (*matches)[pt.Notify]; !ok {
-			(*matches)[pt.Notify] = [][]byte{}
-		}
-		(*matches)[pt.Notify] = append((*matches)[pt.Notify], id)
+		matches = append(matches, pt.Notify)
 	}
 
 	// Determine next Filter
@@ -151,26 +148,27 @@ func (pt *PatriciaTrie) Match(id []byte, matches *NotifyMap) {
 		panic(err)
 	}
 	if nb == '1' && pt.One != nil {
-		pt.One.Match(id, matches)
+		matches = append(matches, pt.One.Search(id)...)
 	} else if nb == '0' && pt.Zero != nil {
-		pt.Zero.Match(id, matches)
+		matches = append(matches, pt.Zero.Search(id)...)
 	}
+	return
 }
 
 func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
 	fks := fm.keys()
-	for i := 0; i < len(fks); i++ {
+	for _, fk := range fks {
 		// if the prefix is already longer than the testee
-		if len(fks[i]) < len(prefix) {
+		if len(fk) < len(prefix) {
 			continue
 		}
 		// ignore the testee without the prefix
-		if !strings.HasPrefix(fks[i], prefix) {
+		if !strings.HasPrefix(fk, prefix) {
 			continue
 		}
-		p := fks[i][len(prefix):]
+		p := fk[len(prefix):]
 		// ignore if no remainder
 		if len(p) == 0 {
 			continue
