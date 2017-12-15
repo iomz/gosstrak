@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// PatriciaTrie struct
 type PatriciaTrie struct {
 	Notify string
 	Filter *Filter
@@ -16,6 +17,10 @@ type PatriciaTrie struct {
 	Zero   *PatriciaTrie
 }
 
+// NotifyMap contains notify sring as key and slice of ids in []byte
+type NotifyMap map[string][][]byte
+
+// MarshalBinary overwrites the marshaller in gob encoding *PatriciaTrie
 func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -48,6 +53,7 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// UnmarshalBinary overwrites the unmarshaller in gob decoding *PatriciaTrie
 func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
 
@@ -92,7 +98,39 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-func (pt *PatriciaTrie) Match(id []byte, matched *[]string) {
+// AnalyzeLocality increments the locality per node for the specific id
+func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *PatriciaTrieLocalityMap) {
+	// if not match, return empty string immediately
+	if !pt.Filter.match(id) {
+		return
+	}
+
+	// if the node is the first two node
+	if len(pt.Filter.String) != 0 {
+		prefix += "-" + pt.Filter.String
+	}
+
+	if _, ok := (*ptlm)[prefix]; !ok {
+		(*ptlm)[prefix] = 1
+	} else {
+		(*ptlm)[prefix]++
+	}
+
+	// Determine next Filter
+	nextBitOffset := pt.Filter.Offset + pt.Filter.Size
+	nb, err := getNextBit(id, nextBitOffset)
+	if err != nil {
+		panic(err)
+	}
+	if nb == '1' && pt.One != nil {
+		pt.One.AnalyzeLocality(id, prefix, ptlm)
+	} else if nb == '0' && pt.Zero != nil {
+		pt.Zero.AnalyzeLocality(id, prefix, ptlm)
+	}
+}
+
+// Match needs to be changed
+func (pt *PatriciaTrie) Match(id []byte, matches *NotifyMap) {
 	// if not match, return empty string immediately
 	if !pt.Filter.match(id) {
 		return
@@ -100,23 +138,26 @@ func (pt *PatriciaTrie) Match(id []byte, matched *[]string) {
 
 	// if the id matched with this node, return notify
 	if len(pt.Notify) != 0 {
-		*matched = append(*matched, pt.Notify)
+		if _, ok := (*matches)[pt.Notify]; !ok {
+			(*matches)[pt.Notify] = [][]byte{}
+		}
+		(*matches)[pt.Notify] = append((*matches)[pt.Notify], id)
 	}
 
 	// Determine next Filter
-	next_bit_offset := pt.Filter.Offset + pt.Filter.Size
-	nb, err := get_next_bit(id, next_bit_offset)
+	nextBitOffset := pt.Filter.Offset + pt.Filter.Size
+	nb, err := getNextBit(id, nextBitOffset)
 	if err != nil {
 		panic(err)
 	}
 	if nb == '1' && pt.One != nil {
-		pt.One.Match(id, matched)
+		pt.One.Match(id, matches)
 	} else if nb == '0' && pt.Zero != nil {
-		pt.Zero.Match(id, matched)
+		pt.Zero.Match(id, matches)
 	}
 }
 
-func (pt *PatriciaTrie) constructTrie(prefix string, fm FilterMap) {
+func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
 	fks := fm.keys()
@@ -196,7 +237,9 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	}
 }
 
-func BuildPatriciaTrie(fm FilterMap) *PatriciaTrie {
+// BuildPatriciaTrie builds PatriciaTrie from filter.Map
+// returns the pointer to the entry node
+func BuildPatriciaTrie(fm Map) *PatriciaTrie {
 	p1 := lcp(fm.keys())
 	if len(p1) == 0 {
 		// do something if there's no common prefix
@@ -208,14 +251,14 @@ func BuildPatriciaTrie(fm FilterMap) *PatriciaTrie {
 	return head
 }
 
-func get_next_bit(id []byte, nbo int) (rune, error) {
+func getNextBit(id []byte, nbo int) (rune, error) {
 	o := nbo / ByteLength
 	// No more bit in the ID
 	if len(id) == o {
 		return 'x', nil
 	}
 	if len(id) < o {
-		return '?', errors.New("get_next_bit error")
+		return '?', errors.New("getNextBit error")
 	}
 	if (uint8(id[o])>>uint8((7-(nbo%ByteLength))))%2 == 0 {
 		return '0', nil

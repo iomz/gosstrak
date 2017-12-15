@@ -20,10 +20,9 @@ func Benchmark_runDumb(b *testing.B) {
 }
 
 func Benchmark_runPatricia(b *testing.B) {
-	fm := loadFiltersFromCSVFile("filters.csv")
-	head := filter.BuildPatriciaTrie(fm)
+	head := loadPatriciaTrie("filters.csv", "", true)
 	b.ResetTimer()
-	runPatricia("ids.gob", head)
+	runPatricia("ids.gob", head, "out.gob")
 }
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {
@@ -33,7 +32,7 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want filter.FilterMap
+		want filter.Map
 	}{
 	// TODO: Add test cases.
 	}

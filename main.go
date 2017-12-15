@@ -19,24 +19,53 @@ var (
 	// Current Version
 	version = "0.1.1"
 
-	// kingpin app
+	// app
 	app = kingpin.New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
-	// kingpin verbose mode flag
+	// common flag
 	verbose    = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
 	filterFile = app.Flag("filter-file", "A CSV file contains filter and notify.").Short('f').Default("filters.csv").String()
 	idFile     = app.Flag("id-file", "A gob file contains ids.").Short('i').Default("ids.gob").String()
 	treeFile   = app.Flag("tree-file", "Indicate the filename for the Trie.").Short('t').Default("tree.gob").String()
+	outFile    = app.Flag("out-file", "Indicate the filename for whatever output.").Short('o').Default("out.gob").String()
 
-	// kingpin patricia command
+	// patricia command
 	patricia         = app.Command("patricia", "Run in Patricia Trie filtering mode.")
 	patriciaShowTrie = patricia.Flag("print", "Show the Patricia Trie.").Short('p').Default("false").Bool()
 	patriciaRebuild  = patricia.Flag("rebuild", "Rebuild the Patricia Trie.").Short('r').Default("false").Bool()
 
-	// kingpin dumb command
+	// dumb command
 	dumb = app.Command("dumb", "Run in dumb filter mode.")
+
+	// analyze command
+	analyze       = app.Command("analyze", "Analyze the tree node reference locality.")
+	analyzeEngine = analyze.Flag("engine", "Used filtering engine for the target.").Default("patricia").String()
+	analyzeInput  = analyze.Flag("analyze-input", "A gob file contains results in NotifyMap.").Default("out.gob").String()
+	analyzeOutput = analyze.Flag("analyze-output", "A JSON file for d3.js.").Default("exp/patricia_locality/locality.json").String()
 )
 
-func runDumb(idFile string, fm filter.FilterMap) {
+func runAnalyzePatricia(head *filter.PatriciaTrie, inFile string, outFile string) {
+	matches := new(filter.NotifyMap)
+	if err := binutil.Load(inFile, matches); err != nil {
+		panic(err)
+	}
+	log.Printf("Loaded %v filters from %s\n", len(*matches), inFile)
+	ptlm := filter.PatriciaTrieLocalityMap{}
+	for _, ids := range *matches {
+		for _, id := range ids {
+			head.AnalyzeLocality(id, "", &ptlm)
+		}
+	}
+	// Save to file
+	file, err := os.Create(outFile)
+	if err != nil {
+		log.Fatal("file:", err)
+	}
+	file.Write(ptlm.ToJSON())
+	file.Close()
+	log.Print("Saved the Patricia Trie locality to ", outFile)
+}
+
+func runDumb(idFile string, fm filter.Map) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
@@ -60,7 +89,7 @@ func runDumb(idFile string, fm filter.FilterMap) {
 	//}
 }
 
-func runPatricia(idFile string, head *filter.PatriciaTrie) {
+func runPatricia(idFile string, head *filter.PatriciaTrie, outFile string) {
 	if *patriciaShowTrie {
 		fmt.Println(head.Dump())
 	}
@@ -68,15 +97,16 @@ func runPatricia(idFile string, head *filter.PatriciaTrie) {
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
-	matched := make([]string, 0, len(*ids))
+	matches := filter.NotifyMap{}
 	for _, id := range *ids {
-		head.Match(id, &matched)
+		head.Match(id, &matches)
 	}
-	//fmt.Printf("Matched ids: %v\n", len(matched))
+	binutil.Save(outFile, matches)
+	log.Print("Saved the result to ", outFile)
 }
 
-func loadFiltersFromCSVFile(f string) filter.FilterMap {
-	fm := filter.FilterMap{}
+func loadFiltersFromCSVFile(f string) filter.Map {
+	fm := filter.Map{}
 	fp, err := os.Open(f)
 	if err != nil {
 		panic(err)
@@ -99,43 +129,54 @@ func loadFiltersFromCSVFile(f string) filter.FilterMap {
 	return fm
 }
 
+func loadPatriciaTrie(filterFile string, treeFile string, isRebuilding bool) *filter.PatriciaTrie {
+	var head *filter.PatriciaTrie
+	// Tree encode
+	_, err := os.Stat(treeFile)
+	if isRebuilding || os.IsNotExist(err) {
+		fm := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
+		var tree bytes.Buffer
+		head = filter.BuildPatriciaTrie(fm)
+		enc := gob.NewEncoder(&tree)
+		err = enc.Encode(head)
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+		// Save to file
+		file, err := os.Create(treeFile)
+		if err != nil {
+			log.Fatal("file:", err)
+		}
+		file.Write(tree.Bytes())
+		file.Close()
+		log.Print("Saved the Patricia Trie to ", treeFile)
+	} else {
+		// Tree decode
+		binutil.Load(treeFile, &head)
+		log.Print("Loaded the Patricia Trie from ", treeFile)
+	}
+	return head
+}
+
 func main() {
 	app.Version(version)
 	parse := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	switch parse {
 	case patricia.FullCommand():
-		fm := loadFiltersFromCSVFile(*filterFile)
-		var head *filter.PatriciaTrie
-
-		// Tree encode
-		_, err := os.Stat(*treeFile)
-		if *patriciaRebuild || os.IsNotExist(err) {
-			var tree bytes.Buffer
-			head = filter.BuildPatriciaTrie(fm)
-			enc := gob.NewEncoder(&tree)
-			err = enc.Encode(head)
-			if err != nil {
-				log.Fatal("encode:", err)
-			}
-			// Save to file
-			file, err := os.Create(*treeFile)
-			if err != nil {
-				log.Fatal("file:", err)
-			}
-			file.Write(tree.Bytes())
-			file.Close()
-			log.Print("Saved the Patricia Trie to ", *treeFile)
-		} else {
-			// Tree decode
-			binutil.Load(*treeFile, &head)
-			log.Print("Loaded the Patricia Trie from ", *treeFile)
-		}
-
-		runPatricia(*idFile, head)
+		head := loadPatriciaTrie(*filterFile, *treeFile, *patriciaRebuild)
+		runPatricia(*idFile, head, *outFile)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
 		runDumb(*idFile, fm)
+	case analyze.FullCommand():
+		switch strings.ToLower(*analyzeEngine) {
+		case "patricia":
+			// Force analyze mode to need the tree file
+			head := loadPatriciaTrie(*filterFile, *treeFile, false)
+			runAnalyzePatricia(head, *analyzeInput, *analyzeOutput)
+		}
 	}
 }
