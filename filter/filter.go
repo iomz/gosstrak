@@ -1,7 +1,9 @@
 package filter
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -23,7 +25,33 @@ type Filter struct {
 	ByteSize   int
 }
 
-func (f *Filter) match(id []byte) bool {
+// GetByteAt() returns a byte of ByteFilter at the given offset
+// returns error if HasByteAt(bo) is false
+func (f *Filter) GetByteAt(bo int) (byte, error) {
+	if f.HasByteAt(bo) {
+		for i := 0; i < f.ByteSize; i++ {
+			if bo == f.ByteOffset+i {
+				return f.ByteFilter[i], nil
+			}
+		}
+	}
+	return 0, errors.New("this filter doesn't have the byte in the given offset")
+}
+
+// HasByteAt() returns true if the ByteFilter covers
+// a byte starting with the given offset
+func (f *Filter) HasByteAt(bo int) bool {
+	log.Println(f.ByteOffset, f.ByteSize, bo)
+	if f.ByteOffset > bo { // the filter is after the given bo
+		return false
+	} else if f.ByteOffset+f.ByteSize <= bo { // the filter is before the given offset
+		return false
+	}
+	return true
+}
+
+// Match returns true if the id is captured by this filter
+func (f *Filter) Match(id []byte) bool {
 	for i := 0; i < f.ByteSize; i++ {
 		if (id[f.ByteOffset+i]|f.ByteMask[i])^f.ByteFilter[i] != byte(0) {
 			return false
@@ -37,7 +65,7 @@ func (f *Filter) ToString() string {
 	return fmt.Sprintf("%s(%d %d)", f.String, f.Offset, f.Size)
 }
 
-// makeFilter returns padded filter and mask in rune slices
+// makeFilter returns padded offset, filter and mask in rune slices
 func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 	var f []rune
 	var m []rune
@@ -45,10 +73,8 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 
 	leftPaddingLength := offset % ByteLength
 	// pad left with 1 if necessary
-	if offset != 0 {
-		f = []rune(strings.Repeat("1", leftPaddingLength))
-		m = []rune(strings.Repeat("1", leftPaddingLength))
-	}
+	f = []rune(strings.Repeat("1", leftPaddingLength))
+	m = []rune(strings.Repeat("1", leftPaddingLength))
 
 	// insert filter body
 	if ByteLength-leftPaddingLength < len(bs) {
@@ -64,6 +90,14 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 		rightPaddingLength := ByteLength - len(f)
 		f = append(f, []rune(strings.Repeat("1", rightPaddingLength))...)
 		m = append(m, []rune(strings.Repeat("1", rightPaddingLength))...)
+	}
+
+	// Apply wildcard x bits in the filter to mask
+	for i := range f {
+		if f[i] == 'x' {
+			f[i] = '1'
+			m[i] = '1'
+		}
 	}
 
 	// if there is remainder, continue making the filter

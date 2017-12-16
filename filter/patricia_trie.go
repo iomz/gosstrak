@@ -101,7 +101,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 // AnalyzeLocality increments the locality per node for the specific id
 func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *PatriciaTrieLocalityMap) {
 	// if not match, return empty string immediately
-	if !pt.Filter.match(id) {
+	if !pt.Filter.Match(id) {
 		return
 	}
 
@@ -132,7 +132,7 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *Patricia
 // Search returns a slice of notify
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately
-	if !pt.Filter.match(id) {
+	if !pt.Filter.Match(id) {
 		return
 	}
 
