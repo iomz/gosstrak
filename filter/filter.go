@@ -3,7 +3,6 @@ package filter
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -25,23 +24,22 @@ type Filter struct {
 	ByteSize   int
 }
 
-// GetByteAt() returns a byte of ByteFilter at the given offset
-// returns error if HasByteAt(bo) is false
-func (f *Filter) GetByteAt(bo int) (byte, error) {
+// GetByteAt returns a byte of ByteFilter and ByteMask
+// at the given offset, returns error if HasByteAt(bo) is false
+func (f *Filter) GetByteAt(bo int) (byte, byte, error) {
 	if f.HasByteAt(bo) {
 		for i := 0; i < f.ByteSize; i++ {
 			if bo == f.ByteOffset+i {
-				return f.ByteFilter[i], nil
+				return f.ByteFilter[i], f.ByteMask[i], nil
 			}
 		}
 	}
-	return 0, errors.New("this filter doesn't have the byte in the given offset")
+	return 0, 0, errors.New("this filter doesn't have the byte in the given offset")
 }
 
-// HasByteAt() returns true if the ByteFilter covers
+// HasByteAt returns true if the ByteFilter covers
 // a byte starting with the given offset
 func (f *Filter) HasByteAt(bo int) bool {
-	log.Println(f.ByteOffset, f.ByteSize, bo)
 	if f.ByteOffset > bo { // the filter is after the given bo
 		return false
 	} else if f.ByteOffset+f.ByteSize <= bo { // the filter is before the given offset

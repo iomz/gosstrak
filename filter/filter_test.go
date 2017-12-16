@@ -64,13 +64,14 @@ func TestFilter_GetByteAt(t *testing.T) {
 		fields  fields
 		args    args
 		want    byte
+		want1   byte
 		wantErr bool
 	}{
-		{"00110011 from 0 at 0", fields{"00110011", 8, 0, []byte{51}, []byte{0}, 0, 1}, args{0}, byte(51), false},
-		{"00110011 from 0 at 1", fields{"00110011", 8, 0, []byte{51}, []byte{0}, 0, 1}, args{1}, byte(0), true},
-		{"00110011 from 4 at 0", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{0}, byte(243), false},
-		{"00110011 from 4 at 1", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{1}, byte(63), false},
-		{"00110011 from 4 at 3", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{3}, byte(0), true},
+		{"00110011 from 0 at 0", fields{"00110011", 8, 0, []byte{51}, []byte{0}, 0, 1}, args{0}, byte(51), byte(0), false},
+		{"00110011 from 0 at 1", fields{"00110011", 8, 0, []byte{51}, []byte{0}, 0, 1}, args{1}, byte(0), byte(0), true},
+		{"00110011 from 4 at 0", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{0}, byte(243), byte(240), false},
+		{"00110011 from 4 at 1", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{1}, byte(63), byte(15), false},
+		{"00110011 from 4 at 3", fields{"00110011", 8, 4, []byte{243, 63}, []byte{240, 15}, 0, 2}, args{3}, byte(0), byte(0), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -83,13 +84,16 @@ func TestFilter_GetByteAt(t *testing.T) {
 				ByteOffset: tt.fields.ByteOffset,
 				ByteSize:   tt.fields.ByteSize,
 			}
-			got, err := f.GetByteAt(tt.args.bo)
+			got, got1, err := f.GetByteAt(tt.args.bo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Filter.GetByteAt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Filter.GetByteAt() = %v, want %v", got, tt.want)
+				t.Errorf("Filter.GetByteAt() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("Filter.GetByteAt() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
