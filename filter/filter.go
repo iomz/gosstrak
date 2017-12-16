@@ -100,7 +100,8 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 
 	// if there is remainder, continue making the filter
 	if len(bs)+leftPaddingLength > ByteLength {
-		_, fc, mc := makeFilter(bs[bodyLength:], 0)
+		nextOffset := ((offset / ByteLength) + 1) * ByteLength
+		_, fc, mc := makeFilter(bs[bodyLength:], nextOffset)
 		f = append(f, fc...)
 		m = append(m, mc...)
 	}
