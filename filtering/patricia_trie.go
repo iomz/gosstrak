@@ -11,10 +11,10 @@ import (
 
 // PatriciaTrie struct
 type PatriciaTrie struct {
-	Notify string
-	Filter *FilterObject
-	One    *PatriciaTrie
-	Zero   *PatriciaTrie
+	notify string
+	filter *FilterObject
+	one    *PatriciaTrie
+	zero   *PatriciaTrie
 }
 
 // NotifyMap contains notify sring as key and slice of ids in []byte
@@ -26,27 +26,27 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	enc := gob.NewEncoder(&buf)
 
 	// Notify
-	enc.Encode(pt.Notify)
+	enc.Encode(pt.notify)
 
 	// Filter
-	hasFilter := pt.Filter != nil
+	hasFilter := pt.filter != nil
 	enc.Encode(hasFilter)
 	if hasFilter {
-		err = enc.Encode(pt.Filter)
+		err = enc.Encode(pt.filter)
 	}
 
 	// One
-	hasOne := pt.One != nil
+	hasOne := pt.one != nil
 	enc.Encode(hasOne)
 	if hasOne {
-		err = enc.Encode(pt.One)
+		err = enc.Encode(pt.one)
 	}
 
 	// Zero
-	hasZero := pt.Zero != nil
+	hasZero := pt.zero != nil
 	enc.Encode(hasZero)
 	if hasZero {
-		err = enc.Encode(pt.Zero)
+		err = enc.Encode(pt.zero)
 	}
 
 	//buf.Encode
@@ -58,7 +58,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
 
 	// Notify
-	if err = dec.Decode(&pt.Notify); err != nil {
+	if err = dec.Decode(&pt.notify); err != nil {
 		return
 	}
 
@@ -68,9 +68,9 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasFilter {
-		err = dec.Decode(&pt.Filter)
+		err = dec.Decode(&pt.filter)
 	} else {
-		pt.Filter = nil
+		pt.filter = nil
 	}
 
 	// One
@@ -79,9 +79,9 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasOne {
-		err = dec.Decode(&pt.One)
+		err = dec.Decode(&pt.one)
 	} else {
-		pt.One = nil
+		pt.one = nil
 	}
 
 	// Zero
@@ -90,9 +90,9 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasOne {
-		err = dec.Decode(&pt.Zero)
+		err = dec.Decode(&pt.zero)
 	} else {
-		pt.Zero = nil
+		pt.zero = nil
 	}
 
 	return
@@ -101,13 +101,13 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 // AnalyzeLocality increments the locality per node for the specific id
 func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 	// if not match, return empty string immediately
-	if !pt.Filter.Match(id) {
+	if !pt.filter.Match(id) {
 		return
 	}
 
 	// if the node is the first two node
-	if len(pt.Filter.String) != 0 {
-		prefix += "-" + pt.Filter.String
+	if len(pt.filter.String) != 0 {
+		prefix += "-" + pt.filter.String
 	}
 
 	if _, ok := (*lm)[prefix]; !ok {
@@ -116,41 +116,41 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 		(*lm)[prefix]++
 	}
 
-	// Determine next Filter
-	nextBitOffset := pt.Filter.Offset + pt.Filter.Size
+	// Determine next filter
+	nextBitOffset := pt.filter.Offset + pt.filter.Size
 	nb, err := getNextBit(id, nextBitOffset)
 	if err != nil {
 		panic(err)
 	}
-	if nb == '1' && pt.One != nil {
-		pt.One.AnalyzeLocality(id, prefix, lm)
-	} else if nb == '0' && pt.Zero != nil {
-		pt.Zero.AnalyzeLocality(id, prefix, lm)
+	if nb == '1' && pt.one != nil {
+		pt.one.AnalyzeLocality(id, prefix, lm)
+	} else if nb == '0' && pt.zero != nil {
+		pt.zero.AnalyzeLocality(id, prefix, lm)
 	}
 }
 
 // Search returns a slice of notify
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately
-	if !pt.Filter.Match(id) {
+	if !pt.filter.Match(id) {
 		return
 	}
 
 	// if the id matched with this node, return notify
-	if len(pt.Notify) != 0 {
-		matches = append(matches, pt.Notify)
+	if len(pt.notify) != 0 {
+		matches = append(matches, pt.notify)
 	}
 
-	// Determine next Filter
-	nextBitOffset := pt.Filter.Offset + pt.Filter.Size
+	// Determine next filter
+	nextBitOffset := pt.filter.Offset + pt.filter.Size
 	nb, err := getNextBit(id, nextBitOffset)
 	if err != nil {
 		panic(err)
 	}
-	if nb == '1' && pt.One != nil {
-		matches = append(matches, pt.One.Search(id)...)
-	} else if nb == '0' && pt.Zero != nil {
-		matches = append(matches, pt.Zero.Search(id)...)
+	if nb == '1' && pt.one != nil {
+		matches = append(matches, pt.one.Search(id)...)
+	} else if nb == '0' && pt.zero != nil {
+		matches = append(matches, pt.zero.Search(id)...)
 	}
 	return
 }
@@ -192,25 +192,25 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
 	cumulativePrefix := ""
 	// if there's a branch starts with 1
 	if len(onePrefixBranch) != 0 {
-		pt.One = &PatriciaTrie{}
-		pt.One.Filter = NewFilter(onePrefixBranch, len(prefix))
+		pt.one = &PatriciaTrie{}
+		pt.one.filter = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
 		if n, ok := fm[cumulativePrefix]; ok {
-			pt.One.Notify = n
+			pt.one.notify = n
 		}
-		pt.One.constructTrie(cumulativePrefix, fm)
+		pt.one.constructTrie(cumulativePrefix, fm)
 	}
 	// if there's a branch starts with 0
 	if len(zeroPrefixBranch) != 0 {
-		pt.Zero = &PatriciaTrie{}
-		pt.Zero.Filter = NewFilter(zeroPrefixBranch, len(prefix))
+		pt.zero = &PatriciaTrie{}
+		pt.zero.filter = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
 		if n, ok := fm[cumulativePrefix]; ok {
-			pt.Zero.Notify = n
+			pt.zero.notify = n
 		}
-		pt.Zero.constructTrie(cumulativePrefix, fm)
+		pt.zero.constructTrie(cumulativePrefix, fm)
 	}
 }
 
@@ -223,15 +223,15 @@ func (pt *PatriciaTrie) Dump() string {
 
 func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	var n string
-	if len(pt.Notify) != 0 {
-		n = "-> " + pt.Notify
+	if len(pt.notify) != 0 {
+		n = "-> " + pt.notify
 	}
-	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.Filter.ToString(), n)
-	if pt.One != nil {
-		pt.One.print(writer, indent+2)
+	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filter.ToString(), n)
+	if pt.one != nil {
+		pt.one.print(writer, indent+2)
 	}
-	if pt.Zero != nil {
-		pt.Zero.print(writer, indent+2)
+	if pt.zero != nil {
+		pt.zero.print(writer, indent+2)
 	}
 }
 
@@ -243,7 +243,7 @@ func BuildPatriciaTrie(fm Map) *PatriciaTrie {
 		// do something if there's no common prefix
 	}
 	head := &PatriciaTrie{}
-	head.Filter = NewFilter(p1, 0)
+	head.filter = NewFilter(p1, 0)
 	head.constructTrie(p1, fm)
 
 	return head
