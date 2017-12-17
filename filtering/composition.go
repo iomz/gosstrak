@@ -1,4 +1,4 @@
-package filter
+package filtering
 
 import (
 	"strings"

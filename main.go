@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
-	"github.com/iomz/gosstrak-fc/filter"
+	"github.com/iomz/gosstrak-fc/filtering"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -43,16 +43,16 @@ var (
 	analyzeOutput = analyze.Flag("analyze-output", "A JSON file for d3.js.").Default("public/patricia/locality.json").String()
 )
 
-func runAnalyzePatricia(head *filter.PatriciaTrie, inFile string, outFile string) {
-	matches := new(filter.NotifyMap)
+func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile string) {
+	matches := new(filtering.NotifyMap)
 	if err := binutil.Load(inFile, matches); err != nil {
 		panic(err)
 	}
 	log.Printf("Loaded %v notifies from %s\n", len(*matches), inFile)
-	ptlm := filter.PatriciaTrieLocalityMap{}
+	lm := filtering.LocalityMap{}
 	for _, ids := range *matches {
 		for _, id := range ids {
-			head.AnalyzeLocality(id, "", &ptlm)
+			head.AnalyzeLocality(id, "", &lm)
 		}
 	}
 	// Save to file
@@ -60,12 +60,12 @@ func runAnalyzePatricia(head *filter.PatriciaTrie, inFile string, outFile string
 	if err != nil {
 		log.Fatal("file:", err)
 	}
-	file.Write(ptlm.ToJSON())
+	file.Write(lm.ToJSON())
 	file.Close()
 	log.Print("Saved the Patricia Trie locality to ", outFile)
 }
 
-func runDumb(idFile string, fm filter.Map) {
+func runDumb(idFile string, fm filtering.Map) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
@@ -89,7 +89,7 @@ func runDumb(idFile string, fm filter.Map) {
 	//}
 }
 
-func runPatricia(idFile string, head *filter.PatriciaTrie, outFile string) {
+func runPatricia(idFile string, head *filtering.PatriciaTrie, outFile string) {
 	if *patriciaShowTrie {
 		fmt.Println(head.Dump())
 	}
@@ -97,7 +97,7 @@ func runPatricia(idFile string, head *filter.PatriciaTrie, outFile string) {
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
 	}
-	notifies := filter.NotifyMap{}
+	notifies := filtering.NotifyMap{}
 	for _, id := range *ids {
 		matches := head.Search(id)
 		for _, n := range matches {
@@ -111,8 +111,8 @@ func runPatricia(idFile string, head *filter.PatriciaTrie, outFile string) {
 	log.Print("Saved the result to ", outFile)
 }
 
-func loadFiltersFromCSVFile(f string) filter.Map {
-	fm := filter.Map{}
+func loadFiltersFromCSVFile(f string) filtering.Map {
+	fm := filtering.Map{}
 	fp, err := os.Open(f)
 	if err != nil {
 		panic(err)
@@ -135,15 +135,15 @@ func loadFiltersFromCSVFile(f string) filter.Map {
 	return fm
 }
 
-func loadPatriciaTrie(filterFile string, treeFile string, isRebuilding bool) *filter.PatriciaTrie {
-	var head *filter.PatriciaTrie
+func loadPatriciaTrie(filterFile string, treeFile string, isRebuilding bool) *filtering.PatriciaTrie {
+	var head *filtering.PatriciaTrie
 	// Tree encode
 	_, err := os.Stat(treeFile)
 	if isRebuilding || os.IsNotExist(err) {
 		fm := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
 		var tree bytes.Buffer
-		head = filter.BuildPatriciaTrie(fm)
+		head = filtering.BuildPatriciaTrie(fm)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {

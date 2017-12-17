@@ -4,13 +4,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/iomz/gosstrak-fc/filter"
+	"github.com/iomz/gosstrak-fc/filtering"
 )
 
 func Benchmark_BuildPatriciaTrie(b *testing.B) {
 	fm := loadFiltersFromCSVFile("filters.csv")
 	b.ResetTimer()
-	filter.BuildPatriciaTrie(fm)
+	filtering.BuildPatriciaTrie(fm)
 }
 
 func Benchmark_runDumb(b *testing.B) {
@@ -32,7 +32,7 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want filter.Map
+		want filtering.Map
 	}{
 	// TODO: Add test cases.
 	}

@@ -1,4 +1,4 @@
-package filter
+package filtering
 
 import (
 	"bytes"
@@ -99,7 +99,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 }
 
 // AnalyzeLocality increments the locality per node for the specific id
-func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *PatriciaTrieLocalityMap) {
+func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 	// if not match, return empty string immediately
 	if !pt.Filter.Match(id) {
 		return
@@ -110,10 +110,10 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *Patricia
 		prefix += "-" + pt.Filter.String
 	}
 
-	if _, ok := (*ptlm)[prefix]; !ok {
-		(*ptlm)[prefix] = 1
+	if _, ok := (*lm)[prefix]; !ok {
+		(*lm)[prefix] = 1
 	} else {
-		(*ptlm)[prefix]++
+		(*lm)[prefix]++
 	}
 
 	// Determine next Filter
@@ -123,9 +123,9 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, ptlm *Patricia
 		panic(err)
 	}
 	if nb == '1' && pt.One != nil {
-		pt.One.AnalyzeLocality(id, prefix, ptlm)
+		pt.One.AnalyzeLocality(id, prefix, lm)
 	} else if nb == '0' && pt.Zero != nil {
-		pt.Zero.AnalyzeLocality(id, prefix, ptlm)
+		pt.Zero.AnalyzeLocality(id, prefix, lm)
 	}
 }
 

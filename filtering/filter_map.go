@@ -1,4 +1,4 @@
-package filter
+package filtering
 
 // Map contains filter as key and notify string as value
 type Map map[string]string
