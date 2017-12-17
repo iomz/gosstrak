@@ -108,7 +108,7 @@ func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile str
 	if err := binutil.Load(inFile, matches); err != nil {
 		panic(err)
 	}
-	log.Printf("Loaded %v notifies from %s\n", len(*matches), inFile)
+	log.Printf("Loaded %v notifications from %s\n", len(*matches), inFile)
 	lm := filtering.LocalityMap{}
 	for _, ids := range *matches {
 		for _, id := range ids {
@@ -122,7 +122,7 @@ func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile str
 	}
 	file.Write(lm.ToJSON())
 	file.Close()
-	log.Print("Saved the Patricia Trie locality to ", outFile)
+	log.Print("Saved the result to ", outFile)
 }
 
 func runDumb(idFile string, sub filtering.Subscriptions) {
