@@ -12,6 +12,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -23,6 +26,9 @@ import (
 var (
 	// Current Version
 	version = "0.2.0"
+
+	// Data cache directory
+	dataCacheDir = "/var/tmp/gosstrak-fc-cache"
 
 	// app
 	app = kingpin.
@@ -47,12 +53,12 @@ var (
 	engineFile = app.
 			Flag("engine-file", "Indicate the filename storing the filtering engine.").
 			Short('e').
-			Default("engine.gob").
+			Default(dataCacheDir + "/engine.gob").
 			String()
 	outFile = app.
-		Flag("out-file", "Indicate the filename for whatever output.").
+		Flag("out-file", "Indicate the filename for saving the result.").
 		Short('o').
-		Default("out.gob").String()
+		Default(dataCacheDir + "/out.gob").String()
 	isRebuilding = app.
 			Flag("rebuild", "Rebuild the filtering engine.").
 			Short('r').
@@ -80,13 +86,22 @@ var (
 			String()
 	analyzeInput = analyze.
 			Flag("analyze-input", "A gob file contains results in NotifyMap.").
-			Default("out.gob").
+			Default(dataCacheDir + "/out.gob").
 			String()
 	analyzeOutput = analyze.
 			Flag("analyze-output", "A JSON file for d3.js.").
-			Default("public/patricia/locality.json").
+			Default(getPackagePath() + "/public/patricia/locality.json").
 			String()
 )
+
+func getPackagePath() string {
+	// Determine the package dir
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	return path.Dir(filename)
+}
 
 func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile string) {
 	matches := new(filtering.NotifyMap)
@@ -110,7 +125,7 @@ func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile str
 	log.Print("Saved the Patricia Trie locality to ", outFile)
 }
 
-func runDumb(idFile string, fm filtering.Map) {
+func runDumb(idFile string, sub filtering.Subscriptions) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
@@ -119,12 +134,12 @@ func runDumb(idFile string, fm filtering.Map) {
 	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
-		for f, n := range fm {
+		for f, info := range sub {
 			if strings.HasPrefix(i, f) {
-				if _, ok := matches[n]; !ok {
-					matches[n] = []string{}
+				if _, ok := matches[info.NotificationURI]; !ok {
+					matches[info.NotificationURI] = []string{}
 				}
-				matches[n] = append(matches[n], i)
+				matches[info.NotificationURI] = append(matches[info.NotificationURI], i)
 			}
 		}
 	}
@@ -153,8 +168,8 @@ func execute(idFile string, head filtering.Engine, outFile string) {
 	log.Print("Saved the result to ", outFile)
 }
 
-func loadFiltersFromCSVFile(f string) filtering.Map {
-	fm := filtering.Map{}
+func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
+	sub := filtering.Subscriptions{}
 	fp, err := os.Open(f)
 	if err != nil {
 		panic(err)
@@ -171,10 +186,19 @@ func loadFiltersFromCSVFile(f string) filtering.Map {
 		} else if err != nil {
 			panic(err)
 		}
-		// prefix as key, notify string as value
-		fm[record[1]] = record[0]
+		if len(record) < 3 {
+			// prefix as key, notify string as value
+			sub[record[1]] = &filtering.Info{record[0], 0}
+		} else {
+			// prefix as key, notify string as value
+			pValue, err := strconv.ParseFloat(record[2], 64)
+			if err != nil {
+				panic(err)
+			}
+			sub[record[1]] = &filtering.Info{record[0], pValue}
+		}
 	}
-	return fm
+	return sub
 }
 
 func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *filtering.HuffmanTree {
@@ -182,10 +206,10 @@ func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *f
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		fm := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
+		sub := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildHuffmanTree(fm)
+		head = filtering.BuildHuffmanTree(sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -212,10 +236,10 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		fm := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
+		sub := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildPatriciaTrie(fm)
+		head = filtering.BuildPatriciaTrie(sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -241,6 +265,14 @@ func main() {
 	app.Version(version)
 	parse := kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	// Create cache directory if not exists
+	if _, err := os.Stat(dataCacheDir); os.IsNotExist(err) {
+		err = os.MkdirAll(dataCacheDir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	switch parse {
 	case patricia.FullCommand():
 		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
@@ -249,9 +281,9 @@ func main() {
 		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
 	case dumb.FullCommand():
-		fm := loadFiltersFromCSVFile(*filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
-		runDumb(*idFile, fm)
+		sub := loadFiltersFromCSVFile(*filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
+		runDumb(*idFile, sub)
 	case analyze.FullCommand():
 		switch strings.ToLower(*analyzeEngine) {
 		case "patricia":

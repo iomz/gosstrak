@@ -16,10 +16,10 @@ import (
 
 // PatriciaTrie struct
 type PatriciaTrie struct {
-	notify string
-	filter *FilterObject
-	one    *PatriciaTrie
-	zero   *PatriciaTrie
+	notificationURI string
+	filter          *FilterObject
+	one             *PatriciaTrie
+	zero            *PatriciaTrie
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *PatriciaTrie
@@ -28,7 +28,7 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	enc := gob.NewEncoder(&buf)
 
 	// Notify
-	enc.Encode(pt.notify)
+	enc.Encode(pt.notificationURI)
 
 	// Filter
 	hasFilter := pt.filter != nil
@@ -60,7 +60,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
 
 	// Notify
-	if err = dec.Decode(&pt.notify); err != nil {
+	if err = dec.Decode(&pt.notificationURI); err != nil {
 		return
 	}
 
@@ -131,16 +131,16 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 	}
 }
 
-// Search returns a slice of notify
+// Search returns a slice of notificationURI
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately
 	if !pt.filter.Match(id) {
 		return
 	}
 
-	// if the id matched with this node, return notify
-	if len(pt.notify) != 0 {
-		matches = append(matches, pt.notify)
+	// if the id matched with this node, return notificationURI
+	if len(pt.notificationURI) != 0 {
+		matches = append(matches, pt.notificationURI)
 	}
 
 	// Determine next filter
@@ -157,10 +157,10 @@ func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	return
 }
 
-func (pt *PatriciaTrie) build(prefix string, fm Map) {
+func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
-	fks := fm.keys()
+	fks := sub.keys()
 	for _, fk := range fks {
 		// if the prefix is already longer than the testee
 		if len(fk) < len(prefix) {
@@ -198,10 +198,10 @@ func (pt *PatriciaTrie) build(prefix string, fm Map) {
 		pt.one.filter = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
-		if n, ok := fm[cumulativePrefix]; ok {
-			pt.one.notify = n
+		if info, ok := sub[cumulativePrefix]; ok {
+			pt.one.notificationURI = info.NotificationURI
 		}
-		pt.one.build(cumulativePrefix, fm)
+		pt.one.build(cumulativePrefix, sub)
 	}
 	// if there's a branch starts with 0
 	if len(zeroPrefixBranch) != 0 {
@@ -209,10 +209,10 @@ func (pt *PatriciaTrie) build(prefix string, fm Map) {
 		pt.zero.filter = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
-		if n, ok := fm[cumulativePrefix]; ok {
-			pt.zero.notify = n
+		if info, ok := sub[cumulativePrefix]; ok {
+			pt.zero.notificationURI = info.NotificationURI
 		}
-		pt.zero.build(cumulativePrefix, fm)
+		pt.zero.build(cumulativePrefix, sub)
 	}
 }
 
@@ -225,8 +225,8 @@ func (pt *PatriciaTrie) Dump() string {
 
 func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	var n string
-	if len(pt.notify) != 0 {
-		n = "-> " + pt.notify
+	if len(pt.notificationURI) != 0 {
+		n = "-> " + pt.notificationURI
 	}
 	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filter.ToString(), n)
 	if pt.one != nil {
@@ -237,16 +237,16 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	}
 }
 
-// BuildPatriciaTrie builds PatriciaTrie from filter.Map
+// BuildPatriciaTrie builds PatriciaTrie from filter.Subscriptions
 // returns the pointer to the entry node
-func BuildPatriciaTrie(fm Map) *PatriciaTrie {
-	p1 := lcp(fm.keys())
+func BuildPatriciaTrie(sub Subscriptions) *PatriciaTrie {
+	p1 := lcp(sub.keys())
 	if len(p1) == 0 {
 		// do something if there's no common prefix
 	}
 	head := &PatriciaTrie{}
 	head.filter = NewFilter(p1, 0)
-	head.build(p1, fm)
+	head.build(p1, sub)
 
 	return head
 }

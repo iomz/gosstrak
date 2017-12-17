@@ -14,10 +14,10 @@ import (
 
 // HuffmanTree struct
 type HuffmanTree struct {
-	notify       string
-	filter       *FilterObject
-	matchNext    *HuffmanTree
-	mismatchNext *HuffmanTree
+	notificationURI string
+	filter          *FilterObject
+	matchNext       *HuffmanTree
+	mismatchNext    *HuffmanTree
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *HuffmanTree
@@ -36,7 +36,7 @@ func (ht *HuffmanTree) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap
 	return
 }
 
-// Search returns a slice of notify
+// Search returns a slice of notificationURI
 func (ht *HuffmanTree) Search(id []byte) (matches []string) {
 	return
 }
@@ -56,6 +56,6 @@ func (ht *HuffmanTree) print(writer io.Writer, indent int) {
 
 // BuildHuffmanTree builds HuffmanTree from filter.Map
 // returns the pointer to the entry node
-func BuildHuffmanTree(fm Map) *HuffmanTree {
+func BuildHuffmanTree(sub Subscriptions) *HuffmanTree {
 	return &HuffmanTree{}
 }

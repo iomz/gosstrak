@@ -37,7 +37,7 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want filtering.Map
+		want filtering.Subscriptions
 	}{
 	// TODO: Add test cases.
 	}

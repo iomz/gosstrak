@@ -14,5 +14,5 @@ type Engine interface {
 	UnmarshalBinary(data []byte) error
 }
 
-// NotifyMap contains notify sring as key and slice of ids in []byte
+// NotifyMap contains notificationURI sring as key and slice of ids in [][]byte
 type NotifyMap map[string][][]byte
