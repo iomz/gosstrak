@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strconv"
@@ -152,7 +153,20 @@ func runDumb(idFile string, sub filtering.Subscriptions) {
 func execute(idFile string, head filtering.Engine, outFile string) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
-		panic(err)
+		// if ids.csv exists, use gobencids command
+		if _, err := os.Stat("ids.csv"); !os.IsNotExist(err) {
+			log.Printf("%v not found, using ids.csv instead...", idFile)
+			err = exec.Command("gobencid").Run()
+			if err != nil {
+				panic(err)
+			}
+			err = binutil.Load(idFile, ids)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
 	}
 	notifies := filtering.NotifyMap{}
 	for _, id := range *ids {
