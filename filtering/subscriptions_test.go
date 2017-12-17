@@ -49,10 +49,10 @@ func TestSubscriptions_HuffmanTable(t *testing.T) {
 				"1100": &Info{"12", 12, &Subscriptions{}},
 			},
 			HuffmanTable{
-				HuffmanCode{[]string{"0000"}, 0},
-				HuffmanCode{[]string{"0011"}, 3},
-				HuffmanCode{[]string{"1100"}, 12},
-				HuffmanCode{[]string{"1111"}, 15},
+				HuffmanCode{&group{[]*group{}, "0000"}, 0},
+				HuffmanCode{&group{[]*group{}, "0011"}, 3},
+				HuffmanCode{&group{[]*group{}, "1100"}, 12},
+				HuffmanCode{&group{[]*group{}, "1111"}, 15},
 			},
 		},
 	}

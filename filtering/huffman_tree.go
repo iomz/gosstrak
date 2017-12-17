@@ -58,6 +58,10 @@ func (ht *HuffmanTree) print(writer io.Writer, indent int) {
 // BuildHuffmanTree builds HuffmanTree from Subscriptions
 // returns the pointer to the entry node
 func BuildHuffmanTree(sub Subscriptions) *HuffmanTree {
+	sub.linkSubset()
+	table := sub.HuffmanTable()
+	table.autoencode()
+	ht := &HuffmanTree{}
 
-	return &HuffmanTree{}
+	return ht
 }
