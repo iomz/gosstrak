@@ -18,6 +18,7 @@ type HuffmanTree struct {
 	filter          *FilterObject
 	matchNext       *HuffmanTree
 	mismatchNext    *HuffmanTree
+	subset          []*HuffmanTree
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *HuffmanTree

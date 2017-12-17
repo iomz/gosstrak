@@ -201,15 +201,19 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 			panic(err)
 		}
 		if len(record) < 3 {
-			// prefix as key, notify string as value
-			sub[record[1]] = &filtering.Info{record[0], 0}
+			// Default case
+			// prefix as key, *filtering.Info as value
+			sub[record[1]] = &filtering.Info{record[0], 0, nil}
 		} else {
-			// prefix as key, notify string as value
+			// For HuffmanTree, filter with EntropyValue
+			// prefix as key, *filtering.Info as value
 			pValue, err := strconv.ParseFloat(record[2], 64)
 			if err != nil {
 				panic(err)
 			}
-			sub[record[1]] = &filtering.Info{record[0], pValue}
+			fs := record[1]
+			uri := record[0]
+			sub[fs] = &filtering.Info{uri, pValue, nil}
 		}
 	}
 	return sub

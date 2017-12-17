@@ -43,7 +43,7 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 		{"SGTIN-96_3_3_458960468_102",
 			args{getPackagePath() + "/testdata/filters.csv"},
 			filtering.Subscriptions{
-				"0011000001101101101101011011001011100101010000000001100110": &filtering.Info{"SGTIN-96_3_3_458960468_102", 0},
+				"0011000001101101101101011011001011100101010000000001100110": &filtering.Info{"SGTIN-96_3_3_458960468_102", 0, nil},
 			}},
 	}
 	for _, tt := range tests {
