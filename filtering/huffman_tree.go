@@ -54,8 +54,9 @@ func (ht *HuffmanTree) Dump() string {
 func (ht *HuffmanTree) print(writer io.Writer, indent int) {
 }
 
-// BuildHuffmanTree builds HuffmanTree from filter.Map
+// BuildHuffmanTree builds HuffmanTree from Subscriptions
 // returns the pointer to the entry node
 func BuildHuffmanTree(sub Subscriptions) *HuffmanTree {
+
 	return &HuffmanTree{}
 }
