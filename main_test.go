@@ -1,3 +1,8 @@
+// Copyright (c) 2017 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -22,7 +27,7 @@ func Benchmark_runDumb(b *testing.B) {
 func Benchmark_runPatricia(b *testing.B) {
 	head := loadPatriciaTrie("filters.csv", "", true)
 	b.ResetTimer()
-	runPatricia("ids.gob", head, "out.gob")
+	execute("ids.gob", head, "out.gob")
 }
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {

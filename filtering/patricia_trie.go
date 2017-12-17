@@ -1,3 +1,8 @@
+// Copyright (c) 2017 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
 package filtering
 
 import (
@@ -16,9 +21,6 @@ type PatriciaTrie struct {
 	one    *PatriciaTrie
 	zero   *PatriciaTrie
 }
-
-// NotifyMap contains notify sring as key and slice of ids in []byte
-type NotifyMap map[string][][]byte
 
 // MarshalBinary overwrites the marshaller in gob encoding *PatriciaTrie
 func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
@@ -155,7 +157,7 @@ func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	return
 }
 
-func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
+func (pt *PatriciaTrie) build(prefix string, fm Map) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
 	fks := fm.keys()
@@ -199,7 +201,7 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
 		if n, ok := fm[cumulativePrefix]; ok {
 			pt.one.notify = n
 		}
-		pt.one.constructTrie(cumulativePrefix, fm)
+		pt.one.build(cumulativePrefix, fm)
 	}
 	// if there's a branch starts with 0
 	if len(zeroPrefixBranch) != 0 {
@@ -210,7 +212,7 @@ func (pt *PatriciaTrie) constructTrie(prefix string, fm Map) {
 		if n, ok := fm[cumulativePrefix]; ok {
 			pt.zero.notify = n
 		}
-		pt.zero.constructTrie(cumulativePrefix, fm)
+		pt.zero.build(cumulativePrefix, fm)
 	}
 }
 
@@ -244,7 +246,7 @@ func BuildPatriciaTrie(fm Map) *PatriciaTrie {
 	}
 	head := &PatriciaTrie{}
 	head.filter = NewFilter(p1, 0)
-	head.constructTrie(p1, fm)
+	head.build(p1, fm)
 
 	return head
 }

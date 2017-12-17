@@ -1,10 +1,14 @@
+// Copyright (c) 2017 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
 package main
 
 import (
 	"bytes"
 	"encoding/csv"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -15,32 +19,73 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+// Environmental variables
 var (
 	// Current Version
-	version = "0.1.1"
+	version = "0.2.0"
 
 	// app
-	app = kingpin.New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
+	app = kingpin.
+		New("gosstrak-fc", "An RFID middleware to replace Fosstrak F&C.")
+
 	// common flag
-	verbose    = app.Flag("debug", "Enable verbose mode.").Short('v').Default("false").Bool()
-	filterFile = app.Flag("filter-file", "A CSV file contains filter and notify.").Short('f').Default("filters.csv").String()
-	idFile     = app.Flag("id-file", "A gob file contains ids.").Short('i').Default("ids.gob").String()
-	treeFile   = app.Flag("tree-file", "Indicate the filename for the Trie.").Short('t').Default("tree.gob").String()
-	outFile    = app.Flag("out-file", "Indicate the filename for whatever output.").Short('o').Default("out.gob").String()
+	verbose = app.
+		Flag("debug", "Enable verbose mode.").
+		Short('v').
+		Default("false").
+		Bool()
+	filterFile = app.
+			Flag("filter-file", "A CSV file contains filter and notify.").
+			Short('f').
+			Default("filters.csv").
+			String()
+	idFile = app.
+		Flag("id-file", "A gob file contains ids.").
+		Short('i').
+		Default("ids.gob").
+		String()
+	engineFile = app.
+			Flag("engine-file", "Indicate the filename storing the filtering engine.").
+			Short('e').
+			Default("engine.gob").
+			String()
+	outFile = app.
+		Flag("out-file", "Indicate the filename for whatever output.").
+		Short('o').
+		Default("out.gob").String()
+	isRebuilding = app.
+			Flag("rebuild", "Rebuild the filtering engine.").
+			Short('r').
+			Default("false").
+			Bool()
 
 	// patricia command
-	patricia         = app.Command("patricia", "Run in Patricia Trie filtering mode.")
-	patriciaShowTrie = patricia.Flag("print", "Show the Patricia Trie.").Short('p').Default("false").Bool()
-	patriciaRebuild  = patricia.Flag("rebuild", "Rebuild the Patricia Trie.").Short('r').Default("false").Bool()
+	patricia = app.
+			Command("patricia", "Use Patricia Trie filtering engine.")
+
+	// huffman command
+	huffman = app.
+		Command("huffman", "Use Huffman Tree filtering engine.")
 
 	// dumb command
-	dumb = app.Command("dumb", "Run in dumb filter mode.")
+	dumb = app.
+		Command("dumb", "Run in dumb filter mode.")
 
 	// analyze command
-	analyze       = app.Command("analyze", "Analyze the tree node reference locality.")
-	analyzeEngine = analyze.Flag("engine", "Used filtering engine for the target.").Default("patricia").String()
-	analyzeInput  = analyze.Flag("analyze-input", "A gob file contains results in NotifyMap.").Default("out.gob").String()
-	analyzeOutput = analyze.Flag("analyze-output", "A JSON file for d3.js.").Default("public/patricia/locality.json").String()
+	analyze = app.
+		Command("analyze", "Analyze the tree node reference locality.")
+	analyzeEngine = analyze.
+			Flag("engine", "Used filtering engine for the target.").
+			Default("patricia").
+			String()
+	analyzeInput = analyze.
+			Flag("analyze-input", "A gob file contains results in NotifyMap.").
+			Default("out.gob").
+			String()
+	analyzeOutput = analyze.
+			Flag("analyze-output", "A JSON file for d3.js.").
+			Default("public/patricia/locality.json").
+			String()
 )
 
 func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile string) {
@@ -89,10 +134,7 @@ func runDumb(idFile string, fm filtering.Map) {
 	//}
 }
 
-func runPatricia(idFile string, head filtering.Engine, outFile string) {
-	if *patriciaShowTrie {
-		fmt.Println(head.Dump())
-	}
+func execute(idFile string, head filtering.Engine, outFile string) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		panic(err)
@@ -135,10 +177,40 @@ func loadFiltersFromCSVFile(f string) filtering.Map {
 	return fm
 }
 
-func loadPatriciaTrie(filterFile string, treeFile string, isRebuilding bool) *filtering.PatriciaTrie {
+func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *filtering.HuffmanTree {
+	var head *filtering.HuffmanTree
+	// Tree encode
+	_, err := os.Stat(engineFile)
+	if isRebuilding || os.IsNotExist(err) {
+		fm := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
+		var tree bytes.Buffer
+		head = filtering.BuildHuffmanTree(fm)
+		enc := gob.NewEncoder(&tree)
+		err = enc.Encode(head)
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+		// Save to file
+		file, err := os.Create(engineFile)
+		if err != nil {
+			log.Fatal("file:", err)
+		}
+		file.Write(tree.Bytes())
+		file.Close()
+		log.Print("Saved the Huffman Tree filtering engine to ", engineFile)
+	} else {
+		// Tree decode
+		binutil.Load(engineFile, &head)
+		log.Print("Loaded the Huffman Tree filtering engine from ", engineFile)
+	}
+	return head
+}
+
+func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *filtering.PatriciaTrie {
 	var head *filtering.PatriciaTrie
 	// Tree encode
-	_, err := os.Stat(treeFile)
+	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		fm := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(fm), filterFile)
@@ -150,17 +222,17 @@ func loadPatriciaTrie(filterFile string, treeFile string, isRebuilding bool) *fi
 			log.Fatal("encode:", err)
 		}
 		// Save to file
-		file, err := os.Create(treeFile)
+		file, err := os.Create(engineFile)
 		if err != nil {
 			log.Fatal("file:", err)
 		}
 		file.Write(tree.Bytes())
 		file.Close()
-		log.Print("Saved the Patricia Trie to ", treeFile)
+		log.Print("Saved the Patricia Trie filtering engine to ", engineFile)
 	} else {
 		// Tree decode
-		binutil.Load(treeFile, &head)
-		log.Print("Loaded the Patricia Trie from ", treeFile)
+		binutil.Load(engineFile, &head)
+		log.Print("Loaded the Patricia Trie filtering engine from ", engineFile)
 	}
 	return head
 }
@@ -171,8 +243,11 @@ func main() {
 
 	switch parse {
 	case patricia.FullCommand():
-		head := loadPatriciaTrie(*filterFile, *treeFile, *patriciaRebuild)
-		runPatricia(*idFile, head, *outFile)
+		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, head, *outFile)
+	case huffman.FullCommand():
+		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, head, *outFile)
 	case dumb.FullCommand():
 		fm := loadFiltersFromCSVFile(*filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(fm), *filterFile)
@@ -181,7 +256,7 @@ func main() {
 		switch strings.ToLower(*analyzeEngine) {
 		case "patricia":
 			// Force analyze mode to need the tree file
-			head := loadPatriciaTrie(*filterFile, *treeFile, false)
+			head := loadPatriciaTrie(*filterFile, *engineFile, false)
 			runAnalyzePatricia(head, *analyzeInput, *analyzeOutput)
 		}
 	}
