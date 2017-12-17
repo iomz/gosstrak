@@ -13,8 +13,8 @@ const (
 	ByteLength = 8
 )
 
-// Filter type is a struct for filter element
-type Filter struct {
+// FilterObject type is a struct for filter element
+type FilterObject struct {
 	String     string
 	Size       int
 	Offset     int
@@ -26,7 +26,7 @@ type Filter struct {
 
 // GetByteAt returns a byte of ByteFilter and ByteMask
 // at the given offset, returns error if HasByteAt(bo) is false
-func (f *Filter) GetByteAt(bo int) (byte, byte, error) {
+func (f *FilterObject) GetByteAt(bo int) (byte, byte, error) {
 	if f.HasByteAt(bo) {
 		for i := 0; i < f.ByteSize; i++ {
 			if bo == f.ByteOffset+i {
@@ -39,7 +39,7 @@ func (f *Filter) GetByteAt(bo int) (byte, byte, error) {
 
 // HasByteAt returns true if the ByteFilter covers
 // a byte starting with the given offset
-func (f *Filter) HasByteAt(bo int) bool {
+func (f *FilterObject) HasByteAt(bo int) bool {
 	if f.ByteOffset > bo { // the filter is after the given bo
 		return false
 	} else if f.ByteOffset+f.ByteSize <= bo { // the filter is before the given offset
@@ -49,7 +49,7 @@ func (f *Filter) HasByteAt(bo int) bool {
 }
 
 // Match returns true if the id is captured by this filter
-func (f *Filter) Match(id []byte) bool {
+func (f *FilterObject) Match(id []byte) bool {
 	for i := 0; i < f.ByteSize; i++ {
 		if (id[f.ByteOffset+i]|f.ByteMask[i])^f.ByteFilter[i] != byte(0) {
 			return false
@@ -58,8 +58,8 @@ func (f *Filter) Match(id []byte) bool {
 	return true
 }
 
-// ToString returns a string representation of Filter
-func (f *Filter) ToString() string {
+// ToString returns a string representation of FilterObject
+func (f *FilterObject) ToString() string {
 	return fmt.Sprintf("%s(%d %d)", f.String, f.Offset, f.Size)
 }
 
@@ -109,13 +109,13 @@ func makeFilter(bs []rune, offset int) (int, []rune, []rune) {
 	return offset / ByteLength, f, m
 }
 
-// NewFilter constructs Filter
-func NewFilter(s string, o int) *Filter {
+// NewFilter constructs FilterObject
+func NewFilter(s string, o int) *FilterObject {
 	bo, f, m := makeFilter([]rune(s), o)
 	bf, _ := binutil.ParseBinRuneSliceToUint8Slice(f)
 	bm, _ := binutil.ParseBinRuneSliceToUint8Slice(m)
 
-	return &Filter{
+	return &FilterObject{
 		String:     s,
 		Size:       len(s),
 		Offset:     o,

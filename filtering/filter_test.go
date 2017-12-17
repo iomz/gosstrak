@@ -81,7 +81,7 @@ func TestFilter_GetByteAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -138,7 +138,7 @@ func TestFilter_HasByteAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -183,7 +183,7 @@ func TestFilter_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -218,7 +218,7 @@ func TestFilter_ToString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -242,13 +242,13 @@ func TestNewFilter(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *Filter
+		want *FilterObject
 	}{
-		{"00000000 from 0", args{"00000000", 0}, &Filter{"00000000", 8, 0, []byte{0}, []byte{0}, 0, 1}},
-		{"0000xxxx from 0", args{"0000xxxx", 0}, &Filter{"0000xxxx", 8, 0, []byte{15}, []byte{15}, 0, 1}},
-		{"0000 from 0", args{"0000", 0}, &Filter{"0000", 4, 0, []byte{15}, []byte{15}, 0, 1}},
-		{"0000 from 4", args{"0000", 4}, &Filter{"0000", 4, 4, []byte{240}, []byte{240}, 0, 1}},
-		{"0000000000000000 from 12", args{"0000000000000000", 12}, &Filter{"0000000000000000", 16, 12, []byte{240, 0, 15}, []byte{240, 0, 15}, 1, 3}},
+		{"00000000 from 0", args{"00000000", 0}, &FilterObject{"00000000", 8, 0, []byte{0}, []byte{0}, 0, 1}},
+		{"0000xxxx from 0", args{"0000xxxx", 0}, &FilterObject{"0000xxxx", 8, 0, []byte{15}, []byte{15}, 0, 1}},
+		{"0000 from 0", args{"0000", 0}, &FilterObject{"0000", 4, 0, []byte{15}, []byte{15}, 0, 1}},
+		{"0000 from 4", args{"0000", 4}, &FilterObject{"0000", 4, 4, []byte{240}, []byte{240}, 0, 1}},
+		{"0000000000000000 from 12", args{"0000000000000000", 12}, &FilterObject{"0000000000000000", 16, 12, []byte{240, 0, 15}, []byte{240, 0, 15}, 1, 3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

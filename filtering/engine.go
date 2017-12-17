@@ -1,8 +1,7 @@
 package filtering
 
 type Engine interface {
-	//AnalyzeLocality()
-	Build(fm Map) *Engine
+	AnalyzeLocality(id []byte, prefix string, lm *LocalityMap)
 	Dump() string
 	MarshalBinary() ([]byte, error)
 	Search(id []byte) []string

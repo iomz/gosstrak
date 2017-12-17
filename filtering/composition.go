@@ -9,16 +9,16 @@ import (
 // Composition contains list of composite filters
 // and its origins
 type Composition struct {
-	Filter   *Filter
+	Filter   *FilterObject
 	Children ChildFilters
 }
 
 // ChildFilters contains processed filters in map
 // with its original filter as a key
-type ChildFilters map[string]*Filter
+type ChildFilters map[string]*FilterObject
 
 // NewComposition constructs Composition
-func NewComposition(filters []*Filter) *Composition {
+func NewComposition(filters []*FilterObject) *Composition {
 	// 0.) Find the edges
 	// This is going to be the range of the composite filter
 	// of size: tail-head

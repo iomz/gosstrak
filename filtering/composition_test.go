@@ -7,7 +7,7 @@ import (
 
 func TestNewComposition(t *testing.T) {
 	type args struct {
-		filters []*Filter
+		filters []*FilterObject
 	}
 	tests := []struct {
 		name string
@@ -15,28 +15,28 @@ func TestNewComposition(t *testing.T) {
 		want *Composition
 	}{
 		{"[8]0011000011 | [6]1100110011",
-			args{[]*Filter{
+			args{[]*FilterObject{
 				{"0011000011", 10, 8, []byte{48, 255}, []byte{0, 63}, 1, 2},
 				{"1100110011", 10, 6, []byte{255, 51}, []byte{252, 0}, 0, 2},
 			}},
 			&Composition{
-				&Filter{"001100xx", 8, 8, []byte{51}, []byte{3}, 1, 1},
+				&FilterObject{"001100xx", 8, 8, []byte{51}, []byte{3}, 1, 1},
 				ChildFilters{
-					"0011000011": &Filter{"0011000011xxxxxx", 16, 8, []byte{48, 255}, []byte{0, 63}, 1, 2},
-					"1100110011": &Filter{"xxxxxx1100110011", 16, 0, []byte{255, 51}, []byte{252, 0}, 0, 2},
+					"0011000011": &FilterObject{"0011000011xxxxxx", 16, 8, []byte{48, 255}, []byte{0, 63}, 1, 2},
+					"1100110011": &FilterObject{"xxxxxx1100110011", 16, 0, []byte{255, 51}, []byte{252, 0}, 0, 2},
 				},
 			},
 		},
 		{"[0]0011000011 | [0]0011001111",
-			args{[]*Filter{
+			args{[]*FilterObject{
 				{"0011000011", 10, 0, []byte{48, 255}, []byte{0, 63}, 0, 2},
 				{"0011001111", 10, 0, []byte{51, 255}, []byte{0, 63}, 0, 2},
 			}},
 			&Composition{
-				&Filter{"001100xx11xxxxxx", 16, 0, []byte{51, 255}, []byte{3, 63}, 0, 2},
+				&FilterObject{"001100xx11xxxxxx", 16, 0, []byte{51, 255}, []byte{3, 63}, 0, 2},
 				ChildFilters{
-					"0011000011": &Filter{"00110000xxxxxxxx", 16, 0, []byte{48, 255}, []byte{0, 255}, 0, 2},
-					"0011001111": &Filter{"00110011xxxxxxxx", 16, 0, []byte{51, 255}, []byte{0, 255}, 0, 2},
+					"0011000011": &FilterObject{"00110000xxxxxxxx", 16, 0, []byte{48, 255}, []byte{0, 255}, 0, 2},
+					"0011001111": &FilterObject{"00110011xxxxxxxx", 16, 0, []byte{51, 255}, []byte{0, 255}, 0, 2},
 				},
 			},
 		},

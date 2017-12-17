@@ -2,7 +2,7 @@ package filtering
 
 type HuffmanTree struct {
 	Notify       string
-	Filter       *Filter
+	Filter       *FilterObject
 	MatchNext    *HuffmanTree
 	MismatchNext *HuffmanTree
 }

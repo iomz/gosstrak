@@ -12,7 +12,7 @@ import (
 // PatriciaTrie struct
 type PatriciaTrie struct {
 	Notify string
-	Filter *Filter
+	Filter *FilterObject
 	One    *PatriciaTrie
 	Zero   *PatriciaTrie
 }

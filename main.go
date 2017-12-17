@@ -89,7 +89,7 @@ func runDumb(idFile string, fm filtering.Map) {
 	//}
 }
 
-func runPatricia(idFile string, head *filtering.PatriciaTrie, outFile string) {
+func runPatricia(idFile string, head filtering.Engine, outFile string) {
 	if *patriciaShowTrie {
 		fmt.Println(head.Dump())
 	}
