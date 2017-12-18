@@ -89,8 +89,14 @@ func TestLocalityData_InsertLocality(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-	}{
-	// TODO: Add test cases.
+	}{ /*
+		{
+			"test insertLocality",
+			fields{
+			},
+			args{
+			},
+		},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -43,26 +43,25 @@ func (sub Subscriptions) keys() []string {
 func (sub Subscriptions) linkSubset() {
 	hc := *NewHuffmanCodes(sub)
 	for _, ent := range hc {
-		// if the hc has a composition, then skip
-		if len(ent.group) != 0 {
-			continue
-		}
-		for fs, info := range sub {
-			linkCandidate := ent.filter
-			// check if fs is a subset of the linkCandidate
-			if strings.HasPrefix(fs, linkCandidate) &&
-				fs != linkCandidate { // they shouldn't be the same
-				if sub[linkCandidate].Subset == nil {
-					sub[linkCandidate].Subset = &Subscriptions{fs: info}
-				} else {
-					(*sub[linkCandidate].Subset)[fs] = info
+		// an entry must have two members in the group
+		if len(ent.group) == 0 {
+			for fs, info := range sub {
+				linkCandidate := ent.filter
+				// check if fs is a subset of the linkCandidate
+				if strings.HasPrefix(fs, linkCandidate) &&
+					fs != linkCandidate { // they shouldn't be the same
+					if sub[linkCandidate].Subset == nil {
+						sub[linkCandidate].Subset = &Subscriptions{fs: info}
+					} else {
+						(*sub[linkCandidate].Subset)[fs] = info
+					}
+					// recursively link the subset
+					sub[linkCandidate].Subset.linkSubset()
+					// also, add the subset's EntropyValue to the link's
+					sub[linkCandidate].EntropyValue += info.EntropyValue
+					// finaly delete the filter from the upper Subscriptions
+					delete(sub, fs)
 				}
-				// recursively link the subset
-				sub[linkCandidate].Subset.linkSubset()
-				// also, add the subset's EntropyValue to the link's
-				sub[linkCandidate].EntropyValue += info.EntropyValue
-				// finaly delete the filter from the upper Subscriptions
-				delete(sub, fs)
 			}
 		}
 	}

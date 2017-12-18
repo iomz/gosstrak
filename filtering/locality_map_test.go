@@ -16,12 +16,12 @@ func TestLocalityMap_ToJSON(t *testing.T) {
 		lm   LocalityMap
 		want []byte
 	}{
-	// TODO: Add test cases.
+	//{"00: 20, 0011: 10, 0000: 10", LocalityMap{"0011": 10, "00": 20, "0000": 10}, []byte{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.lm.ToJSON(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LocalityMap.ToJSON() = %v, want %v", got, tt.want)
+				t.Errorf("LocalityMap.ToJSON() = \n%v, want \n%v", string(got), string(tt.want))
 			}
 		})
 	}
