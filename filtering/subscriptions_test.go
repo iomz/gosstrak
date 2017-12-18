@@ -6,6 +6,7 @@
 package filtering
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -34,32 +35,38 @@ func TestSubscriptions_keys(t *testing.T) {
 	}
 }
 
-func TestSubscriptions_HuffmanTable(t *testing.T) {
+/*
+func TestSubscriptions_linkSubset(t *testing.T) {
 	tests := []struct {
 		name string
 		sub  Subscriptions
-		want HuffmanTable
+		args args
+		want Subscriptions
 	}{
-		{
-			"0011,0000,1111,1100",
-			Subscriptions{
-				"0011": &Info{"3", 3, &Subscriptions{}},
-				"0000": &Info{"0", 0, &Subscriptions{}},
-				"1111": &Info{"15", 15, &Subscriptions{}},
-				"1100": &Info{"12", 12, &Subscriptions{}},
-			},
-			HuffmanTable{
-				HuffmanCode{&group{[]*group{}, "0000"}, 0},
-				HuffmanCode{&group{[]*group{}, "0011"}, 3},
-				HuffmanCode{&group{[]*group{}, "1100"}, 12},
-				HuffmanCode{&group{[]*group{}, "1111"}, 15},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.sub.HuffmanTable(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Subscriptions.HuffmanTable() = \n%v, want \n%v", got, tt.want)
+			tt.sub.linkSubset()
+			if !reflect.DeepEqual(tt.sub, tt.want) {
+				t.Errorf("Subscriptions.linkSubset() -> \n%v, want \n%v", tt.sub.Dump(), tt.want.Dump())
+			}
+		})
+	}
+}
+*/
+
+func TestSubscriptions_Dump(t *testing.T) {
+	tests := []struct {
+		name string
+		sub  Subscriptions
+		want string
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.sub.Dump(); got != tt.want {
+				t.Errorf("Subscriptions.Dump() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -99,6 +106,29 @@ func TestSubscriptions_linkSubset(t *testing.T) {
 			tt.sub.linkSubset()
 			if !reflect.DeepEqual(tt.sub, tt.want) {
 				t.Errorf("Subscriptions.linkSubset() -> \n%v, want \n%v", tt.sub.Dump(), tt.want.Dump())
+			}
+		})
+	}
+}
+
+func TestSubscriptions_print(t *testing.T) {
+	type args struct {
+		indent int
+	}
+	tests := []struct {
+		name       string
+		sub        Subscriptions
+		args       args
+		wantWriter string
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := &bytes.Buffer{}
+			tt.sub.print(writer, tt.args.indent)
+			if gotWriter := writer.String(); gotWriter != tt.wantWriter {
+				t.Errorf("Subscriptions.print() = %v, want %v", gotWriter, tt.wantWriter)
 			}
 		})
 	}

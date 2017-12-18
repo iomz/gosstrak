@@ -29,17 +29,6 @@ func (sub Subscriptions) Dump() string {
 	return writer.String()
 }
 
-func (sub Subscriptions) HuffmanTable() HuffmanTable {
-	ht := make(HuffmanTable, len(sub))
-	i := 0
-	for fs, info := range sub {
-		ht[i] = HuffmanCode{&group{[]*group{}, fs}, info.EntropyValue}
-		i++
-	}
-	ht.sort()
-	return ht
-}
-
 func (sub Subscriptions) keys() []string {
 	ks := make([]string, len(sub))
 	i := 0
@@ -52,14 +41,14 @@ func (sub Subscriptions) keys() []string {
 }
 
 func (sub Subscriptions) linkSubset() {
-	ht := sub.HuffmanTable()
-	for _, hc := range ht {
+	hc := *NewHuffmanCodes(sub)
+	for _, ent := range hc {
 		// if the hc has a composition, then skip
-		if len(hc.FilterGroup.members) != 0 {
+		if len(ent.group) != 0 {
 			continue
 		}
 		for fs, info := range sub {
-			linkCandidate := hc.FilterGroup.filter
+			linkCandidate := ent.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
