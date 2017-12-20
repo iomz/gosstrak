@@ -74,6 +74,10 @@ var (
 	huffman = app.
 		Command("huffman", "Use Huffman Tree filtering engine.")
 
+	// list command
+	list = app.
+		Command("list", "Use list of byte filtering engine.")
+
 	// dumb command
 	dumb = app.
 		Command("dumb", "Run in dumb filter mode.")
@@ -150,7 +154,7 @@ func runDumb(idFile string, sub filtering.Subscriptions) {
 	//}
 }
 
-func execute(idFile string, head filtering.Engine, outFile string) {
+func execute(idFile string, engine filtering.Engine, outFile string) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		// if ids.csv exists, use gobencids command
@@ -170,7 +174,7 @@ func execute(idFile string, head filtering.Engine, outFile string) {
 	}
 	notifies := filtering.NotifyMap{}
 	for _, id := range *ids {
-		matches := head.Search(id)
+		matches := engine.Search(id)
 		for _, n := range matches {
 			if _, ok := notifies[n]; !ok {
 				notifies[n] = [][]byte{}
@@ -249,6 +253,39 @@ func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *f
 	return head
 }
 
+func loadList(filterFile string, engineFile string, isRebuilding bool) *filtering.List {
+	var list *filtering.List
+	// List encode
+	_, err := os.Stat(engineFile)
+	if isRebuilding || os.IsNotExist(err) {
+		sub := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		var listBuf bytes.Buffer
+		list = filtering.BuildList(sub)
+		enc := gob.NewEncoder(&listBuf)
+		err = enc.Encode(list)
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+		// Save to file
+		file, err := os.Create(engineFile)
+		if err != nil {
+			log.Fatal("file:", err)
+		}
+		file.Write(listBuf.Bytes())
+		file.Close()
+		log.Print("Saved the List filtering engine to ", engineFile)
+	} else {
+		// Tree decode
+		err = binutil.Load(engineFile, &list)
+		if err != nil {
+			log.Fatal("engine: ", err)
+		}
+		log.Print("Loaded the List filtering engine from ", engineFile)
+	}
+	return list
+}
+
 func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *filtering.PatriciaTrie {
 	var head *filtering.PatriciaTrie
 	// Tree encode
@@ -273,7 +310,10 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 		log.Print("Saved the Patricia Trie filtering engine to ", engineFile)
 	} else {
 		// Tree decode
-		binutil.Load(engineFile, &head)
+		err = binutil.Load(engineFile, &head)
+		if err != nil {
+			log.Fatal("engine: ", err)
+		}
 		log.Print("Loaded the Patricia Trie filtering engine from ", engineFile)
 	}
 	return head
@@ -298,6 +338,9 @@ func main() {
 	case huffman.FullCommand():
 		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
+	case list.FullCommand():
+		list := loadList(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, list, *outFile)
 	case dumb.FullCommand():
 		sub := loadFiltersFromCSVFile(*filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)

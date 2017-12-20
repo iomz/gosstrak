@@ -27,6 +27,9 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
+	// Type of Engine
+	enc.Encode("Engine:filtering.PatriciaTrie")
+
 	// Notify
 	enc.Encode(pt.notificationURI)
 
@@ -58,6 +61,12 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 // UnmarshalBinary overwrites the unmarshaller in gob decoding *PatriciaTrie
 func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	// Type of Engine
+	var typeOfEngine string
+	if err = dec.Decode(&typeOfEngine); err != nil || typeOfEngine != "Engine:filtering.PatriciaTrie" {
+		return errors.New("Wrong Filtering Engine: " + typeOfEngine)
+	}
 
 	// Notify
 	if err = dec.Decode(&pt.notificationURI); err != nil {
