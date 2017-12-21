@@ -7,8 +7,10 @@ import (
 	"fmt"
 )
 
+// List is a slice of pointers to ExactMatch
 type List []*ExactMatch
 
+// ExactMatch is a raw filter directly taken from Subscriptions
 type ExactMatch struct {
 	notificationURI string
 	filter          *FilterObject

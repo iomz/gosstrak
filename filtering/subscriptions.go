@@ -23,6 +23,7 @@ type Info struct {
 	Subset          *Subscriptions
 }
 
+// Dump retuns a string representation of the Subscriptions
 func (sub Subscriptions) Dump() string {
 	writer := &bytes.Buffer{}
 	sub.print(writer, 0)

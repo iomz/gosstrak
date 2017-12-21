@@ -69,6 +69,8 @@ func (f *FilterObject) ToString() string {
 	return fmt.Sprintf("%s(%d %d)", f.String, f.Offset, f.Size)
 }
 
+// IsTransparent returns true if the filter is meaningless
+// = any id will match with this filter
 func (f *FilterObject) IsTransparent() bool {
 	check := make([]byte, f.ByteSize)
 	for i := 0; i < f.ByteSize; i++ {
