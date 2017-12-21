@@ -8,6 +8,7 @@ package filtering
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -66,6 +67,18 @@ func (f *FilterObject) Match(id []byte) bool {
 // ToString returns a string representation of FilterObject
 func (f *FilterObject) ToString() string {
 	return fmt.Sprintf("%s(%d %d)", f.String, f.Offset, f.Size)
+}
+
+func (f *FilterObject) IsTransparent() bool {
+	check := make([]byte, f.ByteSize)
+	for i := 0; i < f.ByteSize; i++ {
+		check[i] = 255
+	}
+	if reflect.DeepEqual(f.ByteFilter, check) &&
+		reflect.DeepEqual(f.ByteMask, check) {
+		return true
+	}
+	return false
 }
 
 // makeFilter returns padded offset, filter and mask in rune slices

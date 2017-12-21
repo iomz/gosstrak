@@ -138,3 +138,23 @@ func TestBuildList(t *testing.T) {
 		})
 	}
 }
+
+func TestList_Dump(t *testing.T) {
+	tests := []struct {
+		name string
+		list *List
+		want string
+	}{
+		{"List.Dump() test", &List{
+			&ExactMatch{"3", NewFilter("0011", 0)},
+			&ExactMatch{"3-0", NewFilter("00110000", 0)},
+		}, "--0011(0 4) 3\n--00110000(0 8) 3-0\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.list.Dump(); got != tt.want {
+				t.Errorf("List.Dump() = \n%v, want \n%v", got, tt.want)
+			}
+		})
+	}
+}

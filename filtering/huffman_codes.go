@@ -23,18 +23,20 @@ func (hc HuffmanCodes) Dump() string {
 }
 
 type entry struct {
-	filter string
-	p      float64
-	bit    rune
-	code   string
-	group  HuffmanCodes
+	filter          string
+	offset          int
+	notificationURI string
+	p               float64
+	compLevel       int
+	group           HuffmanCodes
+	branch          *HuffmanTree
 }
 
 func (ent *entry) equal(want *entry) (ok bool, got *entry, wanted *entry) {
 	if ent.filter != want.filter ||
+		ent.offset != want.offset ||
 		ent.p != want.p ||
-		ent.bit != want.bit ||
-		ent.code != want.code {
+		ent.compLevel != want.compLevel {
 		return false, ent, want
 	}
 	for i, child := range want.group {
@@ -52,7 +54,7 @@ func (ent *entry) equal(want *entry) (ok bool, got *entry, wanted *entry) {
 func (ent *entry) print(writer io.Writer, indent int) {
 	if len(ent.group) == 0 && len(ent.filter) != 0 {
 		fmt.Fprintf(writer, "%s--%v %f %d %s\n",
-			strings.Repeat(" ", indent), ent.bit, ent.p, ent.code, ent.filter)
+			strings.Repeat(" ", indent), ent.p, ent.compLevel, ent.filter, ent.offset)
 	} else if len(ent.group) == 2 { // has group
 		ent.group[0].print(writer, indent+2)
 		ent.group[1].print(writer, indent+2)
@@ -66,50 +68,50 @@ func (hc *HuffmanCodes) sortByP() {
 	return
 }
 
-func (hc HuffmanCodes) autoencode() *HuffmanCodes {
+func (hc HuffmanCodes) autoencode(compLimit int) *HuffmanCodes {
 	// write bits to last and penultimate
 	hc.sortByP()
 	last := hc[0]
 	penultimate := hc[1]
-	last.bit = '0'
-	penultimate.bit = '1'
 
 	if len(hc) == 2 {
 		return &hc
 	}
 
-	// Make a new composition
-	ent := &entry{
-		filter: "",
-		p:      penultimate.p + last.p,
-		bit:    0,
-		code:   "",
-		group:  []*entry{penultimate, last},
+	// If the pair exceeds the compLimit
+	var ent *entry
+	if max(last.compLevel+1, penultimate.compLevel+1) > compLimit || compLimit == -1 {
+	} else { // if not, make a new composition
+		ent = &entry{
+			filter:    "",
+			offset:    0,
+			p:         penultimate.p + last.p,
+			compLevel: max(last.compLevel+1, penultimate.compLevel+1),
+			group:     []*entry{penultimate, last},
+			branch:    &HuffmanTree{},
+		}
 	}
+
 	// Remove last and penultimate and add the composition
 	nhc := append(hc[2:], ent)
 
-	return nhc.autoencode()
-}
-
-func (hc *HuffmanCodes) gencode(code string) {
-	for i := 0; i < 2; i++ {
-		ent := (*hc)[i]
-		if len(ent.group) == 0 {
-			ent.code = code + string(ent.bit)
-		} else if len(ent.group) == 2 {
-			ent.group.gencode(code + string(ent.bit))
-		}
-	}
+	return nhc.autoencode(compLimit)
 }
 
 func NewHuffmanCodes(sub Subscriptions) *HuffmanCodes {
 	hc := make(HuffmanCodes, len(sub))
 	i := 0
 	for fs, info := range sub {
-		hc[i] = &entry{fs, info.EntropyValue, 0, "", []*entry{}}
+		hc[i] = &entry{fs, 0, info.NotificationURI, info.EntropyValue, 0, []*entry{}, nil}
 		i++
 	}
 	hc.sortByP()
 	return &hc
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
 }

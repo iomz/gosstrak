@@ -263,3 +263,41 @@ func TestFilterObject_ToString(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterObject_IsTransparent(t *testing.T) {
+	type fields struct {
+		String     string
+		Size       int
+		Offset     int
+		ByteFilter []byte
+		ByteMask   []byte
+		ByteOffset int
+		ByteSize   int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{"xxxxxxxx", fields{"xxxxxxxx", 8, 0, []byte{255}, []byte{255}, 0, 1}, true},
+		{"2 byte x", fields{"xxxxxxxxxxxxxxxx", 16, 8, []byte{255, 255}, []byte{255, 255}, 1, 2}, true},
+		{"xxx00xxx", fields{"xxx00xxx", 8, 8, []byte{231}, []byte{231}, 1, 1}, false},
+		{"xxx11xxx", fields{"xxx11xxx", 8, 8, []byte{255}, []byte{231}, 1, 1}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FilterObject{
+				String:     tt.fields.String,
+				Size:       tt.fields.Size,
+				Offset:     tt.fields.Offset,
+				ByteFilter: tt.fields.ByteFilter,
+				ByteMask:   tt.fields.ByteMask,
+				ByteOffset: tt.fields.ByteOffset,
+				ByteSize:   tt.fields.ByteSize,
+			}
+			if got := f.IsTransparent(); got != tt.want {
+				t.Errorf("FilterObject.IsTransparent() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

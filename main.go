@@ -73,6 +73,11 @@ var (
 	// huffman command
 	huffman = app.
 		Command("huffman", "Use Huffman Tree filtering engine.")
+	huffmanCompositionLimit = huffman.
+				Flag("composition-limit", "Limit the number of recursive composition.").
+				Short('c').
+				Default("1").
+				Int()
 
 	// list command
 	list = app.
@@ -223,7 +228,7 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 	return sub
 }
 
-func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *filtering.HuffmanTree {
+func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool, compLimit int) *filtering.HuffmanTree {
 	var head *filtering.HuffmanTree
 	// Tree encode
 	_, err := os.Stat(engineFile)
@@ -231,7 +236,7 @@ func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *f
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildHuffmanTree(sub)
+		head = filtering.BuildHuffmanTree(sub, compLimit)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -336,7 +341,7 @@ func main() {
 		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
 	case huffman.FullCommand():
-		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
+		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding, *huffmanCompositionLimit)
 		execute(*idFile, head, *outFile)
 	case list.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)

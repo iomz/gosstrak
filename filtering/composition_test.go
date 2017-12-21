@@ -25,7 +25,8 @@ func TestNewComposition(t *testing.T) {
 				{"1100110011", 10, 6, []byte{255, 51}, []byte{252, 0}, 0, 2},
 			}},
 			&Composition{
-				&FilterObject{"001100xx", 8, 8, []byte{51}, []byte{3}, 1, 1},
+				"001100xx",
+				8,
 				ChildFilters{
 					"0011000011": &FilterObject{"0011000011xxxxxx", 16, 8, []byte{48, 255}, []byte{0, 63}, 1, 2},
 					"1100110011": &FilterObject{"xxxxxx1100110011", 16, 0, []byte{255, 51}, []byte{252, 0}, 0, 2},
@@ -38,7 +39,8 @@ func TestNewComposition(t *testing.T) {
 				{"0011001111", 10, 0, []byte{51, 255}, []byte{0, 63}, 0, 2},
 			}},
 			&Composition{
-				&FilterObject{"001100xx11xxxxxx", 16, 0, []byte{51, 255}, []byte{3, 63}, 0, 2},
+				"001100xx11xxxxxx",
+				0,
 				ChildFilters{
 					"0011000011": &FilterObject{"00110000xxxxxxxx", 16, 0, []byte{48, 255}, []byte{0, 255}, 0, 2},
 					"0011001111": &FilterObject{"00110011xxxxxxxx", 16, 0, []byte{51, 255}, []byte{0, 255}, 0, 2},
@@ -49,16 +51,19 @@ func TestNewComposition(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewComposition(tt.args.filters)
-			if !reflect.DeepEqual(*got.Filter, *tt.want.Filter) {
-				t.Errorf("*NewComposition().Filter = \n%v, want \n%v", *got.Filter, *tt.want.Filter)
+			if got.filter != tt.want.filter {
+				t.Errorf("*NewComposition().filter = \n%v, want \n%v", got.filter, tt.want.filter)
 			}
-			for k := range tt.want.Children {
-				t.Logf("Look up key %v in NewComposition().Children", k)
-				if _, ok := got.Children[k]; !ok || got.Children[k] == nil {
-					t.Errorf("NewComposition().Children wants %v key", k)
+			if got.offset != tt.want.offset {
+				t.Errorf("*NewComposition().offset = \n%v, want \n%v", got.offset, tt.want.offset)
+			}
+			for k := range tt.want.children {
+				t.Logf("Look up key %v in NewComposition().children", k)
+				if _, ok := got.children[k]; !ok || got.children[k] == nil {
+					t.Errorf("NewComposition().children wants %v key", k)
 				}
-				if !reflect.DeepEqual(*got.Children[k], *tt.want.Children[k]) {
-					t.Errorf("*NewComposition().Children[%v] = \n%v, want \n%v", k, *got.Children[k], *tt.want.Children[k])
+				if !reflect.DeepEqual(*got.children[k], *tt.want.children[k]) {
+					t.Errorf("*NewComposition().children[%v] = \n%v, want \n%v", k, *got.children[k], *tt.want.children[k])
 				}
 			}
 		})

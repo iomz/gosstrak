@@ -20,3 +20,7 @@
 
 # exp dir
 exp/
+
+# temporary files
+*.bak
+*.tmp

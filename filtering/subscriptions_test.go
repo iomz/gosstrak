@@ -20,8 +20,8 @@ func TestSubscriptions_keys(t *testing.T) {
 		{
 			"0,8",
 			Subscriptions{
-				"0000": &Info{"0", 100, &Subscriptions{}},
-				"1000": &Info{"8", 10, &Subscriptions{}},
+				"0000": &Info{"0", 100, nil},
+				"1000": &Info{"8", 10, nil},
 			},
 			[]string{"0000", "1000"},
 		},

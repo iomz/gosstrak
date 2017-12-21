@@ -14,8 +14,9 @@ import (
 // Composition contains list of composite filters
 // and its origins
 type Composition struct {
-	Filter   *FilterObject
-	Children ChildFilters
+	filter   string
+	offset   int
+	children ChildFilters
 }
 
 // ChildFilters contains processed filters in map
@@ -114,8 +115,9 @@ func NewComposition(filters []*FilterObject) *Composition {
 	}
 
 	return &Composition{
-		Filter:   compositeFilter,
-		Children: children,
+		filter:   cfString,
+		offset:   head * ByteLength,
+		children: children,
 	}
 }
 

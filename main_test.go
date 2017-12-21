@@ -132,6 +132,7 @@ func Test_loadHuffmanTree(t *testing.T) {
 		filterFile   string
 		engineFile   string
 		isRebuilding bool
+		compLimit    int
 	}
 	tests := []struct {
 		name string
@@ -142,7 +143,7 @@ func Test_loadHuffmanTree(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := loadHuffmanTree(tt.args.filterFile, tt.args.engineFile, tt.args.isRebuilding); !reflect.DeepEqual(got, tt.want) {
+			if got := loadHuffmanTree(tt.args.filterFile, tt.args.engineFile, tt.args.isRebuilding, tt.args.compLimit); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadHuffmanTree() = %v, want %v", got, tt.want)
 			}
 		})
