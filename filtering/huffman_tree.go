@@ -175,7 +175,14 @@ func makeBranch(sub *Subscriptions, isComposition bool, first *entry, second *en
 				// handle first
 				ht = first.branch
 				// handle second
-				ht.mismatchNext = &HuffmanTree{}
+				swapTarget := ht.mismatchNext
+				if swapTarget == nil {
+					ht.mismatchNext = &HuffmanTree{}
+				} else {
+					newMismatchNext := &HuffmanTree{}
+					newMismatchNext.mismatchNext = swapTarget
+					ht.mismatchNext = newMismatchNext
+				}
 				ht.mismatchNext.filterObject = NewFilter(second.filter, second.offset)
 				ht.mismatchNext.notificationURI = second.notificationURI
 			} else {
@@ -185,6 +192,14 @@ func makeBranch(sub *Subscriptions, isComposition bool, first *entry, second *en
 				ht.matchNext = first.branch
 				ht.matchNext.filterObject = composition.children[first.branch.filterObject.String]
 				// handle second
+				swapTarget := ht.matchNext.mismatchNext
+				if swapTarget == nil {
+					ht.matchNext.mismatchNext = &HuffmanTree{}
+				} else {
+					newMismatchNext := &HuffmanTree{}
+					newMismatchNext.mismatchNext = swapTarget
+					ht.matchNext.mismatchNext = newMismatchNext
+				}
 				ht.matchNext.mismatchNext = &HuffmanTree{}
 				ht.matchNext.mismatchNext.filterObject = composition.children[second.filter]
 				ht.matchNext.mismatchNext.notificationURI = second.notificationURI
@@ -204,7 +219,14 @@ func makeBranch(sub *Subscriptions, isComposition bool, first *entry, second *en
 			} else {
 				// handle first
 				ht.filterObject = nf
-				ht.matchNext = &HuffmanTree{}
+				swapTarget := ht.matchNext
+				if swapTarget == nil {
+					ht.matchNext = &HuffmanTree{}
+				} else {
+					newMatchNext := &HuffmanTree{}
+					newMatchNext.matchNext = swapTarget
+					ht.matchNext = newMatchNext
+				}
 				ht.matchNext.filterObject = composition.children[first.filter]
 				ht.matchNext.notificationURI = first.notificationURI
 				// handle second
@@ -217,15 +239,23 @@ func makeBranch(sub *Subscriptions, isComposition bool, first *entry, second *en
 			composition := NewComposition([]*FilterObject{f0, f1})
 			nf := NewFilter(composition.filter, composition.offset)
 
-			// handle first
-			ht.matchNext = first.branch
-			if !nf.IsTransparent() {
+			if nf.IsTransparent() {
+				ht = first.branch
+				swapTarget := ht.mismatchNext
+				if swapTarget == nil {
+					ht.mismatchNext = second.branch
+				} else {
+					newMismatchNext := &HuffmanTree{}
+					newMismatchNext.mismatchNext = swapTarget
+					ht.mismatchNext = newMismatchNext
+				}
+			} else {
+				ht.filterObject = nf
+				// handle first
+				ht.matchNext = first.branch
 				ht.matchNext.filterObject = composition.children[first.branch.filterObject.String]
-			}
-
-			// handle second
-			ht.mismatchNext = second.branch
-			if !nf.IsTransparent() {
+				// handle second
+				ht.mismatchNext = second.branch
 				ht.mismatchNext.filterObject = composition.children[second.branch.filterObject.String]
 			}
 		}
