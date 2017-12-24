@@ -7,6 +7,7 @@ package filtering
 
 import (
 	"encoding/json"
+	"sort"
 	"strings"
 )
 
@@ -21,10 +22,17 @@ func (lm LocalityMap) ToJSON() []byte {
 	head.locality = 100
 	head.children = []*LocalityData{}
 
-	total := lm[""]
+	total := 0
+	if _, ok := lm[""]; ok {
+		total = lm[""]
+	} else {
+		head.name = lm.first().NotificationURI
+		total = lm.first().Locality
+	}
+
 	for node, count := range lm {
 		locality := 100 * float32(count) / float32(total)
-		path := strings.Split(node, "-")
+		path := strings.Split(node, ",")
 		// Root node
 		if len(path) == 1 {
 			continue
@@ -35,6 +43,24 @@ func (lm LocalityMap) ToJSON() []byte {
 	// Construct ld
 	res, _ := json.Marshal(head)
 	return res
+}
+
+type LocalityPair struct {
+	NotificationURI string
+	Locality        int
+}
+
+func (lm LocalityMap) first() LocalityPair {
+	nl := make([]LocalityPair, len(lm))
+	i := 0
+	for n, l := range lm {
+		nl[i] = LocalityPair{n, l}
+		i++
+	}
+	sort.Slice(nl, func(i, j int) bool {
+		return nl[i].Locality > nl[j].Locality
+	})
+	return nl[0]
 }
 
 // LocalityData contains usage locality
@@ -107,5 +133,10 @@ func (ld *LocalityData) InsertLocality(path []string, locality float32) {
 	child := &LocalityData{}
 	child.InsertLocality(path, locality)
 	ld.children = append(ld.children, child)
+	if len(ld.children) == 2 {
+		sort.Slice(ld.children, func(i, j int) bool {
+			return ld.children[j].name == "Match" || ld.children[j].name == "Mismatch"
+		})
+	}
 	return
 }

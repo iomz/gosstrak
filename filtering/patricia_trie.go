@@ -32,7 +32,7 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 
 	// if the node is the first two node
 	if len(pt.filterObject.String) != 0 {
-		prefix += "-" + pt.filterObject.String
+		prefix += "," + pt.filterObject.String
 	}
 
 	if _, ok := (*lm)[prefix]; !ok {

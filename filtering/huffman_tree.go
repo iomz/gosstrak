@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	//"log"
 	"reflect"
 	"strings"
 )
@@ -25,8 +24,39 @@ type HuffmanTree struct {
 }
 
 // AnalyzeLocality increments the locality per node for the specific id
-func (ht *HuffmanTree) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
-	return
+func (ht *HuffmanTree) AnalyzeLocality(id []byte, path string, lm *LocalityMap) {
+	if len(path) == 0 {
+		path = ht.notificationURI
+	} else {
+		path += "," + ht.notificationURI
+	}
+
+	// count up the traffic per node
+	if _, ok := (*lm)[path]; !ok {
+		(*lm)[path] = 1
+	} else {
+		(*lm)[path]++
+	}
+
+	if ht.filterObject.Match(id) {
+		if ht.matchNext != nil {
+			ht.matchNext.AnalyzeLocality(id, path, lm)
+		} else {
+			if _, ok := (*lm)[path+",Match"]; !ok {
+				(*lm)[path+",Match"] = 1
+			} else {
+				(*lm)[path+",Match"]++
+			}
+		}
+	} else if ht.mismatchNext != nil {
+		ht.mismatchNext.AnalyzeLocality(id, path, lm)
+	} else {
+		if _, ok := (*lm)[path+",Mismatch"]; !ok {
+			(*lm)[path+",Mismatch"] = 1
+		} else {
+			(*lm)[path+",Mismatch"]++
+		}
+	}
 }
 
 // Dump returs a string representation of the PatriciaTrie
@@ -143,6 +173,7 @@ func (ht *HuffmanTree) build(sub *Subscriptions, hc *HuffmanCodes) *HuffmanTree 
 	for i, ent := range *hc {
 		node.filterObject = NewFilter(ent.filter, ent.offset)
 		node.notificationURI = ent.notificationURI
+		// if this entry has subset
 		if _, ok := (*sub)[ent.filter]; ok && (*sub)[ent.filter].Subset != nil {
 			subset := (*sub)[ent.filter].Subset
 			subhc := NewHuffmanCodes(subset)
@@ -153,7 +184,7 @@ func (ht *HuffmanTree) build(sub *Subscriptions, hc *HuffmanCodes) *HuffmanTree 
 		}
 		if i+1 < len(*hc) {
 			node.mismatchNext = &HuffmanTree{}
-			node = ht.mismatchNext
+			node = node.mismatchNext
 		} else {
 			node.mismatchNext = nil
 		}

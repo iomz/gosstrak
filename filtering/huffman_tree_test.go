@@ -27,8 +27,36 @@ func TestHuffmanTree_AnalyzeLocality(t *testing.T) {
 		name   string
 		fields fields
 		args   args
+		want   *LocalityMap
 	}{
-	// TODO: Add test cases.
+		{
+			"simple analyze huffman",
+			fields{
+				"00",
+				NewFilter("00", 0),
+				&HuffmanTree{
+					"0011",
+					NewFilter("11", 2),
+					nil,
+					nil,
+				},
+				&HuffmanTree{
+					"11",
+					NewFilter("11", 0),
+					nil,
+					nil,
+				},
+			},
+			args{
+				[]byte{48},
+				"",
+				&LocalityMap{},
+			},
+			&LocalityMap{
+				"-00":    1,
+				"-00-11": 1,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,6 +67,9 @@ func TestHuffmanTree_AnalyzeLocality(t *testing.T) {
 				mismatchNext:    tt.fields.mismatchNext,
 			}
 			ht.AnalyzeLocality(tt.args.id, tt.args.prefix, tt.args.lm)
+			if !reflect.DeepEqual(*tt.args.lm, *tt.want) {
+				t.Errorf("PatriciaTrie.AnalyzeLocality() = \n%v, want \n%v", *tt.args.lm, *tt.want)
+			}
 		})
 	}
 }

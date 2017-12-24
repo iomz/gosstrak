@@ -67,48 +67,35 @@ var (
 			Bool()
 
 	// patricia command
-	patricia = app.
+	cmdPatricia = app.
 			Command("patricia", "Use Patricia Trie filtering engine.")
 
 	// huffman command
-	huffman = app.
-		Command("huffman", "Use Huffman Tree filtering engine.")
+	cmdHuffman = app.
+			Command("huffman", "Use Huffman Tree filtering engine.")
 
 	// list command
-	list = app.
+	cmdList = app.
 		Command("list", "Use list of byte filtering engine.")
 
 	// dumb command
-	dumb = app.
+	cmdDumb = app.
 		Command("dumb", "Run in dumb filter mode.")
 
 	// analyze command
-	analyze = app.
-		Command("analyze", "Analyze the tree node reference locality.")
-	analyzeEngine = analyze.
+	cmdAnalyze = app.
+			Command("analyze", "Analyze the tree node reference locality.")
+	analyzeEngine = cmdAnalyze.
 			Flag("engine", "Used filtering engine for the target.").
 			Default("patricia").
 			String()
-	analyzeInput = analyze.
+	analyzeInput = cmdAnalyze.
 			Flag("analyze-input", "A gob file contains results in NotifyMap.").
 			Default(dataCacheDir + "/out.gob").
 			String()
-	analyzeOutput = analyze.
-			Flag("analyze-output", "A JSON file for d3.js.").
-			Default(getPackagePath() + "/public/patricia/locality.json").
-			String()
 )
 
-func getPackagePath() string {
-	// Determine the package dir
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("No caller information")
-	}
-	return path.Dir(filename)
-}
-
-func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile string) {
+func analyze(head filtering.Engine, inFile string, outFile string) {
 	matches := new(filtering.NotifyMap)
 	if err := binutil.Load(inFile, matches); err != nil {
 		panic(err)
@@ -128,30 +115,6 @@ func runAnalyzePatricia(head *filtering.PatriciaTrie, inFile string, outFile str
 	file.Write(lm.ToJSON())
 	file.Close()
 	log.Print("Saved the result to ", outFile)
-}
-
-func runDumb(idFile string, sub filtering.Subscriptions) {
-	ids := new([][]byte)
-	if err := binutil.Load(idFile, ids); err != nil {
-		panic(err)
-	}
-	//fmt.Printf("Loaded %v ids from %v\n", len(*ids), idFile)
-	matches := map[string][]string{}
-	for _, id := range *ids {
-		i := binutil.ParseByteSliceToBinString(id)
-		for f, info := range sub {
-			if strings.HasPrefix(i, f) {
-				if _, ok := matches[info.NotificationURI]; !ok {
-					matches[info.NotificationURI] = []string{}
-				}
-				matches[info.NotificationURI] = append(matches[info.NotificationURI], i)
-			}
-		}
-	}
-
-	//for n, m := range matches {
-	//	fmt.Printf("%v: %v\n", n, len(m))
-	//}
 }
 
 func execute(idFile string, engine filtering.Engine, outFile string) {
@@ -184,6 +147,15 @@ func execute(idFile string, engine filtering.Engine, outFile string) {
 	}
 	binutil.Save(outFile, notifies)
 	log.Print("Saved the result to ", outFile)
+}
+
+func getPackagePath() string {
+	// Determine the package dir
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	return path.Dir(filename)
 }
 
 func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
@@ -319,6 +291,30 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 	return head
 }
 
+func runDumb(idFile string, sub filtering.Subscriptions) {
+	ids := new([][]byte)
+	if err := binutil.Load(idFile, ids); err != nil {
+		panic(err)
+	}
+	//fmt.Printf("Loaded %v ids from %v\n", len(*ids), idFile)
+	matches := map[string][]string{}
+	for _, id := range *ids {
+		i := binutil.ParseByteSliceToBinString(id)
+		for f, info := range sub {
+			if strings.HasPrefix(i, f) {
+				if _, ok := matches[info.NotificationURI]; !ok {
+					matches[info.NotificationURI] = []string{}
+				}
+				matches[info.NotificationURI] = append(matches[info.NotificationURI], i)
+			}
+		}
+	}
+
+	//for n, m := range matches {
+	//	fmt.Printf("%v: %v\n", n, len(m))
+	//}
+}
+
 func main() {
 	app.Version(version)
 	parse := kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -332,25 +328,29 @@ func main() {
 	}
 
 	switch parse {
-	case patricia.FullCommand():
+	case cmdPatricia.FullCommand():
 		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
-	case huffman.FullCommand():
+	case cmdHuffman.FullCommand():
 		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
-	case list.FullCommand():
+	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, list, *outFile)
-	case dumb.FullCommand():
+	case cmdDumb.FullCommand():
 		sub := loadFiltersFromCSVFile(*filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
 		runDumb(*idFile, sub)
-	case analyze.FullCommand():
+	case cmdAnalyze.FullCommand():
 		switch strings.ToLower(*analyzeEngine) {
+		case "huffman":
+			head := loadHuffmanTree(*filterFile, *engineFile, false)
+			aoFile := getPackagePath() + "/public/huffman/locality.json"
+			analyze(head, *analyzeInput, aoFile)
 		case "patricia":
-			// Force analyze mode to need the tree file
 			head := loadPatriciaTrie(*filterFile, *engineFile, false)
-			runAnalyzePatricia(head, *analyzeInput, *analyzeOutput)
+			aoFile := getPackagePath() + "/public/patricia/locality.json"
+			analyze(head, *analyzeInput, aoFile)
 		}
 	}
 }
