@@ -110,10 +110,10 @@ func TestBuildList(t *testing.T) {
 			"BuildList testing...",
 			args{
 				Subscriptions{
-					"0011":         &Info{"3", 10, nil},
-					"1111":         &Info{"15", 2, nil},
-					"00110000":     &Info{"3-0", 5, nil},
-					"001100110000": &Info{"3-3-0", 5, nil},
+					"0011":         &Info{0, "3", 10, nil},
+					"1111":         &Info{0, "15", 2, nil},
+					"00110000":     &Info{0, "3-0", 5, nil},
+					"001100110000": &Info{0, "3-3-0", 5, nil},
 				},
 			},
 			&List{

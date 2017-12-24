@@ -20,8 +20,8 @@ func TestSubscriptions_keys(t *testing.T) {
 		{
 			"0,8",
 			Subscriptions{
-				"0000": &Info{"0", 100, nil},
-				"1000": &Info{"8", 10, nil},
+				"0000": &Info{0, "0", 100, nil},
+				"1000": &Info{0, "8", 10, nil},
 			},
 			[]string{"0000", "1000"},
 		},
@@ -61,22 +61,22 @@ func TestSubscriptions_linkSubset(t *testing.T) {
 		{
 			"Subset linking test for Subscriptions",
 			Subscriptions{
-				"0011":         &Info{"3", 10, nil},
-				"00110011":     &Info{"3-3", 5, nil},
-				"1111":         &Info{"15", 2, nil},
-				"00110000":     &Info{"3-0", 5, nil},
-				"001100110000": &Info{"3-3-0", 5, nil},
+				"0011":         &Info{0, "3", 10, nil},
+				"00110011":     &Info{0, "3-3", 5, nil},
+				"1111":         &Info{0, "15", 2, nil},
+				"00110000":     &Info{0, "3-0", 5, nil},
+				"001100110000": &Info{0, "3-3-0", 5, nil},
 			},
 			Subscriptions{
-				"0011": &Info{"3", 10,
+				"0011": &Info{0, "3", 10,
 					&Subscriptions{
-						"00110000": &Info{"3-0", 5, nil},
-						"00110011": &Info{"3-3", 5, &Subscriptions{
-							"001100110000": &Info{"3-3-0", 5, nil},
+						"0000": &Info{4, "3-0", 5, nil},
+						"0011": &Info{4, "3-3", 5, &Subscriptions{
+							"0000": &Info{8, "3-3-0", 5, nil},
 						}},
 					},
 				},
-				"1111": &Info{"15", 2, nil},
+				"1111": &Info{0, "15", 2, nil},
 			},
 		},
 	}
@@ -126,9 +126,9 @@ func Test_recalculateEntropyValue(t *testing.T) {
 			"15",
 			args{
 				&Subscriptions{
-					"00110000": &Info{"3-0", 5, nil},
-					"00110011": &Info{"3-3", 5, &Subscriptions{
-						"001100110000": &Info{"3-3-0", 5, nil},
+					"00110000": &Info{0, "3-0", 5, nil},
+					"00110011": &Info{0, "3-3", 5, &Subscriptions{
+						"0000": &Info{8, "3-3-0", 5, nil},
 					}},
 				},
 			},

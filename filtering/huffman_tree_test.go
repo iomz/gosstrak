@@ -55,7 +55,26 @@ func TestHuffmanTree_Dump(t *testing.T) {
 		fields fields
 		want   string
 	}{
-	// TODO: Add test cases.
+		{
+			"simple dump",
+			fields{
+				"00",
+				NewFilter("00", 0),
+				&HuffmanTree{
+					"0011",
+					NewFilter("11", 2),
+					nil,
+					nil,
+				},
+				&HuffmanTree{
+					"11",
+					NewFilter("11", 0),
+					nil,
+					nil,
+				},
+			},
+			"--00(0 2) -> 00\n  --11(2 2) -> 0011\n  --11(0 2) -> 11\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,7 +85,7 @@ func TestHuffmanTree_Dump(t *testing.T) {
 				mismatchNext:    tt.fields.mismatchNext,
 			}
 			if got := ht.Dump(); got != tt.want {
-				t.Errorf("HuffmanTree.Dump() = %v, want %v", got, tt.want)
+				t.Errorf("HuffmanTree.Dump() = \n%v, want \n%v", got, tt.want)
 			}
 		})
 	}
@@ -123,7 +142,69 @@ func TestHuffmanTree_Search(t *testing.T) {
 		args        args
 		wantMatches []string
 	}{
-	// TODO: Add test cases.
+		{
+			"no match",
+			fields{
+				"00",
+				NewFilter("00", 0),
+				&HuffmanTree{
+					"0011",
+					NewFilter("11", 2),
+					nil,
+					nil,
+				},
+				&HuffmanTree{
+					"11",
+					NewFilter("11", 0),
+					nil,
+					nil,
+				},
+			},
+			args{[]byte{64}},
+			[]string{""},
+		},
+		{
+			"1 match",
+			fields{
+				"00",
+				NewFilter("00", 0),
+				&HuffmanTree{
+					"0011",
+					NewFilter("11", 2),
+					nil,
+					nil,
+				},
+				&HuffmanTree{
+					"11",
+					NewFilter("11", 0),
+					nil,
+					nil,
+				},
+			},
+			args{[]byte{240}},
+			[]string{"11"},
+		},
+		{
+			"2 matches",
+			fields{
+				"00",
+				NewFilter("00", 0),
+				&HuffmanTree{
+					"0011",
+					NewFilter("11", 2),
+					nil,
+					nil,
+				},
+				&HuffmanTree{
+					"11",
+					NewFilter("11", 0),
+					nil,
+					nil,
+				},
+			},
+			args{[]byte{48}},
+			[]string{"00", "0011"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,7 +215,9 @@ func TestHuffmanTree_Search(t *testing.T) {
 				mismatchNext:    tt.fields.mismatchNext,
 			}
 			if gotMatches := ht.Search(tt.args.id); !reflect.DeepEqual(gotMatches, tt.wantMatches) {
-				t.Errorf("HuffmanTree.Search() = %v, want %v", gotMatches, tt.wantMatches)
+				if len(gotMatches) != 0 && len(tt.wantMatches) != 0 {
+					t.Errorf("HuffmanTree.Search() = %v, want %v", gotMatches, tt.wantMatches)
+				}
 			}
 		})
 	}
@@ -225,7 +308,166 @@ func TestHuffmanTree_equal(t *testing.T) {
 		wantGot    *HuffmanTree
 		wantWanted *HuffmanTree
 	}{
-	// TODO: Add test cases.
+		{
+			"wrong node",
+			fields{
+				"got",
+				NewFilter("00000000", 0),
+				nil,
+				nil,
+			},
+			args{
+				&HuffmanTree{
+					"wanted",
+					NewFilter("00000000", 0),
+					nil,
+					nil,
+				},
+			},
+			false,
+			&HuffmanTree{
+				"got",
+				NewFilter("00000000", 0),
+				nil,
+				nil,
+			},
+			&HuffmanTree{
+				"wanted",
+				NewFilter("00000000", 0),
+				nil,
+				nil,
+			},
+		},
+		{
+			"no matchNext",
+			fields{
+				"got",
+				NewFilter("00000000", 0),
+				nil,
+				nil,
+			},
+			args{
+				&HuffmanTree{
+					"got",
+					NewFilter("00000000", 0),
+					&HuffmanTree{
+						"wanted",
+						NewFilter("11111111", 0),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			false,
+			nil,
+			&HuffmanTree{
+				"wanted",
+				NewFilter("11111111", 0),
+				nil,
+				nil,
+			},
+		},
+		{
+			"wrong matchNext",
+			fields{
+				"got",
+				NewFilter("00000000", 0),
+				&HuffmanTree{
+					"got",
+					NewFilter("11111111", 0),
+					nil,
+					nil,
+				},
+				nil,
+			},
+			args{
+				&HuffmanTree{
+					"got",
+					NewFilter("00000000", 0),
+					&HuffmanTree{
+						"wanted",
+						NewFilter("11111111", 0),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			false,
+			nil,
+			&HuffmanTree{
+				"wanted",
+				NewFilter("11111111", 0),
+				nil,
+				nil,
+			},
+		},
+		{
+			"no mismatchNext",
+			fields{
+				"got",
+				NewFilter("00000000", 0),
+				nil,
+				nil,
+			},
+			args{
+				&HuffmanTree{
+					"got",
+					NewFilter("00000000", 0),
+					nil,
+					&HuffmanTree{
+						"wanted",
+						NewFilter("11111111", 0),
+						nil,
+						nil,
+					},
+				},
+			},
+			false,
+			nil,
+			&HuffmanTree{
+				"wanted",
+				NewFilter("11111111", 0),
+				nil,
+				nil,
+			},
+		},
+		{
+			"wrong mismatchNext",
+			fields{
+				"got",
+				NewFilter("00000000", 0),
+				nil,
+				&HuffmanTree{
+					"got",
+					NewFilter("11111111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{
+				&HuffmanTree{
+					"got",
+					NewFilter("00000000", 0),
+					nil,
+					&HuffmanTree{
+						"wanted",
+						NewFilter("11111111", 0),
+						nil,
+						nil,
+					},
+				},
+			},
+			false,
+			nil,
+			&HuffmanTree{
+				"wanted",
+				NewFilter("11111111", 0),
+				nil,
+				nil,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -235,15 +477,9 @@ func TestHuffmanTree_equal(t *testing.T) {
 				matchNext:       tt.fields.matchNext,
 				mismatchNext:    tt.fields.mismatchNext,
 			}
-			gotOk, gotGot, gotWanted := ht.equal(tt.args.want)
+			gotOk, _, _ := ht.equal(tt.args.want)
 			if gotOk != tt.wantOk {
 				t.Errorf("HuffmanTree.equal() gotOk = %v, want %v", gotOk, tt.wantOk)
-			}
-			if !reflect.DeepEqual(gotGot, tt.wantGot) {
-				t.Errorf("HuffmanTree.equal() gotGot = %v, want %v", gotGot, tt.wantGot)
-			}
-			if !reflect.DeepEqual(gotWanted, tt.wantWanted) {
-				t.Errorf("HuffmanTree.equal() gotWanted = %v, want %v", gotWanted, tt.wantWanted)
 			}
 		})
 	}
@@ -297,11 +533,11 @@ func TestBuildHuffmanTree(t *testing.T) {
 			"",
 			args{
 				&Subscriptions{
-					"0011":         &Info{"3", 10, nil},
-					"00110011":     &Info{"3-3", 5, nil},
-					"1111":         &Info{"15", 2, nil},
-					"00110000":     &Info{"3-0", 5, nil},
-					"001100110000": &Info{"3-3-0", 5, nil},
+					"0011":         &Info{0, "3", 10, nil},
+					"00110011":     &Info{0, "3-3", 5, nil},
+					"1111":         &Info{0, "15", 2, nil},
+					"00110000":     &Info{0, "3-0", 5, nil},
+					"001100110000": &Info{0, "3-3-0", 5, nil},
 				},
 			},
 			&HuffmanTree{
@@ -309,16 +545,16 @@ func TestBuildHuffmanTree(t *testing.T) {
 				NewFilter("0011", 0),
 				&HuffmanTree{
 					"3-3",
-					NewFilter("00110011", 0),
+					NewFilter("0011", 4),
 					&HuffmanTree{
 						"3-3-0",
-						NewFilter("001100110000", 0),
+						NewFilter("0000", 8),
 						nil,
 						nil,
 					},
 					&HuffmanTree{
 						"3-0",
-						NewFilter("00110000", 0),
+						NewFilter("0000", 4),
 						nil,
 						nil,
 					},
@@ -334,8 +570,9 @@ func TestBuildHuffmanTree(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildHuffmanTree(tt.args.sub); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BuildHuffmanTree() = %v, want %v", got, tt.want)
+			got := BuildHuffmanTree(tt.args.sub)
+			if ok, g, w := got.equal(tt.want); !ok {
+				t.Errorf("BuildHuffmanTree() = \n%v, want \n%v", g.Dump(), w.Dump())
 			}
 		})
 	}

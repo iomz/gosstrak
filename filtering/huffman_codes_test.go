@@ -116,10 +116,10 @@ func TestNewHuffmanCodes(t *testing.T) {
 			"0011,0000,1111,1100",
 			args{
 				&Subscriptions{
-					"0011": &Info{"3", 3, &Subscriptions{}},
-					"0001": &Info{"1", 1, &Subscriptions{}},
-					"1111": &Info{"15", 15, &Subscriptions{}},
-					"1100": &Info{"12", 12, &Subscriptions{}},
+					"0011": &Info{0, "3", 3, &Subscriptions{}},
+					"0001": &Info{0, "1", 1, &Subscriptions{}},
+					"1111": &Info{0, "15", 15, &Subscriptions{}},
+					"1100": &Info{0, "12", 12, &Subscriptions{}},
 				},
 			},
 			&HuffmanCodes{

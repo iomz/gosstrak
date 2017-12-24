@@ -18,6 +18,7 @@ type Subscriptions map[string]*Info
 
 // Info contains notificationURI and pValue for a filter
 type Info struct {
+	Offset          int
 	NotificationURI string
 	EntropyValue    float64
 	Subset          *Subscriptions
@@ -50,10 +51,23 @@ func (sub Subscriptions) linkSubset() {
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
+				// if there is no subset already
 				if sub[linkCandidate].Subset == nil {
-					sub[linkCandidate].Subset = &Subscriptions{fs: info}
+					sub[linkCandidate].Subset = &Subscriptions{
+						fs[len(linkCandidate):]: &Info{
+							Offset:          info.Offset + len(linkCandidate),
+							NotificationURI: info.NotificationURI,
+							EntropyValue:    info.EntropyValue,
+							Subset:          nil,
+						},
+					}
 				} else {
-					(*sub[linkCandidate].Subset)[fs] = info
+					(*sub[linkCandidate].Subset)[fs[len(linkCandidate):]] = &Info{
+						Offset:          info.Offset + len(linkCandidate),
+						NotificationURI: info.NotificationURI,
+						EntropyValue:    info.EntropyValue,
+						Subset:          nil,
+					}
 				}
 				// recursively link the subset
 				sub[linkCandidate].Subset.linkSubset()

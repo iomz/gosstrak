@@ -207,7 +207,7 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 		if len(record) < 3 {
 			// Default case
 			// prefix as key, *filtering.Info as value
-			sub[record[1]] = &filtering.Info{NotificationURI: record[0], EntropyValue: 0, Subset: nil}
+			sub[record[1]] = &filtering.Info{Offset: 0, NotificationURI: record[0], EntropyValue: 0, Subset: nil}
 		} else {
 			// For HuffmanTree, filter with EntropyValue
 			// prefix as key, *filtering.Info as value
@@ -217,7 +217,7 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 			}
 			fs := record[1]
 			uri := record[0]
-			sub[fs] = &filtering.Info{NotificationURI: uri, EntropyValue: pValue, Subset: nil}
+			sub[fs] = &filtering.Info{Offset: 0, NotificationURI: uri, EntropyValue: pValue, Subset: nil}
 		}
 	}
 	return sub

@@ -7,7 +7,7 @@ package filtering
 
 import (
 	"bytes"
-	//"encoding/gob"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
@@ -38,17 +38,101 @@ func (ht *HuffmanTree) Dump() string {
 
 // MarshalBinary overwrites the marshaller in gob encoding *HuffmanTree
 func (ht *HuffmanTree) MarshalBinary() (_ []byte, err error) {
-	return []byte{}, errors.New("")
-	//return buf.Bytes(), err
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+
+	// Type of Engine
+	enc.Encode("Engine:filtering.HuffmanTree")
+
+	// Notify
+	enc.Encode(ht.notificationURI)
+
+	// Filter
+	hasFilter := ht.filterObject != nil
+	enc.Encode(hasFilter)
+	if hasFilter {
+		err = enc.Encode(ht.filterObject)
+	}
+
+	// matchNext
+	hasMatchNext := ht.matchNext != nil
+	enc.Encode(hasMatchNext)
+	if hasMatchNext {
+		err = enc.Encode(ht.matchNext)
+	}
+
+	// mismatchNext
+	hasMismatchNext := ht.mismatchNext != nil
+	enc.Encode(hasMismatchNext)
+	if hasMismatchNext {
+		err = enc.Encode(ht.mismatchNext)
+	}
+
+	return buf.Bytes(), err
 }
 
 // Search returns a slice of notificationURI
-func (ht *HuffmanTree) Search(id []byte) (matches []string) {
-	return
+func (ht *HuffmanTree) Search(id []byte) []string {
+	matches := []string{}
+	if ht.filterObject.Match(id) {
+		matches = append(matches, ht.notificationURI)
+		if ht.matchNext != nil {
+			matches = append(matches, ht.matchNext.Search(id)...)
+		}
+		return matches
+	}
+	if ht.mismatchNext != nil {
+		return ht.mismatchNext.Search(id)
+	}
+	return matches
 }
 
 // UnmarshalBinary overwrites the unmarshaller in gob decoding *PatriciaTrie
 func (ht *HuffmanTree) UnmarshalBinary(data []byte) (err error) {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	// Type of Engine
+	var typeOfEngine string
+	if err = dec.Decode(&typeOfEngine); err != nil || typeOfEngine != "Engine:filtering.HuffmanTree" {
+		return errors.New("Wrong Filtering Engine: " + typeOfEngine)
+	}
+
+	// Notify
+	if err = dec.Decode(&ht.notificationURI); err != nil {
+		return
+	}
+
+	// FilterObject
+	var hasFilterObject bool
+	if err = dec.Decode(&hasFilterObject); err != nil {
+		return
+	}
+	if hasFilterObject {
+		err = dec.Decode(&ht.filterObject)
+	}
+
+	// matchNext
+	var hasMatchNext bool
+	if err = dec.Decode(&hasMatchNext); err != nil {
+		return
+	}
+	if hasMatchNext {
+		err = dec.Decode(&ht.matchNext)
+	} else {
+		ht.matchNext = nil
+	}
+
+	// mismatchNext
+	var hasMismatchNext bool
+	if err = dec.Decode(&hasMismatchNext); err != nil {
+		return
+	}
+	if hasMismatchNext {
+		err = dec.Decode(&ht.mismatchNext)
+	} else {
+		ht.mismatchNext = nil
+	}
+
 	return
 }
 
@@ -79,18 +163,22 @@ func (ht *HuffmanTree) build(sub *Subscriptions, hc *HuffmanCodes) *HuffmanTree 
 
 func (ht *HuffmanTree) equal(want *HuffmanTree) (ok bool, got *HuffmanTree, wanted *HuffmanTree) {
 	if ht.notificationURI != want.notificationURI ||
-		!reflect.DeepEqual(ht.filterObject, want.filterObject) ||
-		!reflect.DeepEqual(ht.matchNext, want.matchNext) ||
-		!reflect.DeepEqual(ht.mismatchNext, want.mismatchNext) {
+		!reflect.DeepEqual(ht.filterObject, want.filterObject) {
 		return false, ht, want
 	}
 	if want.matchNext != nil {
+		if ht.matchNext == nil {
+			return false, nil, want.matchNext
+		}
 		res, cgot, cwanted := ht.matchNext.equal(want.matchNext)
 		if !res {
 			return res, cgot, cwanted
 		}
 	}
 	if want.mismatchNext != nil {
+		if ht.mismatchNext == nil {
+			return false, nil, want.mismatchNext
+		}
 		res, cgot, cwanted := ht.mismatchNext.equal(want.mismatchNext)
 		if !res {
 			return res, cgot, cwanted

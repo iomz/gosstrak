@@ -22,6 +22,44 @@ type PatriciaTrie struct {
 	zero            *PatriciaTrie
 }
 
+// AnalyzeLocality increments the locality per node for the specific id
+func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
+	// if not match, return empty string immediately
+	if !pt.filter.Match(id) {
+		return
+	}
+
+	// if the node is the first two node
+	if len(pt.filter.String) != 0 {
+		prefix += "-" + pt.filter.String
+	}
+
+	if _, ok := (*lm)[prefix]; !ok {
+		(*lm)[prefix] = 1
+	} else {
+		(*lm)[prefix]++
+	}
+
+	// Determine next filter
+	nextBitOffset := pt.filter.Offset + pt.filter.Size
+	nb, err := getNextBit(id, nextBitOffset)
+	if err != nil {
+		panic(err)
+	}
+	if nb == '1' && pt.one != nil {
+		pt.one.AnalyzeLocality(id, prefix, lm)
+	} else if nb == '0' && pt.zero != nil {
+		pt.zero.AnalyzeLocality(id, prefix, lm)
+	}
+}
+
+// Dump returs a string representation of the PatriciaTrie
+func (pt *PatriciaTrie) Dump() string {
+	writer := &bytes.Buffer{}
+	pt.print(writer, 0)
+	return writer.String()
+}
+
 // MarshalBinary overwrites the marshaller in gob encoding *PatriciaTrie
 func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
@@ -56,6 +94,32 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 
 	//buf.Encode
 	return buf.Bytes(), err
+}
+
+// Search returns a slice of notificationURI
+func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
+	// if not match, return empty slice immediately
+	if !pt.filter.Match(id) {
+		return
+	}
+
+	// if the id matched with this node, return notificationURI
+	if len(pt.notificationURI) != 0 {
+		matches = append(matches, pt.notificationURI)
+	}
+
+	// Determine next filter
+	nextBitOffset := pt.filter.Offset + pt.filter.Size
+	nb, err := getNextBit(id, nextBitOffset)
+	if err != nil {
+		panic(err)
+	}
+	if nb == '1' && pt.one != nil {
+		matches = append(matches, pt.one.Search(id)...)
+	} else if nb == '0' && pt.zero != nil {
+		matches = append(matches, pt.zero.Search(id)...)
+	}
+	return
 }
 
 // UnmarshalBinary overwrites the unmarshaller in gob decoding *PatriciaTrie
@@ -109,62 +173,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-// AnalyzeLocality increments the locality per node for the specific id
-func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
-	// if not match, return empty string immediately
-	if !pt.filter.Match(id) {
-		return
-	}
-
-	// if the node is the first two node
-	if len(pt.filter.String) != 0 {
-		prefix += "-" + pt.filter.String
-	}
-
-	if _, ok := (*lm)[prefix]; !ok {
-		(*lm)[prefix] = 1
-	} else {
-		(*lm)[prefix]++
-	}
-
-	// Determine next filter
-	nextBitOffset := pt.filter.Offset + pt.filter.Size
-	nb, err := getNextBit(id, nextBitOffset)
-	if err != nil {
-		panic(err)
-	}
-	if nb == '1' && pt.one != nil {
-		pt.one.AnalyzeLocality(id, prefix, lm)
-	} else if nb == '0' && pt.zero != nil {
-		pt.zero.AnalyzeLocality(id, prefix, lm)
-	}
-}
-
-// Search returns a slice of notificationURI
-func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
-	// if not match, return empty slice immediately
-	if !pt.filter.Match(id) {
-		return
-	}
-
-	// if the id matched with this node, return notificationURI
-	if len(pt.notificationURI) != 0 {
-		matches = append(matches, pt.notificationURI)
-	}
-
-	// Determine next filter
-	nextBitOffset := pt.filter.Offset + pt.filter.Size
-	nb, err := getNextBit(id, nextBitOffset)
-	if err != nil {
-		panic(err)
-	}
-	if nb == '1' && pt.one != nil {
-		matches = append(matches, pt.one.Search(id)...)
-	} else if nb == '0' && pt.zero != nil {
-		matches = append(matches, pt.zero.Search(id)...)
-	}
-	return
-}
+// Internal helper methods -----------------------------------------------------
 
 func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 	onePrefixBranch := ""
@@ -223,13 +232,6 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		}
 		pt.zero.build(cumulativePrefix, sub)
 	}
-}
-
-// Dump returs a string representation of the PatriciaTrie
-func (pt *PatriciaTrie) Dump() string {
-	writer := &bytes.Buffer{}
-	pt.print(writer, 0)
-	return writer.String()
 }
 
 func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
