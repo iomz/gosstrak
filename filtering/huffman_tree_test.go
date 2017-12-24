@@ -53,8 +53,9 @@ func TestHuffmanTree_AnalyzeLocality(t *testing.T) {
 				&LocalityMap{},
 			},
 			&LocalityMap{
-				"-00":    1,
-				"-00-11": 1,
+				"00":            1,
+				"00,0011":       1,
+				"00,0011,Match": 1,
 			},
 		},
 	}

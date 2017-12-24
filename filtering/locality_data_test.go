@@ -20,9 +20,9 @@ func TestLocalityMap_ToJSON(t *testing.T) {
 			"simple locality map test",
 			LocalityMap{
 				"":            12,
-				"-0011":       4,
-				"-0011-00":    2,
-				"-0011-00-11": 1,
+				",0011":       4,
+				",0011,00":    2,
+				",0011,00,11": 1,
 			},
 			[]byte("[{\"name\":\"Entry Node\",\"value\":100,\"children\":[{\"name\":\"0011\",\"value\":33.333332,\"children\":[{\"name\":\"00\",\"value\":16.666666,\"children\":[{\"name\":\"11\",\"value\":8.333333,\"children\":null}]}]}]}]"),
 		},

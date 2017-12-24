@@ -63,9 +63,9 @@ func TestPatriciaTrie_AnalyzeLocality(t *testing.T) {
 				&LocalityMap{},
 			},
 			&LocalityMap{
-				"-0011":       1,
-				"-0011-00":    1,
-				"-0011-00-11": 1,
+				",0011":       1,
+				",0011,00":    1,
+				",0011,00,11": 1,
 			},
 		},
 	}
