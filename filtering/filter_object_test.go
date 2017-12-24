@@ -1,4 +1,9 @@
-package filter
+// Copyright (c) 2017 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
+package filtering
 
 import (
 	"reflect"
@@ -17,17 +22,23 @@ func Test_makeFilter(t *testing.T) {
 		want1 []rune
 		want2 []rune
 	}{
-		{"000xx000 from 0", args{[]rune("000xx000"), 0}, 0, []rune("00011000"), []rune("00011000")},
-		{"xx0xx from 1", args{[]rune("xx0xx"), 1}, 0, []rune("11101111"), []rune("11101111")},
-		{"00000000 from 0", args{[]rune("00000000"), 0}, 0, []rune("00000000"), []rune("00000000")},
 		{"0000 from 0", args{[]rune("0000"), 0}, 0, []rune("00001111"), []rune("00001111")},
-		{"0000 from 4", args{[]rune("0000"), 4}, 0, []rune("11110000"), []rune("11110000")},
+		{"10000000 from 0", args{[]rune("10000000"), 0}, 0, []rune("10000000"), []rune("00000000")},
+		{"100000001000 from 0", args{[]rune("100000001000"), 0}, 0, []rune("1000000010001111"), []rune("0000000000001111")},
+		{"1000000010000000 from 0", args{[]rune("1000000010000000"), 0}, 0, []rune("1000000010000000"), []rune("0000000000000000")},
+		{"100000001000000010 from 0", args{[]rune("100000001000000010"), 0}, 0, []rune("100000001000000010111111"), []rune("000000000000000000111111")},
 		{"0 from 6", args{[]rune("0"), 6}, 0, []rune("11111101"), []rune("11111101")},
-		{"000000000 from 1", args{[]rune("000000000"), 1}, 0, []rune("1000000000111111"), []rune("1000000000111111")},
-		{"00000000000000000000 from 4", args{[]rune("00000000000000000000"), 4}, 0, []rune("111100000000000000000000"), []rune("111100000000000000000000")},
-		{"000000000000000 from 7", args{[]rune("000000000000000"), 7}, 0, []rune("111111100000000000000011"), []rune("111111100000000000000011")},
-		{"0000000000 from 17", args{[]rune("0000000000"), 17}, 2, []rune("1000000000011111"), []rune("1000000000011111")},
-		{"00000 from 9", args{[]rune("00000"), 9}, 1, []rune("10000011"), []rune("10000011")},
+		{"0000 from 4", args{[]rune("0000"), 4}, 0, []rune("11110000"), []rune("11110000")},
+		{"0010 from 6", args{[]rune("0010"), 6}, 0, []rune("1111110010111111"), []rune("1111110000111111")},
+		{"0000 from 8", args{[]rune("0000"), 8}, 1, []rune("00001111"), []rune("00001111")},
+		{"xx000000 from 0", args{[]rune("xx000000"), 0}, 0, []rune("11000000"), []rune("11000000")},
+		{"000xx000 from 0", args{[]rune("000xx000"), 0}, 0, []rune("00011000"), []rune("00011000")},
+		{"000000xx from 0", args{[]rune("000000xx"), 0}, 0, []rune("00000011"), []rune("00000011")},
+		{"xx00xx from 1", args{[]rune("xx00xx"), 1}, 0, []rune("11100111"), []rune("11100111")},
+		{"xxxx from 0", args{[]rune("xxxx"), 0}, 0, []rune("11111111"), []rune("11111111")},
+		{"xxxxxxxx from 0", args{[]rune("xxxxxxxx"), 0}, 0, []rune("11111111"), []rune("11111111")},
+		{"xxx from 5", args{[]rune("xxx"), 5}, 0, []rune("11111111"), []rune("11111111")},
+		{"xx from 7", args{[]rune("xx"), 7}, 0, []rune("1111111111111111"), []rune("1111111111111111")},
 		//{" from ", args{[]rune(""), 0}, 0, []rune(""), []rune("")},
 	}
 	for _, tt := range tests {
@@ -37,16 +48,41 @@ func Test_makeFilter(t *testing.T) {
 				t.Errorf("makeFilter() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("makeFilter() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("makeFilter() got1 = \n%v, want \n%v", string(got1), string(tt.want1))
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("makeFilter() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("makeFilter() got2 = \n%v, want \n%v", string(got2), string(tt.want2))
 			}
 		})
 	}
 }
 
-func TestFilter_GetByteAt(t *testing.T) {
+func TestNewFilter(t *testing.T) {
+	type args struct {
+		s string
+		o int
+	}
+	tests := []struct {
+		name string
+		args args
+		want *FilterObject
+	}{
+		{"00000000 from 0", args{"00000000", 0}, &FilterObject{"00000000", 8, 0, []byte{0}, []byte{0}, 0, 1}},
+		{"0000xxxx from 0", args{"0000xxxx", 0}, &FilterObject{"0000xxxx", 8, 0, []byte{15}, []byte{15}, 0, 1}},
+		{"0000 from 0", args{"0000", 0}, &FilterObject{"0000", 4, 0, []byte{15}, []byte{15}, 0, 1}},
+		{"0000 from 4", args{"0000", 4}, &FilterObject{"0000", 4, 4, []byte{240}, []byte{240}, 0, 1}},
+		{"0000000000000000 from 12", args{"0000000000000000", 12}, &FilterObject{"0000000000000000", 16, 12, []byte{240, 0, 15}, []byte{240, 0, 15}, 1, 3}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewFilter(tt.args.s, tt.args.o); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewFilter() = \n%v, want \n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFilterObject_GetByteAt(t *testing.T) {
 	type fields struct {
 		String     string
 		Size       int
@@ -75,7 +111,7 @@ func TestFilter_GetByteAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -86,20 +122,20 @@ func TestFilter_GetByteAt(t *testing.T) {
 			}
 			got, got1, err := f.GetByteAt(tt.args.bo)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Filter.GetByteAt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("FilterObject.GetByteAt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("Filter.GetByteAt() got = %v, want %v", got, tt.want)
+				t.Errorf("FilterObject.GetByteAt() got = %v, want %v", got, tt.want)
 			}
 			if got1 != tt.want1 {
-				t.Errorf("Filter.GetByteAt() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("FilterObject.GetByteAt() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
 }
 
-func TestFilter_HasByteAt(t *testing.T) {
+func TestFilterObject_HasByteAt(t *testing.T) {
 	type fields struct {
 		String     string
 		Size       int
@@ -132,7 +168,7 @@ func TestFilter_HasByteAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -142,13 +178,13 @@ func TestFilter_HasByteAt(t *testing.T) {
 				ByteSize:   tt.fields.ByteSize,
 			}
 			if got := f.HasByteAt(tt.args.bo); got != tt.want {
-				t.Errorf("Filter.HasByteAt() = %v, want %v", got, tt.want)
+				t.Errorf("FilterObject.HasByteAt() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestFilter_Match(t *testing.T) {
+func TestFilterObject_Match(t *testing.T) {
 	type fields struct {
 		String     string
 		Size       int
@@ -177,7 +213,7 @@ func TestFilter_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -187,13 +223,13 @@ func TestFilter_Match(t *testing.T) {
 				ByteSize:   tt.fields.ByteSize,
 			}
 			if got := f.Match(tt.args.id); got != tt.want {
-				t.Errorf("Filter.match() = %v, want %v", got, tt.want)
+				t.Errorf("FilterObject.Match() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestFilter_ToString(t *testing.T) {
+func TestFilterObject_ToString(t *testing.T) {
 	type fields struct {
 		String     string
 		Size       int
@@ -212,7 +248,7 @@ func TestFilter_ToString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Filter{
+			f := &FilterObject{
 				String:     tt.fields.String,
 				Size:       tt.fields.Size,
 				Offset:     tt.fields.Offset,
@@ -222,32 +258,45 @@ func TestFilter_ToString(t *testing.T) {
 				ByteSize:   tt.fields.ByteSize,
 			}
 			if got := f.ToString(); got != tt.want {
-				t.Errorf("Filter.ToString() = %v, want %v", got, tt.want)
+				t.Errorf("FilterObject.ToString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestNewFilter(t *testing.T) {
-	type args struct {
-		s string
-		o int
+func TestFilterObject_IsTransparent(t *testing.T) {
+	type fields struct {
+		String     string
+		Size       int
+		Offset     int
+		ByteFilter []byte
+		ByteMask   []byte
+		ByteOffset int
+		ByteSize   int
 	}
 	tests := []struct {
-		name string
-		args args
-		want *Filter
+		name   string
+		fields fields
+		want   bool
 	}{
-		{"00000000 from 0", args{"00000000", 0}, &Filter{"00000000", 8, 0, []byte{0}, []byte{0}, 0, 1}},
-		{"0000xxxx from 0", args{"0000xxxx", 0}, &Filter{"0000xxxx", 8, 0, []byte{15}, []byte{15}, 0, 1}},
-		{"0000 from 0", args{"0000", 0}, &Filter{"0000", 4, 0, []byte{15}, []byte{15}, 0, 1}},
-		{"0000 from 4", args{"0000", 4}, &Filter{"0000", 4, 4, []byte{240}, []byte{240}, 0, 1}},
-		{"0000000000000000 from 12", args{"0000000000000000", 12}, &Filter{"0000000000000000", 16, 12, []byte{240, 0, 15}, []byte{240, 0, 15}, 1, 3}},
+		{"xxxxxxxx", fields{"xxxxxxxx", 8, 0, []byte{255}, []byte{255}, 0, 1}, true},
+		{"2 byte x", fields{"xxxxxxxxxxxxxxxx", 16, 8, []byte{255, 255}, []byte{255, 255}, 1, 2}, true},
+		{"xxx00xxx", fields{"xxx00xxx", 8, 8, []byte{231}, []byte{231}, 1, 1}, false},
+		{"xxx11xxx", fields{"xxx11xxx", 8, 8, []byte{255}, []byte{231}, 1, 1}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewFilter(tt.args.s, tt.args.o); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewFilter() = \n%v, want \n%v", got, tt.want)
+			f := &FilterObject{
+				String:     tt.fields.String,
+				Size:       tt.fields.Size,
+				Offset:     tt.fields.Offset,
+				ByteFilter: tt.fields.ByteFilter,
+				ByteMask:   tt.fields.ByteMask,
+				ByteOffset: tt.fields.ByteOffset,
+				ByteSize:   tt.fields.ByteSize,
+			}
+			if got := f.IsTransparent(); got != tt.want {
+				t.Errorf("FilterObject.IsTransparent() = %v, want %v", got, tt.want)
 			}
 		})
 	}
