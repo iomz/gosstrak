@@ -21,6 +21,19 @@ type ExactMatch struct {
 	filter          *FilterObject
 }
 
+// AnalyzeLocality increments the locality per node for the specific id
+func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
+}
+
+// Dump returs a string representation of the PatriciaTrie
+func (list *List) Dump() string {
+	writer := &bytes.Buffer{}
+	for _, em := range *list {
+		fmt.Fprintf(writer, "--%s %s\n", em.filter.ToString(), em.notificationURI)
+	}
+	return writer.String()
+}
+
 // MarshalBinary overwrites the marshaller in gob encoding *List
 func (list *List) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
@@ -39,6 +52,16 @@ func (list *List) MarshalBinary() (_ []byte, err error) {
 	}
 
 	return buf.Bytes(), err
+}
+
+// Search returns a slice of notificationURI
+func (list *List) Search(id []byte) (matches []string) {
+	for _, em := range *list {
+		if em.filter.Match(id) {
+			matches = append(matches, em.notificationURI)
+		}
+	}
+	return
 }
 
 // UnmarshalBinary overwrites the unmarshaller in gob decoding List
@@ -68,29 +91,6 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 		*list = append(*list, &em)
 	}
 
-	return
-}
-
-// AnalyzeLocality increments the locality per node for the specific id
-func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
-}
-
-// Dump returs a string representation of the PatriciaTrie
-func (list *List) Dump() string {
-	writer := &bytes.Buffer{}
-	for _, em := range *list {
-		fmt.Fprintf(writer, "--%s %s\n", em.filter.ToString(), em.notificationURI)
-	}
-	return writer.String()
-}
-
-// Search returns a slice of notificationURI
-func (list *List) Search(id []byte) (matches []string) {
-	for _, em := range *list {
-		if em.filter.Match(id) {
-			matches = append(matches, em.notificationURI)
-		}
-	}
 	return
 }
 

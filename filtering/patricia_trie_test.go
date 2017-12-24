@@ -27,8 +27,47 @@ func TestPatriciaTrie_AnalyzeLocality(t *testing.T) {
 		name   string
 		fields fields
 		args   args
+		want   *LocalityMap
 	}{
-	// TODO: Add test cases.
+		{
+			"simple analyze",
+			fields{
+				"3",
+				NewFilter("0011", 0),
+				nil,
+				&PatriciaTrie{
+					"",
+					NewFilter("00", 4),
+					&PatriciaTrie{
+						"3-3",
+						NewFilter("11", 6),
+						nil,
+						&PatriciaTrie{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+					},
+					&PatriciaTrie{
+						"3-0",
+						NewFilter("00", 6),
+						nil,
+						nil,
+					},
+				},
+			},
+			args{
+				[]byte{51}, // "b00110011"
+				"",
+				&LocalityMap{},
+			},
+			&LocalityMap{
+				"-0011":       1,
+				"-0011-00":    1,
+				"-0011-00-11": 1,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,6 +78,9 @@ func TestPatriciaTrie_AnalyzeLocality(t *testing.T) {
 				zero:            tt.fields.zero,
 			}
 			pt.AnalyzeLocality(tt.args.id, tt.args.prefix, tt.args.lm)
+			if !reflect.DeepEqual(*tt.args.lm, *tt.want) {
+				t.Errorf("PatriciaTrie.AnalyzeLocality() = \n%v, want \n%v", *tt.args.lm, *tt.want)
+			}
 		})
 	}
 }

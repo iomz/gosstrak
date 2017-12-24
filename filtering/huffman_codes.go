@@ -20,6 +20,8 @@ type entry struct {
 	p               float64
 }
 
+// Internal helper methods -----------------------------------------------------
+
 func (ent *entry) equal(want *entry) (ok bool, got *entry, wanted *entry) {
 	if ent.filter != want.filter ||
 		ent.offset != want.offset ||

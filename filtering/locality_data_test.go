@@ -10,11 +10,36 @@ import (
 	"testing"
 )
 
+func TestLocalityMap_ToJSON(t *testing.T) {
+	tests := []struct {
+		name string
+		lm   LocalityMap
+		want []byte
+	}{
+		{
+			"simple locality map test",
+			LocalityMap{
+				"":            12,
+				"-0011":       4,
+				"-0011-00":    2,
+				"-0011-00-11": 1,
+			},
+			[]byte("[{\"name\":\"Entry Node\",\"value\":100,\"children\":[{\"name\":\"0011\",\"value\":33.333332,\"children\":[{\"name\":\"00\",\"value\":16.666666,\"children\":[{\"name\":\"11\",\"value\":8.333333,\"children\":null}]}]}]}]"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lm.ToJSON(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("LocalityMap.ToJSON() = \n%v, want \n%v", string(got), string(tt.want))
+			}
+		})
+	}
+}
+
 func TestLocalityData_MarshalJSON(t *testing.T) {
 	type fields struct {
 		name     string
 		locality float32
-		parent   *LocalityData
 		children []*LocalityData
 	}
 	tests := []struct {
@@ -30,7 +55,6 @@ func TestLocalityData_MarshalJSON(t *testing.T) {
 			ld := &LocalityData{
 				name:     tt.fields.name,
 				locality: tt.fields.locality,
-				parent:   tt.fields.parent,
 				children: tt.fields.children,
 			}
 			got, err := ld.MarshalJSON()
@@ -49,7 +73,6 @@ func TestLocalityData_JSON(t *testing.T) {
 	type fields struct {
 		name     string
 		locality float32
-		parent   *LocalityData
 		children []*LocalityData
 	}
 	tests := []struct {
@@ -64,7 +87,6 @@ func TestLocalityData_JSON(t *testing.T) {
 			ld := &LocalityData{
 				name:     tt.fields.name,
 				locality: tt.fields.locality,
-				parent:   tt.fields.parent,
 				children: tt.fields.children,
 			}
 			if got := ld.JSON(); !reflect.DeepEqual(got, tt.want) {
@@ -78,7 +100,6 @@ func TestLocalityData_InsertLocality(t *testing.T) {
 	type fields struct {
 		name     string
 		locality float32
-		parent   *LocalityData
 		children []*LocalityData
 	}
 	type args struct {
@@ -89,21 +110,14 @@ func TestLocalityData_InsertLocality(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-	}{ /*
-		{
-			"test insertLocality",
-			fields{
-			},
-			args{
-			},
-		},*/
+	}{
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ld := &LocalityData{
 				name:     tt.fields.name,
 				locality: tt.fields.locality,
-				parent:   tt.fields.parent,
 				children: tt.fields.children,
 			}
 			ld.InsertLocality(tt.args.path, tt.args.locality)
