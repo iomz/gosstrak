@@ -11,13 +11,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 )
 
 // PatriciaTrie struct
 type PatriciaTrie struct {
 	notificationURI string
-	filter          *FilterObject
+	filterObject    *FilterObject
 	one             *PatriciaTrie
 	zero            *PatriciaTrie
 }
@@ -25,13 +26,13 @@ type PatriciaTrie struct {
 // AnalyzeLocality increments the locality per node for the specific id
 func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 	// if not match, return empty string immediately
-	if !pt.filter.Match(id) {
+	if !pt.filterObject.Match(id) {
 		return
 	}
 
 	// if the node is the first two node
-	if len(pt.filter.String) != 0 {
-		prefix += "-" + pt.filter.String
+	if len(pt.filterObject.String) != 0 {
+		prefix += "-" + pt.filterObject.String
 	}
 
 	if _, ok := (*lm)[prefix]; !ok {
@@ -41,7 +42,7 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 	}
 
 	// Determine next filter
-	nextBitOffset := pt.filter.Offset + pt.filter.Size
+	nextBitOffset := pt.filterObject.Offset + pt.filterObject.Size
 	nb, err := getNextBit(id, nextBitOffset)
 	if err != nil {
 		panic(err)
@@ -72,10 +73,10 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	enc.Encode(pt.notificationURI)
 
 	// Filter
-	hasFilter := pt.filter != nil
+	hasFilter := pt.filterObject != nil
 	enc.Encode(hasFilter)
 	if hasFilter {
-		err = enc.Encode(pt.filter)
+		err = enc.Encode(pt.filterObject)
 	}
 
 	// One
@@ -99,7 +100,7 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 // Search returns a slice of notificationURI
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately
-	if !pt.filter.Match(id) {
+	if !pt.filterObject.Match(id) {
 		return
 	}
 
@@ -109,7 +110,7 @@ func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	}
 
 	// Determine next filter
-	nextBitOffset := pt.filter.Offset + pt.filter.Size
+	nextBitOffset := pt.filterObject.Offset + pt.filterObject.Size
 	nb, err := getNextBit(id, nextBitOffset)
 	if err != nil {
 		panic(err)
@@ -143,9 +144,9 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasFilter {
-		err = dec.Decode(&pt.filter)
+		err = dec.Decode(&pt.filterObject)
 	} else {
-		pt.filter = nil
+		pt.filterObject = nil
 	}
 
 	// One
@@ -213,7 +214,7 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 	// if there's a branch starts with 1
 	if len(onePrefixBranch) != 0 {
 		pt.one = &PatriciaTrie{}
-		pt.one.filter = NewFilter(onePrefixBranch, len(prefix))
+		pt.one.filterObject = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
 		if info, ok := sub[cumulativePrefix]; ok {
@@ -224,7 +225,7 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 	// if there's a branch starts with 0
 	if len(zeroPrefixBranch) != 0 {
 		pt.zero = &PatriciaTrie{}
-		pt.zero.filter = NewFilter(zeroPrefixBranch, len(prefix))
+		pt.zero.filterObject = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
 		if info, ok := sub[cumulativePrefix]; ok {
@@ -239,7 +240,7 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	if len(pt.notificationURI) != 0 {
 		n = "-> " + pt.notificationURI
 	}
-	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filter.ToString(), n)
+	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filterObject.ToString(), n)
 	if pt.one != nil {
 		pt.one.print(writer, indent+2)
 	}
@@ -256,19 +257,45 @@ func BuildPatriciaTrie(sub Subscriptions) *PatriciaTrie {
 		// do something if there's no common prefix
 	}
 	head := &PatriciaTrie{}
-	head.filter = NewFilter(p1, 0)
+	head.filterObject = NewFilter(p1, 0)
 	head.build(p1, sub)
 
 	return head
 }
 
+func (pt *PatriciaTrie) equal(want *PatriciaTrie) (ok bool, got *PatriciaTrie, wanted *PatriciaTrie) {
+	if pt.notificationURI != want.notificationURI ||
+		!reflect.DeepEqual(pt.filterObject, want.filterObject) {
+		return false, pt, want
+	}
+	if want.one != nil {
+		if pt.one == nil {
+			return false, nil, want.one
+		}
+		res, cgot, cwanted := pt.one.equal(want.one)
+		if !res {
+			return res, cgot, cwanted
+		}
+	}
+	if want.zero != nil {
+		if pt.zero == nil {
+			return false, nil, want.zero
+		}
+		res, cgot, cwanted := pt.zero.equal(want.zero)
+		if !res {
+			return res, cgot, cwanted
+		}
+	}
+	return true, nil, nil
+}
+
 func getNextBit(id []byte, nbo int) (rune, error) {
 	o := nbo / ByteLength
 	// No more bit in the ID
-	if len(id) == o {
+	if len(id) == o && nbo%ByteLength == 0 {
 		return 'x', nil
 	}
-	if len(id) < o {
+	if len(id) <= o {
 		return '?', errors.New("getNextBit error")
 	}
 	if (uint8(id[o])>>uint8((7-(nbo%ByteLength))))%2 == 0 {
