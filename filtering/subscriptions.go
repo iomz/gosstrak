@@ -41,32 +41,39 @@ func (sub Subscriptions) keys() []string {
 	return ks
 }
 
+// linkSubset finds subsets and nest them under the parents
 func (sub Subscriptions) linkSubset() {
-	hc := *NewHuffmanCodes(sub)
+	hc := *NewHuffmanCodes(&sub)
 	for _, ent := range hc {
-		// an entry must have two members in the group
-		if len(ent.group) == 0 {
-			for fs, info := range sub {
-				linkCandidate := ent.filter
-				// check if fs is a subset of the linkCandidate
-				if strings.HasPrefix(fs, linkCandidate) &&
-					fs != linkCandidate { // they shouldn't be the same
-					if sub[linkCandidate].Subset == nil {
-						sub[linkCandidate].Subset = &Subscriptions{fs: info}
-					} else {
-						(*sub[linkCandidate].Subset)[fs] = info
-					}
-					// recursively link the subset
-					sub[linkCandidate].Subset.linkSubset()
-					// also, add the subset's EntropyValue to the link's
-					sub[linkCandidate].EntropyValue += info.EntropyValue
-					// finaly delete the filter from the upper Subscriptions
-					delete(sub, fs)
+		for fs, info := range sub {
+			linkCandidate := ent.filter
+			// check if fs is a subset of the linkCandidate
+			if strings.HasPrefix(fs, linkCandidate) &&
+				fs != linkCandidate { // they shouldn't be the same
+				if sub[linkCandidate].Subset == nil {
+					sub[linkCandidate].Subset = &Subscriptions{fs: info}
+				} else {
+					(*sub[linkCandidate].Subset)[fs] = info
 				}
+				// recursively link the subset
+				sub[linkCandidate].Subset.linkSubset()
+				// finaly delete the filter from the upper Subscriptions
+				delete(sub, fs)
 			}
 		}
 	}
 	return
+}
+
+func recalculateEntropyValue(sub *Subscriptions) float64 {
+	ev := float64(0)
+	for _, fs := range sub.keys() {
+		if (*sub)[fs].Subset != nil {
+			(*sub)[fs].EntropyValue += recalculateEntropyValue((*sub)[fs].Subset)
+		}
+		ev += (*sub)[fs].EntropyValue
+	}
+	return ev
 }
 
 func (sub Subscriptions) print(writer io.Writer, indent int) {

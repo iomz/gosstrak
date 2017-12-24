@@ -35,26 +35,6 @@ func TestSubscriptions_keys(t *testing.T) {
 	}
 }
 
-/*
-func TestSubscriptions_linkSubset(t *testing.T) {
-	tests := []struct {
-		name string
-		sub  Subscriptions
-		args args
-		want Subscriptions
-	}{
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.sub.linkSubset()
-			if !reflect.DeepEqual(tt.sub, tt.want) {
-				t.Errorf("Subscriptions.linkSubset() -> \n%v, want \n%v", tt.sub.Dump(), tt.want.Dump())
-			}
-		})
-	}
-}
-*/
-
 func TestSubscriptions_Dump(t *testing.T) {
 	tests := []struct {
 		name string
@@ -88,13 +68,12 @@ func TestSubscriptions_linkSubset(t *testing.T) {
 				"001100110000": &Info{"3-3-0", 5, nil},
 			},
 			Subscriptions{
-				"0011": &Info{"3", 25,
+				"0011": &Info{"3", 10,
 					&Subscriptions{
 						"00110000": &Info{"3-0", 5, nil},
-						"00110011": &Info{"3-3", 10, &Subscriptions{
+						"00110011": &Info{"3-3", 5, &Subscriptions{
 							"001100110000": &Info{"3-3-0", 5, nil},
-						},
-						},
+						}},
 					},
 				},
 				"1111": &Info{"15", 2, nil},
@@ -129,6 +108,37 @@ func TestSubscriptions_print(t *testing.T) {
 			tt.sub.print(writer, tt.args.indent)
 			if gotWriter := writer.String(); gotWriter != tt.wantWriter {
 				t.Errorf("Subscriptions.print() = %v, want %v", gotWriter, tt.wantWriter)
+			}
+		})
+	}
+}
+
+func Test_recalculateEntropyValue(t *testing.T) {
+	type args struct {
+		sub *Subscriptions
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		{
+			"15",
+			args{
+				&Subscriptions{
+					"00110000": &Info{"3-0", 5, nil},
+					"00110011": &Info{"3-3", 5, &Subscriptions{
+						"001100110000": &Info{"3-3-0", 5, nil},
+					}},
+				},
+			},
+			float64(15),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := recalculateEntropyValue(tt.args.sub); got != tt.want {
+				t.Errorf("recalculateEntropyValue() = %v, want %v", got, tt.want)
 			}
 		})
 	}
