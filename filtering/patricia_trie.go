@@ -250,7 +250,7 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 }
 
 // BuildPatriciaTrie builds PatriciaTrie from filter.Subscriptions
-// returns the pointer to the entry node
+// returns the pointer to the node node
 func BuildPatriciaTrie(sub Subscriptions) *PatriciaTrie {
 	p1 := lcp(sub.keys())
 	if len(p1) == 0 {

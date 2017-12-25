@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func Test_entry_equal(t *testing.T) {
+func Test_node_equal(t *testing.T) {
 	type fields struct {
 		filter          string
 		offset          int
@@ -18,99 +18,99 @@ func Test_entry_equal(t *testing.T) {
 		p               float64
 	}
 	type args struct {
-		want *entry
+		want *node
 	}
 	tests := []struct {
 		name       string
 		fields     fields
 		args       args
 		wantOk     bool
-		wantGot    *entry
-		wantWanted *entry
+		wantGot    *node
+		wantWanted *node
 	}{
 		{
-			"entry.equal simple test true",
+			"node.equal simple test true",
 			fields{"1111", 0, "15", 15},
 			args{
-				&entry{"1111", 0, "15", 15},
+				&node{"1111", 0, "15", 15},
 			},
 			true, nil, nil,
 		},
 		{
-			"entry.equal simple test false",
+			"node.equal simple test false",
 			fields{"1010", 0, "10", 10},
 			args{
-				&entry{"1111", 0, "15", 15},
+				&node{"1111", 0, "15", 15},
 			},
 			false,
-			&entry{"1010", 0, "10", 10},
-			&entry{"1111", 0, "15", 15},
+			&node{"1010", 0, "10", 10},
+			&node{"1111", 0, "15", 15},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ent := &entry{
+			nd := &node{
 				filter:          tt.fields.filter,
 				offset:          tt.fields.offset,
 				notificationURI: tt.fields.notificationURI,
 				p:               tt.fields.p,
 			}
-			gotOk, gotGot, gotWanted := ent.equal(tt.args.want)
+			gotOk, gotGot, gotWanted := nd.equal(tt.args.want)
 			if gotOk != tt.wantOk {
-				t.Errorf("entry.equal() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("node.equal() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
 			if !reflect.DeepEqual(gotGot, tt.wantGot) {
-				t.Errorf("entry.equal() gotGot = %v, want %v", gotGot, tt.wantGot)
+				t.Errorf("node.equal() gotGot = %v, want %v", gotGot, tt.wantGot)
 			}
 			if !reflect.DeepEqual(gotWanted, tt.wantWanted) {
-				t.Errorf("entry.equal() gotWanted = %v, want %v", gotWanted, tt.wantWanted)
+				t.Errorf("node.equal() gotWanted = %v, want %v", gotWanted, tt.wantWanted)
 			}
 		})
 	}
 }
 
-func TestHuffmanCodes_sortByP(t *testing.T) {
+func TestNodes_sortByP(t *testing.T) {
 	tests := []struct {
 		name string
-		hc   *HuffmanCodes
-		want *HuffmanCodes
+		nds  *Nodes
+		want *Nodes
 	}{
 		{
 			"0011,0001,1111,1100 -> 0001,0011,1100,1111",
-			&HuffmanCodes{
-				&entry{"0011", 0, "3", 3},
-				&entry{"0001", 0, "1", 1},
-				&entry{"1111", 0, "15", 15},
-				&entry{"1100", 0, "12", 12},
+			&Nodes{
+				&node{"0011", 0, "3", 3},
+				&node{"0001", 0, "1", 1},
+				&node{"1111", 0, "15", 15},
+				&node{"1100", 0, "12", 12},
 			},
-			&HuffmanCodes{
-				&entry{"1111", 0, "15", 15},
-				&entry{"1100", 0, "12", 12},
-				&entry{"0011", 0, "3", 3},
-				&entry{"0001", 0, "1", 1},
+			&Nodes{
+				&node{"1111", 0, "15", 15},
+				&node{"1100", 0, "12", 12},
+				&node{"0011", 0, "3", 3},
+				&node{"0001", 0, "1", 1},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.hc.sortByP()
-			for i, g := range *tt.hc {
+			tt.nds.sortByP()
+			for i, g := range *tt.nds {
 				if ok, got, wanted := g.equal((*tt.want)[i]); !ok {
-					t.Errorf("HuffmanCodes.sortByP() = \n%v, want \n%v", *got, *wanted)
+					t.Errorf("Nodes.sortByP() = \n%v, want \n%v", *got, *wanted)
 				}
 			}
 		})
 	}
 }
 
-func TestNewHuffmanCodes(t *testing.T) {
+func TestNewNodes(t *testing.T) {
 	type args struct {
 		sub *Subscriptions
 	}
 	tests := []struct {
 		name string
 		args args
-		want *HuffmanCodes
+		want *Nodes
 	}{
 		{
 			"0011,0000,1111,1100",
@@ -122,20 +122,20 @@ func TestNewHuffmanCodes(t *testing.T) {
 					"1100": &Info{0, "12", 12, &Subscriptions{}},
 				},
 			},
-			&HuffmanCodes{
-				&entry{"1111", 0, "15", 15},
-				&entry{"1100", 0, "12", 12},
-				&entry{"0011", 0, "3", 3},
-				&entry{"0001", 0, "1", 1},
+			&Nodes{
+				&node{"1111", 0, "15", 15},
+				&node{"1100", 0, "12", 12},
+				&node{"0011", 0, "3", 3},
+				&node{"0001", 0, "1", 1},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewHuffmanCodes(tt.args.sub)
+			got := NewNodes(tt.args.sub)
 			for i, w := range *tt.want {
 				if !reflect.DeepEqual(*(*got)[i], *w) {
-					t.Errorf("NewHuffmanCodes() = \n%v, want \n%v", *(*got)[i], *w)
+					t.Errorf("NewNodes() = \n%v, want \n%v", *(*got)[i], *w)
 				}
 			}
 		})

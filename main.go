@@ -70,9 +70,9 @@ var (
 	cmdPatricia = app.
 			Command("patricia", "Use Patricia Trie filtering engine.")
 
-	// huffman command
-	cmdHuffman = app.
-			Command("huffman", "Use Huffman Tree filtering engine.")
+	// obst command
+	cmdOBST = app.
+		Command("obst", "Use Optimal Binary Search Tree filtering engine.")
 
 	// list command
 	cmdList = app.
@@ -181,7 +181,7 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 			// prefix as key, *filtering.Info as value
 			sub[record[1]] = &filtering.Info{Offset: 0, NotificationURI: record[0], EntropyValue: 0, Subset: nil}
 		} else {
-			// For HuffmanTree, filter with EntropyValue
+			// For OptimalBST, filter with EntropyValue
 			// prefix as key, *filtering.Info as value
 			pValue, err := strconv.ParseFloat(record[2], 64)
 			if err != nil {
@@ -195,15 +195,15 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 	return sub
 }
 
-func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *filtering.HuffmanTree {
-	var head *filtering.HuffmanTree
+func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *filtering.OptimalBST {
+	var head *filtering.OptimalBST
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildHuffmanTree(&sub)
+		head = filtering.BuildOptimalBST(&sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -216,11 +216,11 @@ func loadHuffmanTree(filterFile string, engineFile string, isRebuilding bool) *f
 		}
 		file.Write(tree.Bytes())
 		file.Close()
-		log.Print("Saved the Huffman Tree filtering engine to ", engineFile)
+		log.Print("Saved the Optimal BST filtering engine to ", engineFile)
 	} else {
 		// Tree decode
 		binutil.Load(engineFile, &head)
-		log.Print("Loaded the Huffman Tree filtering engine from ", engineFile)
+		log.Print("Loaded the Optimal BST filtering engine from ", engineFile)
 	}
 	return head
 }
@@ -331,8 +331,8 @@ func main() {
 	case cmdPatricia.FullCommand():
 		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
-	case cmdHuffman.FullCommand():
-		head := loadHuffmanTree(*filterFile, *engineFile, *isRebuilding)
+	case cmdOBST.FullCommand():
+		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
 	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
@@ -343,9 +343,9 @@ func main() {
 		runDumb(*idFile, sub)
 	case cmdAnalyze.FullCommand():
 		switch strings.ToLower(*analyzeEngine) {
-		case "huffman":
-			head := loadHuffmanTree(*filterFile, *engineFile, false)
-			aoFile := getPackagePath() + "/public/huffman/locality.json"
+		case "obst":
+			head := loadOptimalBST(*filterFile, *engineFile, false)
+			aoFile := getPackagePath() + "/public/obst/locality.json"
 			analyze(head, *analyzeInput, aoFile)
 		case "patricia":
 			head := loadPatriciaTrie(*filterFile, *engineFile, false)

@@ -44,10 +44,10 @@ func (sub Subscriptions) keys() []string {
 
 // linkSubset finds subsets and nest them under the parents
 func (sub Subscriptions) linkSubset() {
-	hc := *NewHuffmanCodes(&sub)
-	for _, ent := range hc {
+	nds := *NewNodes(&sub)
+	for _, nd := range nds {
 		for fs, info := range sub {
-			linkCandidate := ent.filter
+			linkCandidate := nd.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
