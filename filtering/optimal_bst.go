@@ -238,12 +238,14 @@ func BuildOptimalBST(sub *Subscriptions) *OptimalBST {
 	// make subsets to the child subscriptions of the corresponding parents
 	sub.linkSubset()
 
+	/*
 	// recalculate the cumulative evs if it has subset subscriptions
 	for _, info := range *sub {
 		if info.Subset != nil {
 			info.EntropyValue += recalculateEntropyValue(info.Subset)
 		}
 	}
+	*/
 
 	nds := NewNodes(sub)
 	obst := &OptimalBST{}
