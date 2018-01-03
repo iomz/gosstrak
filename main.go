@@ -66,22 +66,6 @@ var (
 			Default("false").
 			Bool()
 
-	// patricia command
-	cmdPatricia = app.
-			Command("patricia", "Use Patricia Trie filtering engine.")
-
-	// obst command
-	cmdOBST = app.
-		Command("obst", "Use Optimal Binary Search Tree filtering engine.")
-
-	// list command
-	cmdList = app.
-		Command("list", "Use list of byte filtering engine.")
-
-	// dumb command
-	cmdDumb = app.
-		Command("dumb", "Run in dumb filter mode.")
-
 	// analyze command
 	cmdAnalyze = app.
 			Command("analyze", "Analyze the tree node reference locality.")
@@ -93,6 +77,26 @@ var (
 			Flag("analyze-input", "A gob file contains results in NotifyMap.").
 			Default(dataCacheDir + "/out.gob").
 			String()
+
+	// dumb command
+	cmdDumb = app.
+		Command("dumb", "Run in dumb filter mode.")
+
+	// list command
+	cmdList = app.
+		Command("list", "Use list of byte filtering engine.")
+
+	// obst command
+	cmdOBST = app.
+		Command("obst", "Use Optimal Binary Search Tree filtering engine.")
+
+	// patricia command
+	cmdPatricia = app.
+			Command("patricia", "Use Patricia Trie filtering engine.")
+
+	// obst command
+	cmdSplay = app.
+			Command("splay", "Use Splay Tree filtering engine.")
 )
 
 func analyze(head filtering.Engine, inFile string, outFile string) {
@@ -195,36 +199,6 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 	return sub
 }
 
-func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *filtering.OptimalBST {
-	var head *filtering.OptimalBST
-	// Tree encode
-	_, err := os.Stat(engineFile)
-	if isRebuilding || os.IsNotExist(err) {
-		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
-		var tree bytes.Buffer
-		head = filtering.BuildOptimalBST(&sub)
-		enc := gob.NewEncoder(&tree)
-		err = enc.Encode(head)
-		if err != nil {
-			log.Fatal("encode:", err)
-		}
-		// Save to file
-		file, err := os.Create(engineFile)
-		if err != nil {
-			log.Fatal("file:", err)
-		}
-		file.Write(tree.Bytes())
-		file.Close()
-		log.Print("Saved the Optimal BST filtering engine to ", engineFile)
-	} else {
-		// Tree decode
-		binutil.Load(engineFile, &head)
-		log.Print("Loaded the Optimal BST filtering engine from ", engineFile)
-	}
-	return head
-}
-
 func loadList(filterFile string, engineFile string, isRebuilding bool) *filtering.List {
 	var list *filtering.List
 	// List encode
@@ -258,6 +232,36 @@ func loadList(filterFile string, engineFile string, isRebuilding bool) *filterin
 	return list
 }
 
+func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *filtering.OptimalBST {
+	var head *filtering.OptimalBST
+	// Tree encode
+	_, err := os.Stat(engineFile)
+	if isRebuilding || os.IsNotExist(err) {
+		sub := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		var tree bytes.Buffer
+		head = filtering.BuildOptimalBST(&sub)
+		enc := gob.NewEncoder(&tree)
+		err = enc.Encode(head)
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+		// Save to file
+		file, err := os.Create(engineFile)
+		if err != nil {
+			log.Fatal("file:", err)
+		}
+		file.Write(tree.Bytes())
+		file.Close()
+		log.Print("Saved the Optimal BST filtering engine to ", engineFile)
+	} else {
+		// Tree decode
+		binutil.Load(engineFile, &head)
+		log.Print("Loaded the Optimal BST filtering engine from ", engineFile)
+	}
+	return head
+}
+
 func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *filtering.PatriciaTrie {
 	var head *filtering.PatriciaTrie
 	// Tree encode
@@ -287,6 +291,39 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 			log.Fatal("engine: ", err)
 		}
 		log.Print("Loaded the Patricia Trie filtering engine from ", engineFile)
+	}
+	return head
+}
+
+func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *filtering.SplayTree {
+	var head *filtering.SplayTree
+	// Tree encode
+	_, err := os.Stat(engineFile)
+	if isRebuilding || os.IsNotExist(err) {
+		sub := loadFiltersFromCSVFile(filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		var tree bytes.Buffer
+		head = filtering.BuildSplayTree(&sub)
+		enc := gob.NewEncoder(&tree)
+		err = enc.Encode(head)
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+		// Save to file
+		file, err := os.Create(engineFile)
+		if err != nil {
+			log.Fatal("file:", err)
+		}
+		file.Write(tree.Bytes())
+		file.Close()
+		log.Print("Saved the Splay Tree filtering engine to ", engineFile)
+	} else {
+		// Tree decode
+		err = binutil.Load(engineFile, &head)
+		if err != nil {
+			log.Fatal("engine: ", err)
+		}
+		log.Print("Loaded the Splay Tree filtering engine from ", engineFile)
 	}
 	return head
 }
@@ -328,19 +365,6 @@ func main() {
 	}
 
 	switch parse {
-	case cmdPatricia.FullCommand():
-		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, head, *outFile)
-	case cmdOBST.FullCommand():
-		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, head, *outFile)
-	case cmdList.FullCommand():
-		list := loadList(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, list, *outFile)
-	case cmdDumb.FullCommand():
-		sub := loadFiltersFromCSVFile(*filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
-		runDumb(*idFile, sub)
 	case cmdAnalyze.FullCommand():
 		switch strings.ToLower(*analyzeEngine) {
 		case "obst":
@@ -352,5 +376,21 @@ func main() {
 			aoFile := getPackagePath() + "/public/patricia/locality.json"
 			analyze(head, *analyzeInput, aoFile)
 		}
+	case cmdDumb.FullCommand():
+		sub := loadFiltersFromCSVFile(*filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
+		runDumb(*idFile, sub)
+	case cmdList.FullCommand():
+		list := loadList(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, list, *outFile)
+	case cmdOBST.FullCommand():
+		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, head, *outFile)
+	case cmdPatricia.FullCommand():
+		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, head, *outFile)
+	case cmdSplay.FullCommand():
+		head := loadSplayTree(*filterFile, *engineFile, *isRebuilding)
+		execute(*idFile, head, *outFile)
 	}
 }
