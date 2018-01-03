@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/iomz/go-llrp/binutil"
@@ -58,6 +59,12 @@ func readIDsFromCSV(inputFile string) *[][]byte {
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 	ids := readIDsFromCSV(*inFile)
-	binutil.Save(*outFile, ids)
-	log.Printf("Saved %v ids in %v\n", len(*ids), *outFile)
+	// Shuffle IDs
+	dest := make([][]byte, len(*ids))
+	perm := rand.Perm(len(*ids))
+	for i, v := range perm {
+	    dest[v] = (*ids)[i]
+	}
+	binutil.Save(*outFile, &dest)
+	log.Printf("Saved %v ids in %v\n", len(dest), *outFile)
 }
