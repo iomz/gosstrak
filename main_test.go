@@ -28,7 +28,7 @@ func Benchmark_runDumb(b *testing.B) {
 func Benchmark_runPatricia(b *testing.B) {
 	head := loadPatriciaTrie("filters.csv", "", true)
 	b.ResetTimer()
-	execute("ids.gob", head, "out.gob")
+	execute("ids.gob", head, "out.gob", false)
 }
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {
