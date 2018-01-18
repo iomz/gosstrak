@@ -10,9 +10,303 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak-fc/filtering"
 )
 
+func Benchmark_buildList15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	b.ResetTimer()
+	filtering.BuildList(sub)
+}
+
+func Benchmark_buildPatricia15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	b.ResetTimer()
+	filtering.BuildPatriciaTrie(sub)
+}
+
+func Benchmark_buildOBST15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	b.ResetTimer()
+	filtering.BuildOptimalBST(&sub)
+}
+
+func Benchmark_buildSplay15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	b.ResetTimer()
+	filtering.BuildSplayTree(&sub)
+}
+
+func Benchmark_buildList148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	b.ResetTimer()
+	filtering.BuildList(sub)
+}
+
+func Benchmark_buildPatricia148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	b.ResetTimer()
+	filtering.BuildPatriciaTrie(sub)
+}
+
+func Benchmark_buildOBST148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	b.ResetTimer()
+	filtering.BuildOptimalBST(&sub)
+}
+
+func Benchmark_buildSplay148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	b.ResetTimer()
+	filtering.BuildSplayTree(&sub)
+}
+
+func Benchmark_buildList44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	b.ResetTimer()
+	filtering.BuildList(sub)
+}
+
+/* Run too long
+func Benchmark_buildPatricia44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	b.ResetTimer()
+	filtering.BuildPatriciaTrie(sub)
+}
+*/
+
+func Benchmark_buildOBST44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	b.ResetTimer()
+	filtering.BuildOptimalBST(&sub)
+}
+
+func Benchmark_buildSplay44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	b.ResetTimer()
+	filtering.BuildSplayTree(&sub)
+}
+
+func Benchmark_filterList15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	engine := filtering.BuildList(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/15915-4763/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterPatricia15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	engine := filtering.BuildPatriciaTrie(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/15915-4763/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterOBST15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	engine := filtering.BuildOptimalBST(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/15915-4763/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterSplay15915_4763(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
+	engine := filtering.BuildSplayTree(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/15915-4763/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterList148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	engine := filtering.BuildList(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/148825-721/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterPatricia148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	engine := filtering.BuildPatriciaTrie(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/148825-721/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterOBST148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	engine := filtering.BuildOptimalBST(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/148825-721/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterSplay148825_721(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
+	engine := filtering.BuildSplayTree(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/148825-721/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterList44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	engine := filtering.BuildList(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/44456-47561/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+/* Run too long
+func Benchmark_filterPatricia44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	engine := filtering.BuildPatriciaTrie(sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/44456-47561/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+*/
+
+func Benchmark_filterOBST44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	engine := filtering.BuildOptimalBST(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/44456-47561/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+func Benchmark_filterSplay44456_47561(b *testing.B) {
+	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
+	engine := filtering.BuildSplayTree(&sub)
+	ids := new([][]byte)
+	binutil.Load("scenarios/44456-47561/ids.gob", ids)
+	notifies := filtering.NotifyMap{}
+	b.ResetTimer()
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
+			}
+			notifies[n] = append(notifies[n], id)
+		}
+	}
+}
+
+/*
 func Benchmark_BuildPatriciaTrie(b *testing.B) {
 	fm := loadFiltersFromCSVFile("filters.csv")
 	b.ResetTimer()
@@ -30,6 +324,7 @@ func Benchmark_runPatricia(b *testing.B) {
 	b.ResetTimer()
 	execute("ids.gob", head, "out.gob", false)
 }
+*/
 
 func Test_loadFiltersFromCSVFile(t *testing.T) {
 	type args struct {
