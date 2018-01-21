@@ -11,7 +11,6 @@ import (
 	"encoding/gob"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path"
