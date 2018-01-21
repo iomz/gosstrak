@@ -66,10 +66,6 @@ var (
 			Short('r').
 			Default("false").
 			Bool()
-	randomize = app.
-			Flag("random", "Randomize id order.").
-			Default("false").
-			Bool()
 
 	// analyze command
 	cmdAnalyze = app.
@@ -126,7 +122,7 @@ func analyze(head filtering.Engine, inFile string, outFile string) {
 	log.Print("Saved the result to ", outFile)
 }
 
-func execute(idFile string, engine filtering.Engine, outFile string, randomize bool) {
+func execute(idFile string, engine filtering.Engine, outFile string) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
 		// if ids.csv exists, use gobencids command
@@ -146,31 +142,13 @@ func execute(idFile string, engine filtering.Engine, outFile string, randomize b
 	}
 	notifies := filtering.NotifyMap{}
 
-	if randomize {
-		// Shuffle IDs
-		dest := make([][]byte, len(*ids))
-		perm := rand.Perm(len(*ids))
-		for i, v := range perm {
-			dest[v] = (*ids)[i]
-		}
-		for _, id := range dest {
-			matches := engine.Search(id)
-			for _, n := range matches {
-				if _, ok := notifies[n]; !ok {
-					notifies[n] = [][]byte{}
-				}
-				notifies[n] = append(notifies[n], id)
+	for _, id := range *ids {
+		matches := engine.Search(id)
+		for _, n := range matches {
+			if _, ok := notifies[n]; !ok {
+				notifies[n] = [][]byte{}
 			}
-		}
-	} else {
-		for _, id := range *ids {
-			matches := engine.Search(id)
-			for _, n := range matches {
-				if _, ok := notifies[n]; !ok {
-					notifies[n] = [][]byte{}
-				}
-				notifies[n] = append(notifies[n], id)
-			}
+			notifies[n] = append(notifies[n], id)
 		}
 	}
 
@@ -407,15 +385,15 @@ func main() {
 		runDumb(*idFile, sub)
 	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, list, *outFile, *randomize)
+		execute(*idFile, list, *outFile)
 	case cmdOBST.FullCommand():
 		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, head, *outFile, *randomize)
+		execute(*idFile, head, *outFile)
 	case cmdPatricia.FullCommand():
 		head := loadPatriciaTrie(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, head, *outFile, *randomize)
+		execute(*idFile, head, *outFile)
 	case cmdSplay.FullCommand():
 		head := loadSplayTree(*filterFile, *engineFile, *isRebuilding)
-		execute(*idFile, head, *outFile, *randomize)
+		execute(*idFile, head, *outFile)
 	}
 }
