@@ -45,6 +45,7 @@ func (lm LocalityMap) ToJSON() []byte {
 	return res
 }
 
+// LocalityPair contains the NotificationURI and the Locality for the node
 type LocalityPair struct {
 	NotificationURI string
 	Locality        int
