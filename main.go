@@ -7,10 +7,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/csv"
 	"encoding/gob"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -18,9 +20,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak-fc/filtering"
 	"gopkg.in/alecthomas/kingpin.v2"
+)
+
+// Constant Values
+const (
+	// BufferSize is a general size for a buffer
+	BufferSize = 512
 )
 
 // Environmental variables
@@ -65,6 +74,22 @@ var (
 			Short('r').
 			Default("false").
 			Bool()
+	// LLRP related values
+	initialMessageID = app.
+				Flag("initialMessageID", "The initial messageID to start from.").
+				Short('m').
+				Default("1000").
+				Int()
+	ip = app.
+		Flag("ip", "LLRP listening address.").
+		Short('a').
+		Default("0.0.0.0").
+		IP()
+	port = app.
+		Flag("port", "LLRP listening port.").
+		Short('p').
+		Default("5084").
+		Int()
 
 	// analyze command
 	cmdAnalyze = app.
@@ -97,6 +122,13 @@ var (
 	// obst command
 	cmdSplay = app.
 			Command("splay", "Use Splay Tree filtering engine.")
+
+	// run command
+	cmdRun = app.
+		Command("run", "Run the F&C middleware.")
+
+	// Current messageID
+	messageID = uint32(*initialMessageID)
 )
 
 func analyze(head filtering.Engine, inFile string, outFile string) {
@@ -330,6 +362,79 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 	return head
 }
 
+func run(filterFile string, engineFile string) {
+	log.Println("Initializing gosstrak-fc middleware...")
+
+	/* Build the filtering engine */
+	engine := loadPatriciaTrie(filterFile, engineFile, true)
+
+	/* Initialize the LLRP connection */
+	// Establish a connection to the llrp client
+	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
+	if err != nil {
+		log.Fatal("connection:", err)
+	}
+	buf := make([]byte, BufferSize)
+	for {
+		// Read the incoming connection into the buffer.
+		msgLength, err := conn.Read(buf)
+		if err == io.EOF {
+			// Close the connection when you're done with it.
+			return
+		} else if err != nil {
+			log.Fatal(err.Error())
+			conn.Close()
+			break
+		}
+
+		header := binary.BigEndian.Uint16(buf[:2])
+		if header == llrp.ReaderEventNotificationHeader {
+			log.Println(">>> READER_EVENT_NOTIFICATION")
+			conn.Write(llrp.SetReaderConfig(messageID))
+		} else if header == llrp.KeepaliveHeader {
+			log.Println(">>> KEEP_ALIVE")
+			conn.Write(llrp.KeepaliveAck())
+		} else if header == llrp.SetReaderConfigResponseHeader {
+			log.Println(">>> SET_READER_CONFIG_RESPONSE")
+		} else if header == llrp.ROAccessReportHeader {
+			log.Println(">>> RO_ACCESS_REPORT")
+			roarSize := uint16(binary.BigEndian.Uint32(buf[2:6])) // ROAR size
+			log.Println(roarSize)
+			trds := buf[10:roarSize]                      // TRD stack
+			trdSize := binary.BigEndian.Uint16(trds[2:4]) // First TRD size
+			offset := uint16(0)
+			for trdSize != 0 {
+				log.Printf("trdSize: %v, len(trds): %v\n", trdSize, len(trds))
+				var id []byte
+				if trds[offset+4] == 141 { // EPC-96
+					id = trds[offset+1 : offset+13]
+					log.Printf("EPC: %v\n", id)
+				} else if binary.BigEndian.Uint16(trds[offset+4:offset+6]) == 241 {
+					log.Printf("non-EPC: %v\n", trds[offset:])
+					epcDataSize := binary.BigEndian.Uint16(trds[offset+6 : offset+8])
+					epcLengthBits := binary.BigEndian.Uint16(trds[offset+8 : offset+10])
+					id = trds[offset+10 : offset+epcDataSize*2]
+					id = id[0 : epcLengthBits/8]
+					log.Printf("non-EPC: %v\n", id)
+				}
+				//matches := engine.Search(id)
+				_ = engine.Search(id)
+
+				offset += trdSize
+				log.Printf("offset: %v\n", offset)
+				if offset != roarSize {
+					trdSize = binary.BigEndian.Uint16(trds[offset+2 : offset+4])
+				} else {
+					trdSize = 0
+				}
+			}
+		} else {
+			log.Fatalf("Unknown header: %v\n", header)
+			log.Fatalf("%v\n", buf[:msgLength])
+		}
+	}
+}
+
 func runDumb(idFile string, sub filtering.Subscriptions) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
@@ -394,5 +499,7 @@ func main() {
 	case cmdSplay.FullCommand():
 		head := loadSplayTree(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
+	case cmdRun.FullCommand():
+		run(*filterFile, *engineFile)
 	}
 }
