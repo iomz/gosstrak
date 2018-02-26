@@ -29,7 +29,7 @@ import (
 // Constant Values
 const (
 	// BufferSize is a general size for a buffer
-	BufferSize = 512
+	BufferSize = 10240
 )
 
 // Environmental variables
@@ -399,34 +399,34 @@ func run(filterFile string, engineFile string) {
 		} else if header == llrp.ROAccessReportHeader {
 			log.Println(">>> RO_ACCESS_REPORT")
 			roarSize := uint16(binary.BigEndian.Uint32(buf[2:6])) // ROAR size
-			log.Println(roarSize)
+			//log.Println(roarSize)
 			trds := buf[10:roarSize]                      // TRD stack
 			trdSize := binary.BigEndian.Uint16(trds[2:4]) // First TRD size
 			offset := uint16(0)
-			for trdSize != 0 {
+			for trdSize != 0 && int(offset) != len(trds) {
 				log.Printf("trdSize: %v, len(trds): %v\n", trdSize, len(trds))
 				var id []byte
 				if trds[offset+4] == 141 { // EPC-96
-					id = trds[offset+1 : offset+13]
+					id = trds[offset+5 : offset+17]
 					log.Printf("EPC: %v\n", id)
 				} else if binary.BigEndian.Uint16(trds[offset+4:offset+6]) == 241 {
-					log.Printf("non-EPC: %v\n", trds[offset:])
 					epcDataSize := binary.BigEndian.Uint16(trds[offset+6 : offset+8])
 					epcLengthBits := binary.BigEndian.Uint16(trds[offset+8 : offset+10])
 					id = trds[offset+10 : offset+epcDataSize*2]
 					id = id[0 : epcLengthBits/8]
 					log.Printf("non-EPC: %v\n", id)
 				}
-				//matches := engine.Search(id)
-				_ = engine.Search(id)
+				matches := engine.Search(id)
+				//_ = engine.Search(id)
 
 				offset += trdSize
-				log.Printf("offset: %v\n", offset)
-				if offset != roarSize {
+				//log.Printf("offset: %v\n", offset)
+				if offset != roarSize && int(trdSize) != len(trds) {
 					trdSize = binary.BigEndian.Uint16(trds[offset+2 : offset+4])
 				} else {
 					trdSize = 0
 				}
+				log.Printf("%v matches", len(matches))
 			}
 		} else {
 			log.Fatalf("Unknown header: %v\n", header)
