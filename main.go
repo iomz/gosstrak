@@ -368,6 +368,7 @@ func run(filterFile string, engineFile string) {
 	/* Build the filtering engine */
 	engine := loadPatriciaTrie(filterFile, engineFile, true)
 
+llrpinit:
 	/* Initialize the LLRP connection */
 	// Establish a connection to the llrp client
 	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
@@ -404,17 +405,17 @@ func run(filterFile string, engineFile string) {
 			trdSize := binary.BigEndian.Uint16(trds[2:4]) // First TRD size
 			offset := uint16(0)
 			for trdSize != 0 && int(offset) != len(trds) {
-				log.Printf("trdSize: %v, len(trds): %v\n", trdSize, len(trds))
+				//log.Printf("trdSize: %v, len(trds): %v\n", trdSize, len(trds))
 				var id []byte
 				if trds[offset+4] == 141 { // EPC-96
 					id = trds[offset+5 : offset+17]
-					log.Printf("EPC: %v\n", id)
+					//log.Printf("EPC: %v\n", id)
 				} else if binary.BigEndian.Uint16(trds[offset+4:offset+6]) == 241 {
 					epcDataSize := binary.BigEndian.Uint16(trds[offset+6 : offset+8])
 					epcLengthBits := binary.BigEndian.Uint16(trds[offset+8 : offset+10])
 					id = trds[offset+10 : offset+epcDataSize*2]
 					id = id[0 : epcLengthBits/8]
-					log.Printf("non-EPC: %v\n", id)
+					//log.Printf("non-EPC: %v\n", id)
 				}
 				matches := engine.Search(id)
 				//_ = engine.Search(id)
@@ -426,11 +427,12 @@ func run(filterFile string, engineFile string) {
 				} else {
 					trdSize = 0
 				}
-				log.Printf("%v matches", len(matches))
+				log.Printf("%v", matches)
 			}
 		} else {
 			log.Fatalf("Unknown header: %v\n", header)
 			log.Fatalf("%v\n", buf[:msgLength])
+			goto llrpinit
 		}
 	}
 }
