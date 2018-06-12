@@ -41,7 +41,7 @@ func Test_readIDsFromCSV(t *testing.T) {
 		want *[][]byte
 	}{
 		{"SGTIN-96_3_3_458960468_102_1",
-			args{os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak-fc/testdata/ids.csv"},
+			args{os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/testdata/ids.csv"},
 			&[][]byte{{48, 109, 181, 178, 229, 64, 25, 128, 0, 0, 0, 1}},
 		},
 	}

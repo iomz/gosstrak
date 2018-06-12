@@ -24,3 +24,6 @@ exp/
 # temporary files
 *.bak
 *.tmp
+
+# vendoring files
+vendor/

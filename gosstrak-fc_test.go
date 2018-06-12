@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/iomz/go-llrp/binutil"
-	"github.com/iomz/gosstrak-fc/filtering"
+	"github.com/iomz/gosstrak/filtering"
 )
 
 // Build engines -----------------------------------------------------
@@ -568,7 +568,7 @@ func Test_getPackagePath(t *testing.T) {
 		name string
 		want string
 	}{
-		{"os.Getenv(\"GOPATH\") + \"/src/github.com/iomz/gosstrak-fc\"", os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak-fc"},
+		{"os.Getenv(\"GOPATH\") + \"/src/github.com/iomz/gosstrak\"", os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

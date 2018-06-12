@@ -23,7 +23,7 @@ import (
 	"github.com/docker/libchan/spdy"
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
-	"github.com/iomz/gosstrak-fc/filtering"
+	"github.com/iomz/gosstrak/filtering"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -120,6 +120,10 @@ var (
 	// list command
 	cmdList = app.
 		Command("list", "Use list of byte filtering engine.")
+
+	// master command
+	cmdMaster = app.
+			Command("master", "Run gosstrak-fc in master mode.")
 
 	// obst command
 	cmdOBST = app.
@@ -503,6 +507,15 @@ llrpinit:
 	}
 }
 
+func runMaster() {
+	log.Println("Initializing gosstrak-fc for master mode...")
+
+	// Load existing subscriptions from file
+
+	// Load existing filtering engines from file
+
+}
+
 func runDumb(idFile string, sub filtering.Subscriptions) {
 	ids := new([][]byte)
 	if err := binutil.Load(idFile, ids); err != nil {
@@ -558,6 +571,8 @@ func main() {
 	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, list, *outFile)
+	case cmdMaster.FullCommand():
+		runMaster()
 	case cmdOBST.FullCommand():
 		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)
