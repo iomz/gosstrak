@@ -58,7 +58,7 @@ type schemeFiled struct {
 }
 */
 
-func (c *core) Translate(id []byte, pc []byte) (string, error) {
+func (c *core) Translate(pc []byte, id []byte) (string, error) {
 	if len(pc) != 2 {
 		return "", errors.New("Invalid PC bits")
 	}
@@ -241,17 +241,534 @@ func (c *core) buildEPC(id []byte) (string, error) {
 		z.SetBytes(ser)
 		urn += z.String()
 	case 49: // SSCC-96  00110001
+		if len(id) != 12 {
+			return "", errors.New("Invalid ID")
+		}
 		urn = "urn:epc:id:sscc:"
+		// FILTER
+		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		// PARTITION
+		partition := int((id[1] & 28) >> 2) // 28: 00011100
+		ptm := map[PartitionTableKey]int{}
+		for _, v := range SSCC96PartitionTable {
+			if v[PValue] == partition {
+				ptm = v
+				break
+			}
+		}
+		// COMPANY_PREFIX and Extension
+		z := new(big.Int)
+		switch ptm[CPBits] {
+		case 40:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			remainder = id[4] & 3
+			cp[3] = remainder<<6 | id[5]>>2
+			remainder = id[5] & 3
+			cp[4] = remainder<<6 | id[6]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 3) // 18 bits
+			remainder = id[6] & 3
+			ir[0] = remainder
+			ir[1] = id[7]
+			ir[2] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 37:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<3 | id[2]>>5
+			remainder = id[2] & 31
+			cp[1] = remainder<<3 | id[3]>>5
+			remainder = id[3] & 31
+			cp[2] = remainder<<3 | id[4]>>5
+			remainder = id[4] & 31
+			cp[3] = remainder<<3 | id[5]>>5
+			remainder = id[5] & 31
+			cp[4] = remainder<<3 | id[6]>>5
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 3) // 21 bits
+			remainder = id[6] & 31
+			ir[0] = remainder
+			ir[1] = id[7]
+			ir[2] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 34:
+			cp := make([]byte, 5)
+			cp[0] = id[1] & 3
+			cp[1] = id[2]
+			cp[2] = id[3]
+			cp[3] = id[4]
+			cp[4] = id[5]
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 3) // 24 bits
+			ir[0] = id[6]
+			ir[1] = id[7]
+			ir[2] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 30:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<4 | id[2]>>4
+			remainder = id[2] & 15
+			cp[1] = remainder<<4 | id[3]>>4
+			remainder = id[3] & 15
+			cp[2] = remainder<<4 | id[4]>>4
+			remainder = id[4] & 15
+			cp[3] = remainder<<4 | id[5]>>4
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 4) // 28 bits
+			remainder = id[5] & 15
+			ir[0] = remainder
+			ir[1] = id[6]
+			ir[2] = id[7]
+			ir[3] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 27:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<1 | id[2]>>7
+			remainder = id[2] & 127
+			cp[1] = remainder<<1 | id[3]>>7
+			remainder = id[3] & 127
+			cp[2] = remainder<<1 | id[4]>>7
+			remainder = id[4] & 127
+			cp[3] = remainder<<1 | id[5]>>7
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 4) // 31 bits
+			remainder = id[5] & 127
+			ir[0] = remainder
+			ir[1] = id[6]
+			ir[2] = id[7]
+			ir[3] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 24:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 5) // 34 bits
+			remainder = id[4] & 3
+			ir[0] = remainder
+			ir[1] = id[5]
+			ir[2] = id[6]
+			ir[3] = id[7]
+			ir[4] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		case 20:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<2 | id[2]>>6
+			remainder = id[2] & 63
+			cp[1] = remainder<<2 | id[3]>>6
+			remainder = id[3] & 63
+			cp[2] = remainder<<2 | id[4]>>6
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			ir := make([]byte, 5) // 38 bits
+			remainder = id[4] & 63
+			ir[0] = remainder
+			ir[1] = id[5]
+			ir[2] = id[6]
+			ir[3] = id[7]
+			ir[4] = id[8]
+			z.SetBytes(ir)
+			urn += z.String()
+		}
 	case 51: // GRAI-96  00110011
+		if len(id) != 12 {
+			return "", errors.New("Invalid ID")
+		}
 		urn = "urn:epc:id:grai:"
+		// FILTER
+		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		// PARTITION
+		partition := int((id[1] & 28) >> 2) // 28: 00011100
+		ptm := map[PartitionTableKey]int{}
+		for _, v := range GRAI96PartitionTable {
+			if v[PValue] == partition {
+				ptm = v
+				break
+			}
+		}
+		// COMPANY_PREFIX and ITEM_REFERENCE
+		z := new(big.Int)
+		switch ptm[CPBits] {
+		case 40:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			remainder = id[4] & 3
+			cp[3] = remainder<<6 | id[5]>>2
+			remainder = id[5] & 3
+			cp[4] = remainder<<6 | id[6]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 1) // 4 bits
+			remainder = id[6] & 3
+			at[0] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 37:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<3 | id[2]>>5
+			remainder = id[2] & 31
+			cp[1] = remainder<<3 | id[3]>>5
+			remainder = id[3] & 31
+			cp[2] = remainder<<3 | id[4]>>5
+			remainder = id[4] & 31
+			cp[3] = remainder<<3 | id[5]>>5
+			remainder = id[5] & 31
+			cp[4] = remainder<<3 | id[6]>>5
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 1) // 7 bits
+			remainder = id[6] & 31
+			at[0] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 34:
+			cp := make([]byte, 5)
+			cp[0] = id[1] & 3
+			cp[1] = id[2]
+			cp[2] = id[3]
+			cp[3] = id[4]
+			cp[4] = id[5]
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 2) // 10 bits
+			at[0] = id[6] >> 2
+			remainder := id[6] & 3
+			at[1] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 30:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<4 | id[2]>>4
+			remainder = id[2] & 15
+			cp[1] = remainder<<4 | id[3]>>4
+			remainder = id[3] & 15
+			cp[2] = remainder<<4 | id[4]>>4
+			remainder = id[4] & 15
+			cp[3] = remainder<<4 | id[5]>>4
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 2) // 14 bits
+			remainder = id[5] & 15
+			at[0] = remainder<<2 | id[6]>>6
+			remainder = id[6] & 63
+			at[1] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 27:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<1 | id[2]>>7
+			remainder = id[2] & 127
+			cp[1] = remainder<<1 | id[3]>>7
+			remainder = id[3] & 127
+			cp[2] = remainder<<1 | id[4]>>7
+			remainder = id[4] & 127
+			cp[3] = remainder<<1 | id[5]>>7
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 3) // 17 bits
+			remainder = id[5] & 127
+			at[0] = remainder >> 6
+			remainder = remainder & 63
+			at[1] = remainder<<2 | id[6]>>6
+			remainder = id[6] & 63
+			at[2] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 24:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 3) // 20 bits
+			remainder = id[4] & 3
+			at[0] = remainder<<2 | id[5]>>6
+			remainder = id[5] & 63
+			at[1] = remainder<<2 | id[6]>>6
+			remainder = id[6] & 63
+			at[2] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		case 20:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<2 | id[2]>>6
+			remainder = id[2] & 63
+			cp[1] = remainder<<2 | id[3]>>6
+			remainder = id[3] & 63
+			cp[2] = remainder<<2 | id[4]>>6
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			at := make([]byte, 3) // 24 bits
+			remainder = id[4] & 63
+			at[0] = remainder<<2 | id[5]>>6
+			remainder = id[5] & 63
+			at[1] = remainder<<2 | id[6]>>6
+			remainder = id[6] & 63
+			at[2] = remainder<<2 | id[7]>>6
+			z.SetBytes(at)
+			urn += z.String() + "."
+		}
+		// SERIAL
+		ser := make([]byte, 5)
+		ser[0] = id[7] & 63
+		ser[1] = id[8]
+		ser[2] = id[9]
+		ser[3] = id[10]
+		ser[4] = id[11]
+		z.SetBytes(ser)
+		urn += z.String()
 	case 52: // GIAI-96  00110100
+		if len(id) != 12 {
+			return "", errors.New("Invalid ID")
+		}
 		urn = "urn:epc:id:giai:"
+		// FILTER
+		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		// PARTITION
+		partition := int((id[1] & 28) >> 2) // 28: 00011100
+		ptm := map[PartitionTableKey]int{}
+		for _, v := range GIAI96PartitionTable {
+			if v[PValue] == partition {
+				ptm = v
+				break
+			}
+		}
+		// COMPANY_PREFIX and Individual Asset Reference
+		z := new(big.Int)
+		switch ptm[CPBits] {
+		case 40:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			remainder = id[4] & 3
+			cp[3] = remainder<<6 | id[5]>>2
+			remainder = id[5] & 3
+			cp[4] = remainder<<6 | id[6]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 6) // 42 bits
+			remainder = id[6] & 3
+			iar[0] = remainder
+			iar[1] = id[7]
+			iar[2] = id[8]
+			iar[3] = id[9]
+			iar[4] = id[10]
+			iar[5] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 37:
+			cp := make([]byte, 5)
+			remainder := id[1] & 3
+			cp[0] = remainder<<3 | id[2]>>5
+			remainder = id[2] & 31
+			cp[1] = remainder<<3 | id[3]>>5
+			remainder = id[3] & 31
+			cp[2] = remainder<<3 | id[4]>>5
+			remainder = id[4] & 31
+			cp[3] = remainder<<3 | id[5]>>5
+			remainder = id[5] & 31
+			cp[4] = remainder<<3 | id[6]>>5
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 6) // 45 bits
+			remainder = id[6] & 31
+			iar[0] = remainder
+			iar[1] = id[7]
+			iar[2] = id[8]
+			iar[3] = id[9]
+			iar[4] = id[10]
+			iar[5] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 34:
+			cp := make([]byte, 5)
+			cp[0] = id[1] & 3
+			cp[1] = id[2]
+			cp[2] = id[3]
+			cp[3] = id[4]
+			cp[4] = id[5]
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 6) // 48 bits
+			iar[0] = id[6]
+			iar[1] = id[7]
+			iar[2] = id[8]
+			iar[3] = id[9]
+			iar[4] = id[10]
+			iar[5] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 30:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<4 | id[2]>>4
+			remainder = id[2] & 15
+			cp[1] = remainder<<4 | id[3]>>4
+			remainder = id[3] & 15
+			cp[2] = remainder<<4 | id[4]>>4
+			remainder = id[4] & 15
+			cp[3] = remainder<<4 | id[5]>>4
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 7) // 52 bits
+			remainder = id[5] & 15
+			iar[0] = remainder
+			iar[1] = id[6]
+			iar[2] = id[7]
+			iar[3] = id[8]
+			iar[4] = id[9]
+			iar[5] = id[10]
+			iar[6] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 27:
+			cp := make([]byte, 4)
+			remainder := id[1] & 3
+			cp[0] = remainder<<1 | id[2]>>7
+			remainder = id[2] & 127
+			cp[1] = remainder<<1 | id[3]>>7
+			remainder = id[3] & 127
+			cp[2] = remainder<<1 | id[4]>>7
+			remainder = id[4] & 127
+			cp[3] = remainder<<1 | id[5]>>7
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 7) // 55 bits
+			remainder = id[5] & 127
+			iar[0] = remainder
+			iar[1] = id[6]
+			iar[2] = id[7]
+			iar[3] = id[8]
+			iar[4] = id[9]
+			iar[5] = id[10]
+			iar[6] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 24:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<6 | id[2]>>2
+			remainder = id[2] & 3
+			cp[1] = remainder<<6 | id[3]>>2
+			remainder = id[3] & 3
+			cp[2] = remainder<<6 | id[4]>>2
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 8) // 58 bits
+			remainder = id[4] & 3
+			iar[0] = remainder
+			iar[1] = id[5]
+			iar[2] = id[6]
+			iar[3] = id[7]
+			iar[4] = id[8]
+			iar[5] = id[9]
+			iar[6] = id[10]
+			iar[7] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		case 20:
+			cp := make([]byte, 3)
+			remainder := id[1] & 3
+			cp[0] = remainder<<2 | id[2]>>6
+			remainder = id[2] & 63
+			cp[1] = remainder<<2 | id[3]>>6
+			remainder = id[3] & 63
+			cp[2] = remainder<<2 | id[4]>>6
+			z.SetBytes(cp)
+			urn += z.String() + "."
+			iar := make([]byte, 8) // 62 bits
+			remainder = id[4] & 63
+			iar[0] = remainder
+			iar[1] = id[5]
+			iar[2] = id[6]
+			iar[3] = id[7]
+			iar[4] = id[8]
+			iar[5] = id[9]
+			iar[6] = id[10]
+			iar[7] = id[11]
+			z.SetBytes(iar)
+			urn += z.String()
+		}
 	}
 	return urn, nil
 }
 
 func (c *core) buildUII(id []byte, afi byte) (string, error) {
-	return "", nil
+	urn := "urn:epc:id:iso:"
+	switch afi {
+	case 161:
+		urn += "17367:"
+	case 162:
+		urn += "17365:"
+	case 163:
+		urn += "17364:"
+	case 164:
+		urn += "17367h:"
+	case 165:
+		urn += "17366:"
+	case 166:
+		urn += "17366h:"
+	case 167:
+		urn += "17365h:"
+	case 168:
+		urn += "17364h:"
+	case 169:
+		urn += "17363:"
+	case 170:
+		urn += "17363h:"
+	default:
+		return "", errors.New("Invalid AFI.")
+	}
+
+	sid, err := parse6BitEncodedByteSliceToString(id)
+	if err != nil {
+		return "", err
+	}
+
+	urn += sid
+	return urn, nil
 }
 
 func (c *core) buildProprietary(id []byte) (string, error) {
