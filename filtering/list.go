@@ -10,6 +10,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 // List is a slice of pointers to ExactMatch
@@ -21,8 +22,41 @@ type ExactMatch struct {
 	filter          *FilterObject
 }
 
+// AddSubscription adds a set of subscriptions if not exists yet
+func (list *List) AddSubscription(sub Subscriptions) {
+	// store ExactMatch in sorted order from sub
+	for _, fs := range sub.keys() {
+		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+		if list.IndexOf(em) < 0 {
+			*list = append(*list, em)
+		}
+	}
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (list *List) DeleteSubscription(sub Subscriptions) {
+	// store ExactMatch in sorted order from sub
+	for _, fs := range sub.keys() {
+		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+		if i := list.IndexOf(em); i > -1 {
+			*list = append((*list)[:i], (*list)[i+1:]...)
+		}
+	}
+}
+
 // AnalyzeLocality increments the locality per node for the specific id
 func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
+}
+
+// IndexOf check the index of ExactMatch in the List
+// returns -1 if not exist
+func (list *List) IndexOf(em *ExactMatch) int {
+	for i, a := range *list {
+		if reflect.DeepEqual(a, em) {
+			return i
+		}
+	}
+	return -1
 }
 
 // Dump returs a string representation of the PatriciaTrie

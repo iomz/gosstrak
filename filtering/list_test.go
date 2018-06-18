@@ -181,3 +181,124 @@ func TestList_Dump(t *testing.T) {
 		})
 	}
 }
+
+func TestList_IndexOf(t *testing.T) {
+	type args struct {
+		em *ExactMatch
+	}
+	tests := []struct {
+		name string
+		list *List
+		args args
+		want int
+	}{
+		{
+			"Contains true",
+			&List{
+				&ExactMatch{"3", NewFilter("0011", 0)},
+				&ExactMatch{"3-0", NewFilter("00110000", 0)},
+				&ExactMatch{"3-3-0", NewFilter("001100110000", 0)},
+				&ExactMatch{"15", NewFilter("1111", 0)},
+			},
+			args{
+				&ExactMatch{"15", NewFilter("1111", 0)},
+			},
+			3,
+		},
+		{
+			"Contains false",
+			&List{
+				&ExactMatch{"3", NewFilter("0011", 0)},
+				&ExactMatch{"3-0", NewFilter("00110000", 0)},
+				&ExactMatch{"3-3-0", NewFilter("001100110000", 0)},
+				&ExactMatch{"15", NewFilter("1111", 0)},
+			},
+			args{
+				&ExactMatch{"3", NewFilter("11", 0)},
+			},
+			-1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.list.IndexOf(tt.args.em); got != tt.want {
+				t.Errorf("List.IndexOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestList_AddSubscription(t *testing.T) {
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name string
+		list *List
+		args args
+	}{
+		{
+			"AddSubscription ",
+			&List{
+				&ExactMatch{"3", NewFilter("0011", 0)},
+				&ExactMatch{"3-0", NewFilter("00110000", 0)},
+				&ExactMatch{"3-3-0", NewFilter("001100110000", 0)},
+				&ExactMatch{"15", NewFilter("1111", 0)},
+			},
+			args{
+				Subscriptions{
+					"00111100": &Info{0, "3-12", 0, nil},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.list.AddSubscription(tt.args.sub)
+			for _, fs := range tt.args.sub.keys() {
+				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
+				if tt.list.IndexOf(newSub) < 0 {
+					t.Errorf("List.AddSubscription() didn't append %v", *newSub)
+				}
+			}
+		})
+	}
+}
+
+func TestList_DeleteSubscription(t *testing.T) {
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name string
+		list *List
+		args args
+	}{
+		{
+			"AddSubscription ",
+			&List{
+				&ExactMatch{"3", NewFilter("0011", 0)},
+				&ExactMatch{"3-0", NewFilter("00110000", 0)},
+				&ExactMatch{"3-3-0", NewFilter("001100110000", 0)},
+				&ExactMatch{"15", NewFilter("1111", 0)},
+			},
+			args{
+				Subscriptions{
+					"00110000": &Info{0, "3-0", 0, nil},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.list.DeleteSubscription(tt.args.sub)
+			for _, fs := range tt.args.sub.keys() {
+				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
+				if tt.list.IndexOf(newSub) > -1 {
+					t.Errorf("List.AddSubscription() didn't delete %v", *newSub)
+					t.Errorf("List: %s", tt.list.Dump())
+				}
+			}
+		})
+	}
+}
