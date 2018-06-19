@@ -23,6 +23,71 @@ type PatriciaTrie struct {
 	zero            *PatriciaTrie
 }
 
+// AddSubscription adds a set of subscriptions if not exists yet
+func (pt *PatriciaTrie) AddSubscription(fs string, notificationURI string, bo int) {
+	if strings.HasPrefix(fs, pt.filterObject.String) { // fs \in pt.FilterObject.String
+		if len(fs) == pt.filterObject.Size { // the identical filter
+			// if the notificationURI is different, update it
+			if pt.notificationURI != notificationURI {
+				pt.notificationURI = notificationURI
+			}
+			return //end
+		}
+		//} else if len(fs) < pt.filterObject.Size { // Needs a reconstruction
+	} else {
+		newCommonPrefix := lcp([]string{fs, pt.filterObject.String})
+		ncpLength := len(newCommonPrefix)
+		newNode := &PatriciaTrie{}
+		newNode.filterObject = NewFilter(pt.filterObject.String[ncpLength:], bo+ncpLength)
+		newNode.one = pt.one
+		newNode.zero = pt.zero
+		newNode.notificationURI = pt.notificationURI
+		pt.notificationURI = ""
+		pt.filterObject = NewFilter(newCommonPrefix, bo)
+		switch fs[ncpLength] {
+		case '1':
+			pt.zero = newNode
+			pt.one = &PatriciaTrie{}
+			pt.one.filterObject = NewFilter(fs[ncpLength:], bo+ncpLength)
+			pt.one.notificationURI = notificationURI
+		case '0':
+			pt.one = newNode
+			pt.zero = &PatriciaTrie{}
+			pt.zero.filterObject = NewFilter(fs[ncpLength:], bo+ncpLength)
+			pt.zero.notificationURI = notificationURI
+		}
+		return //end
+	}
+
+	// If there's remainder
+	if len(fs) > pt.filterObject.Size {
+		switch fs[pt.filterObject.Size] {
+		case '1':
+			if pt.one == nil {
+				pt.one = &PatriciaTrie{}
+				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], bo)
+				pt.one.notificationURI = notificationURI
+				return //end
+			} else {
+				pt.one.AddSubscription(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+			}
+		case '0':
+			if pt.zero == nil {
+				pt.zero = &PatriciaTrie{}
+				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], bo)
+				pt.zero.notificationURI = notificationURI
+				return //end
+			} else {
+				pt.zero.AddSubscription(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+			}
+		}
+	}
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
+}
+
 // AnalyzeLocality increments the locality per node for the specific id
 func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 	// if not match, return empty string immediately

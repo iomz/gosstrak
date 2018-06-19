@@ -21,13 +21,13 @@ const (
 
 // FilterObject type is a struct for filter element
 type FilterObject struct {
-	String     string
-	Size       int
-	Offset     int
-	ByteFilter []byte
-	ByteMask   []byte
-	ByteOffset int
-	ByteSize   int
+	String     string // the string representation of the binary filter
+	Size       int    // the bit length of the filter
+	Offset     int    // the bit offset from the begginng of the entire filter
+	ByteFilter []byte // the actual byte slice for the filter
+	ByteMask   []byte // the corresponding byte mask for ByteFilter
+	ByteOffset int    // the byte offset from the beggining of the entire filter
+	ByteSize   int    // the size of ByteFilter
 }
 
 // GetByteAt returns a byte of ByteFilter and ByteMask
