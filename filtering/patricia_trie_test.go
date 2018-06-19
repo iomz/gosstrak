@@ -848,13 +848,7 @@ func Test_lcp(t *testing.T) {
 	}
 }
 
-func TestPatriciaTrie_AddSubscription(t *testing.T) {
-	type fields struct {
-		notificationURI string
-		filterObject    *FilterObject
-		one             *PatriciaTrie
-		zero            *PatriciaTrie
-	}
+func TestPatriciaTrie_add(t *testing.T) {
 	type args struct {
 		fs              string
 		notificationURI string
@@ -862,12 +856,13 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields *PatriciaTrie
 		args   args
+		want   *PatriciaTrie
 	}{
 		{
 			"add a node to the edge",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -904,10 +899,51 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"111110", "15-2", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					&PatriciaTrie{
+						"15-2",
+						NewFilter("10", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 		{
 			"add a node to the top",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -944,10 +980,56 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"1100", "12", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"",
+					NewFilter("11", 0),
+					&PatriciaTrie{
+						"15",
+						NewFilter("11", 2),
+						nil,
+						nil,
+					},
+					&PatriciaTrie{
+						"12",
+						NewFilter("00", 2),
+						nil,
+						nil,
+					},
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 		{
 			"add a node in the middle 1",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -984,10 +1066,56 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"00110010", "3-0-2", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"",
+							NewFilter("1", 6),
+							&PatriciaTrie{
+								"3-3",
+								NewFilter("1", 7),
+								nil,
+								&PatriciaTrie{
+									"3-3-0",
+									NewFilter("0000", 8),
+									nil,
+									nil,
+								},
+							},
+							&PatriciaTrie{
+								"3-0-2",
+								NewFilter("0", 7),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 		{
 			"add a node in the middle 2",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -1024,10 +1152,56 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"001100110011", "3-3-3", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"",
+								NewFilter("00", 8),
+								&PatriciaTrie{
+									"3-3-3",
+									NewFilter("11", 10),
+									nil,
+									nil,
+								},
+								&PatriciaTrie{
+									"3-3-0",
+									NewFilter("00", 10),
+									nil,
+									nil,
+								},
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 		{
 			"add a node in the middle 3",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -1064,10 +1238,46 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"111101", "15-1", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 		{
 			"add a node that is already there",
-			fields{
+			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
 				&PatriciaTrie{
@@ -1104,6 +1314,42 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				},
 			},
 			args{"001100110000", "3-3-0_new", 0},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0_new",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -1114,8 +1360,10 @@ func TestPatriciaTrie_AddSubscription(t *testing.T) {
 				one:             tt.fields.one,
 				zero:            tt.fields.zero,
 			}
-			pt.AddSubscription(tt.args.fs, tt.args.notificationURI, tt.args.bo)
-			t.Log("\n" + pt.Dump())
+			pt.add(tt.args.fs, tt.args.notificationURI, tt.args.bo)
+			if ok, got, wanted := pt.equal(tt.want); !ok {
+				t.Errorf("add() = \n%v, want \n%v", got.Dump(), wanted.Dump())
+			}
 		})
 	}
 }

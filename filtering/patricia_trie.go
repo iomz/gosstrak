@@ -24,7 +24,15 @@ type PatriciaTrie struct {
 }
 
 // AddSubscription adds a set of subscriptions if not exists yet
-func (pt *PatriciaTrie) AddSubscription(fs string, notificationURI string, bo int) {
+func (pt *PatriciaTrie) AddSubscription(sub Subscriptions) {
+	// store ExactMatch in sorted order from sub
+	for _, fs := range sub.keys() {
+		pt.add(fs, sub[fs].NotificationURI, sub[fs].Offset)
+	}
+}
+
+// add adds a set of subscriptions if not exists yet
+func (pt *PatriciaTrie) add(fs string, notificationURI string, bo int) {
 	if strings.HasPrefix(fs, pt.filterObject.String) { // fs \in pt.FilterObject.String
 		if len(fs) == pt.filterObject.Size { // the identical filter
 			// if the notificationURI is different, update it
@@ -65,20 +73,20 @@ func (pt *PatriciaTrie) AddSubscription(fs string, notificationURI string, bo in
 		case '1':
 			if pt.one == nil {
 				pt.one = &PatriciaTrie{}
-				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], bo)
+				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], bo+pt.filterObject.Size)
 				pt.one.notificationURI = notificationURI
 				return //end
 			} else {
-				pt.one.AddSubscription(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+				pt.one.add(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
 			}
 		case '0':
 			if pt.zero == nil {
 				pt.zero = &PatriciaTrie{}
-				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], bo)
+				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], bo+pt.filterObject.Size)
 				pt.zero.notificationURI = notificationURI
 				return //end
 			} else {
-				pt.zero.AddSubscription(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+				pt.zero.add(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
 			}
 		}
 	}
@@ -86,6 +94,10 @@ func (pt *PatriciaTrie) AddSubscription(fs string, notificationURI string, bo in
 
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (pt *PatriciaTrie) delete(sub Subscriptions) {
 }
 
 // AnalyzeLocality increments the locality per node for the specific id
