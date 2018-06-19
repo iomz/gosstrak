@@ -852,7 +852,6 @@ func TestPatriciaTrie_add(t *testing.T) {
 	type args struct {
 		fs              string
 		notificationURI string
-		bo              int
 	}
 	tests := []struct {
 		name   string
@@ -898,7 +897,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"111110", "15-2", 0},
+			args{"111110", "15-2"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -979,7 +978,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"1100", "12", 0},
+			args{"1100", "12"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -1065,7 +1064,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"00110010", "3-0-2", 0},
+			args{"00110010", "3-0-2"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -1151,7 +1150,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"001100110011", "3-3-3", 0},
+			args{"001100110011", "3-3-3"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -1237,7 +1236,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"111101", "15-1", 0},
+			args{"111101", "15-1"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -1313,7 +1312,7 @@ func TestPatriciaTrie_add(t *testing.T) {
 					},
 				},
 			},
-			args{"001100110000", "3-3-0_new", 0},
+			args{"001100110000", "3-3-0_new"},
 			&PatriciaTrie{
 				"",
 				NewFilter("", 0),
@@ -1360,9 +1359,428 @@ func TestPatriciaTrie_add(t *testing.T) {
 				one:             tt.fields.one,
 				zero:            tt.fields.zero,
 			}
-			pt.add(tt.args.fs, tt.args.notificationURI, tt.args.bo)
+			pt.add(tt.args.fs, tt.args.notificationURI)
 			if ok, got, wanted := pt.equal(tt.want); !ok {
 				t.Errorf("add() = \n%v, want \n%v", got.Dump(), wanted.Dump())
+			}
+		})
+	}
+}
+
+func TestPatriciaTrie_AddSubscription(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		one             *PatriciaTrie
+		zero            *PatriciaTrie
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pt := &PatriciaTrie{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				one:             tt.fields.one,
+				zero:            tt.fields.zero,
+			}
+			pt.AddSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestPatriciaTrie_DeleteSubscription(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		one             *PatriciaTrie
+		zero            *PatriciaTrie
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pt := &PatriciaTrie{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				one:             tt.fields.one,
+				zero:            tt.fields.zero,
+			}
+			pt.DeleteSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestPatriciaTrie_delete(t *testing.T) {
+	type args struct {
+		fs              string
+		notificationURI string
+	}
+	tests := []struct {
+		name   string
+		fields *PatriciaTrie
+		args   args
+		want   *PatriciaTrie
+	}{
+		{
+			"delete a node from the edge",
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+			args{"001100110000", "3-3-0"},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							nil,
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			"delete a node from the middle 1",
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+			args{"00110011", "3-3"},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3-0",
+							NewFilter("110000", 6),
+							nil,
+							nil,
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			"delete a node from the middle 3",
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"3-0",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							nil,
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+			args{"001100", "3-0"},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							nil,
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			"delete a node from the middle 4",
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"3-0",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+			},
+			args{"001100", "3-0"},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"3-3",
+						NewFilter("0011", 4),
+						nil,
+						nil,
+					},
+				},
+			},
+		},
+		{
+			"delete a node from the top",
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				&PatriciaTrie{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+			args{"1111", "15"},
+			&PatriciaTrie{
+				"",
+				NewFilter("", 0),
+				nil,
+				&PatriciaTrie{
+					"3",
+					NewFilter("0011", 0),
+					nil,
+					&PatriciaTrie{
+						"",
+						NewFilter("00", 4),
+						&PatriciaTrie{
+							"3-3",
+							NewFilter("11", 6),
+							nil,
+							&PatriciaTrie{
+								"3-3-0",
+								NewFilter("0000", 8),
+								nil,
+								nil,
+							},
+						},
+						&PatriciaTrie{
+							"3-0",
+							NewFilter("00", 6),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pt := &PatriciaTrie{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				one:             tt.fields.one,
+				zero:            tt.fields.zero,
+			}
+			pt.delete(tt.args.fs, tt.args.notificationURI)
+			if pt.Dump() != tt.want.Dump() {
+				t.Errorf("delete() = \n%v, want \n%v", pt.Dump(), tt.want.Dump())
+				//t.Errorf("delete() = \n%v, want \n%v", got, wanted)
 			}
 		})
 	}

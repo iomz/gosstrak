@@ -25,16 +25,15 @@ type PatriciaTrie struct {
 
 // AddSubscription adds a set of subscriptions if not exists yet
 func (pt *PatriciaTrie) AddSubscription(sub Subscriptions) {
-	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.keys() {
-		pt.add(fs, sub[fs].NotificationURI, sub[fs].Offset)
+		pt.add(fs, sub[fs].NotificationURI)
 	}
 }
 
 // add adds a set of subscriptions if not exists yet
-func (pt *PatriciaTrie) add(fs string, notificationURI string, bo int) {
+func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 	if strings.HasPrefix(fs, pt.filterObject.String) { // fs \in pt.FilterObject.String
-		if len(fs) == pt.filterObject.Size { // the identical filter
+		if fs == pt.filterObject.String { // the identical filter
 			// if the notificationURI is different, update it
 			if pt.notificationURI != notificationURI {
 				pt.notificationURI = notificationURI
@@ -46,22 +45,23 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string, bo int) {
 		newCommonPrefix := lcp([]string{fs, pt.filterObject.String})
 		ncpLength := len(newCommonPrefix)
 		newNode := &PatriciaTrie{}
-		newNode.filterObject = NewFilter(pt.filterObject.String[ncpLength:], bo+ncpLength)
+		newNode.filterObject = NewFilter(pt.filterObject.String[ncpLength:], pt.filterObject.Offset+ncpLength)
 		newNode.one = pt.one
 		newNode.zero = pt.zero
 		newNode.notificationURI = pt.notificationURI
 		pt.notificationURI = ""
-		pt.filterObject = NewFilter(newCommonPrefix, bo)
+		currentOffset := pt.filterObject.Offset
+		pt.filterObject = NewFilter(newCommonPrefix, currentOffset)
 		switch fs[ncpLength] {
 		case '1':
 			pt.zero = newNode
 			pt.one = &PatriciaTrie{}
-			pt.one.filterObject = NewFilter(fs[ncpLength:], bo+ncpLength)
+			pt.one.filterObject = NewFilter(fs[ncpLength:], currentOffset+ncpLength)
 			pt.one.notificationURI = notificationURI
 		case '0':
 			pt.one = newNode
 			pt.zero = &PatriciaTrie{}
-			pt.zero.filterObject = NewFilter(fs[ncpLength:], bo+ncpLength)
+			pt.zero.filterObject = NewFilter(fs[ncpLength:], currentOffset+ncpLength)
 			pt.zero.notificationURI = notificationURI
 		}
 		return //end
@@ -73,20 +73,20 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string, bo int) {
 		case '1':
 			if pt.one == nil {
 				pt.one = &PatriciaTrie{}
-				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], bo+pt.filterObject.Size)
+				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
 				pt.one.notificationURI = notificationURI
 				return //end
 			} else {
-				pt.one.add(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+				pt.one.add(fs[pt.filterObject.Size:], notificationURI)
 			}
 		case '0':
 			if pt.zero == nil {
 				pt.zero = &PatriciaTrie{}
-				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], bo+pt.filterObject.Size)
+				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
 				pt.zero.notificationURI = notificationURI
 				return //end
 			} else {
-				pt.zero.add(fs[pt.filterObject.Size:], notificationURI, bo+pt.filterObject.Size)
+				pt.zero.add(fs[pt.filterObject.Size:], notificationURI)
 			}
 		}
 	}
@@ -94,10 +94,61 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string, bo int) {
 
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
+	for _, fs := range sub.keys() {
+		pt.delete(fs, sub[fs].NotificationURI)
+	}
 }
 
 // DeleteSubscription deletes a set of subscriptions if already exist
-func (pt *PatriciaTrie) delete(sub Subscriptions) {
+func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
+	// No such filter exist in the trie
+	if !strings.HasPrefix(fs, pt.filterObject.String) {
+		return
+	}
+
+	// This is the filter to delete
+	if fs == pt.filterObject.String {
+		if pt.one != nil && pt.zero != nil { // node in the middle
+			pt.notificationURI = ""
+		} else if pt.one != nil { // has only one node
+			newFilter := NewFilter(pt.filterObject.String+pt.one.filterObject.String, pt.filterObject.Offset)
+			pt.filterObject = newFilter
+			pt.notificationURI = pt.one.notificationURI
+			pt.zero = pt.one.zero
+			pt.one = pt.one.one
+		} else if pt.zero != nil { // has only zero node
+			newFilter := NewFilter(pt.filterObject.String+pt.zero.filterObject.String, pt.filterObject.Offset)
+			pt.filterObject = newFilter
+			pt.notificationURI = pt.zero.notificationURI
+			pt.one = pt.zero.one
+			pt.zero = pt.zero.zero
+		}
+		return //end
+	}
+
+	// If there's remainder
+	if len(fs) > pt.filterObject.Size {
+		switch fs[pt.filterObject.Size] {
+		case '1':
+			if pt.one != nil {
+				if fs[pt.filterObject.Size:] == pt.one.filterObject.String &&
+					pt.one.one == nil && pt.one.zero == nil {
+					pt.one = nil
+					return
+				}
+				pt.one.delete(fs[pt.filterObject.Size:], notificationURI)
+			}
+		case '0':
+			if pt.zero != nil {
+				if fs[pt.filterObject.Size:] == pt.zero.filterObject.String &&
+					pt.zero.one == nil && pt.zero.zero == nil {
+					pt.zero = nil
+					return
+				}
+				pt.zero.delete(fs[pt.filterObject.Size:], notificationURI)
+			}
+		}
+	}
 }
 
 // AnalyzeLocality increments the locality per node for the specific id
