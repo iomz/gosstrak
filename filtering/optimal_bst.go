@@ -23,6 +23,13 @@ type OptimalBST struct {
 	mismatchNext    *OptimalBST
 }
 
+// AddSubscription adds a set of subscriptions if not exists yet
+func (obst *OptimalBST) AddSubscription(sub Subscriptions) {
+	for _, fs := range sub.keys() {
+		obst.add(fs, sub[fs].NotificationURI)
+	}
+}
+
 // AnalyzeLocality increments the locality per node for the specific id
 func (obst *OptimalBST) AnalyzeLocality(id []byte, path string, lm *LocalityMap) {
 	if len(path) == 0 {
@@ -56,6 +63,13 @@ func (obst *OptimalBST) AnalyzeLocality(id []byte, path string, lm *LocalityMap)
 		} else {
 			(*lm)[path+",Mismatch"]++
 		}
+	}
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (obst *OptimalBST) DeleteSubscription(sub Subscriptions) {
+	for _, fs := range sub.keys() {
+		obst.delete(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -168,6 +182,35 @@ func (obst *OptimalBST) UnmarshalBinary(data []byte) (err error) {
 
 // Internal helper methods -----------------------------------------------------
 
+// add a set of subscriptions if not exists yet
+func (obst *OptimalBST) add(fs string, notificationURI string) {
+	if strings.HasPrefix(fs, obst.filterObject.String) { // fs \in obst.FilterObject.String
+		if fs == obst.filterObject.String { // the identical filter
+			// if the notificationURI is different, update it
+			if obst.notificationURI != notificationURI {
+				obst.notificationURI = notificationURI
+			}
+		} else { // it's a subset (matching branch) of the current node, and there's no matchNext node
+			if obst.matchNext == nil {
+				obst.matchNext = &OptimalBST{}
+				obst.matchNext.filterObject = NewFilter(fs[obst.filterObject.Size:], obst.filterObject.Offset+obst.filterObject.Size)
+				obst.matchNext.notificationURI = notificationURI
+			} else { // if there's already matchNext node
+				obst.matchNext.add(fs[obst.filterObject.Size:], notificationURI)
+			}
+		}
+	} else { // doesn't match with the current node, traverse the mismatchNext node
+		if obst.mismatchNext == nil { // there's no mismatchNext node
+			obst.mismatchNext = &OptimalBST{}
+			obst.mismatchNext.filterObject = NewFilter(fs, obst.filterObject.Offset)
+			obst.mismatchNext.notificationURI = notificationURI
+		} else { // if there's already mismatchNext node
+			obst.mismatchNext.add(fs, notificationURI)
+		}
+	}
+	return
+}
+
 func (obst *OptimalBST) build(sub *Subscriptions, nds *Nodes) *OptimalBST {
 	current := obst
 	for i, nd := range *nds {
@@ -190,6 +233,48 @@ func (obst *OptimalBST) build(sub *Subscriptions, nds *Nodes) *OptimalBST {
 		}
 	}
 	return obst
+}
+
+// delete a set of subscriptions if not exists yet
+func (obst *OptimalBST) delete(fs string, notificationURI string) {
+	if strings.HasPrefix(fs, obst.filterObject.String) { // fs \in obst.FilterObject.String
+		if fs == obst.filterObject.String { // this node is to delete
+			if obst.matchNext == nil && obst.mismatchNext == nil { // something wrong
+			} else if obst.matchNext != nil { // if there is subset, keep the node as an aggregation node
+				if obst.matchNext.mismatchNext != nil {
+					obst.notificationURI = ""
+				} else { // if none other mismatch branch, concatenate the matchNext with to-be-deleted node
+					obst.filterObject = NewFilter(fs+obst.matchNext.filterObject.String, obst.filterObject.Offset)
+					obst.notificationURI = obst.matchNext.notificationURI
+					obst.matchNext = obst.matchNext.matchNext
+				}
+			} else if obst.mismatchNext != nil { // replace this node with mismatchNext
+				obst.filterObject = obst.mismatchNext.filterObject
+				obst.notificationURI = obst.mismatchNext.notificationURI
+				obst.matchNext = obst.mismatchNext.matchNext
+				obst.mismatchNext = obst.mismatchNext.mismatchNext
+			}
+		} else { // it's a subset (matching branch) of the current node, and there's no matchNext node
+			if obst.matchNext != nil { // if there's a matchNext node
+				if fs[obst.filterObject.Size:] == obst.matchNext.filterObject.String &&
+					obst.matchNext.matchNext == nil && obst.matchNext.mismatchNext == nil { // the matchNext is to delete
+					obst.matchNext = nil
+				} else {
+					obst.matchNext.delete(fs[obst.filterObject.Size:], notificationURI)
+				}
+			}
+		}
+	} else { // doesn't match with the current node, traverse the mismatchNext node
+		if obst.mismatchNext != nil { // there's a mismatchNext node
+			if fs == obst.mismatchNext.filterObject.String &&
+				obst.mismatchNext.matchNext == nil && obst.mismatchNext.mismatchNext == nil {
+				obst.mismatchNext = nil
+			} else {
+				obst.mismatchNext.delete(fs, notificationURI)
+			}
+		}
+	}
+	return
 }
 
 func (obst *OptimalBST) equal(want *OptimalBST) (ok bool, got *OptimalBST, wanted *OptimalBST) {

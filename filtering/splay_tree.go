@@ -16,9 +16,23 @@ type SplayTree struct {
 	root *OptimalBST
 }
 
+// AddSubscription adds a set of subscriptions if not exists yet
+func (spt *SplayTree) AddSubscription(sub Subscriptions) {
+	for _, fs := range sub.keys() {
+		spt.root.add(fs, sub[fs].NotificationURI)
+	}
+}
+
 // AnalyzeLocality increments the locality per node for the specific id
 func (spt *SplayTree) AnalyzeLocality(id []byte, path string, lm *LocalityMap) {
 	spt.root.AnalyzeLocality(id, path, lm)
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (spt *SplayTree) DeleteSubscription(sub Subscriptions) {
+	for _, fs := range sub.keys() {
+		spt.root.delete(fs, sub[fs].NotificationURI)
+	}
 }
 
 // Dump returs a string representation of the PatriciaTrie

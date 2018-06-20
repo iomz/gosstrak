@@ -33,6 +33,10 @@ func (list *List) AddSubscription(sub Subscriptions) {
 	}
 }
 
+// AnalyzeLocality increments the locality per node for the specific id
+func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
+}
+
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (list *List) DeleteSubscription(sub Subscriptions) {
 	// store ExactMatch in sorted order from sub
@@ -42,10 +46,6 @@ func (list *List) DeleteSubscription(sub Subscriptions) {
 			*list = append((*list)[:i], (*list)[i+1:]...)
 		}
 	}
-}
-
-// AnalyzeLocality increments the locality per node for the specific id
-func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 }
 
 // IndexOf check the index of ExactMatch in the List

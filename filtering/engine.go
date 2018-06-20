@@ -7,7 +7,9 @@ package filtering
 
 // Engine provides interface for the filtering engines
 type Engine interface {
+	AddSubscription(sub Subscriptions)
 	AnalyzeLocality(id []byte, prefix string, lm *LocalityMap)
+	DeleteSubscription(sub Subscriptions)
 	Dump() string
 	MarshalBinary() ([]byte, error)
 	Search(id []byte) []string

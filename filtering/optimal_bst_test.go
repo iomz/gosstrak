@@ -673,3 +673,729 @@ func TestBuildOptimalBST(t *testing.T) {
 		})
 	}
 }
+
+func TestOptimalBST_AddSubscription(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		matchNext       *OptimalBST
+		mismatchNext    *OptimalBST
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obst := &OptimalBST{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				matchNext:       tt.fields.matchNext,
+				mismatchNext:    tt.fields.mismatchNext,
+			}
+			obst.AddSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestOptimalBST_DeleteSubscription(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		matchNext       *OptimalBST
+		mismatchNext    *OptimalBST
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obst := &OptimalBST{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				matchNext:       tt.fields.matchNext,
+				mismatchNext:    tt.fields.mismatchNext,
+			}
+			obst.DeleteSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestOptimalBST_add(t *testing.T) {
+	type args struct {
+		fs              string
+		notificationURI string
+	}
+	tests := []struct {
+		name   string
+		fields *OptimalBST
+		args   args
+		want   *OptimalBST
+	}{
+		{
+			"add a subset of subscription 1",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{"11111010", "15-10"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+		},
+		{
+			"add a subset of subscription 2",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{"001100111100", "3-3-8"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							&OptimalBST{
+								"3-3-8",
+								NewFilter("1100", 8),
+								nil,
+								nil,
+							},
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+		},
+		{
+			"add totally different subscription",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{"1010", "10"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					&OptimalBST{
+						"10",
+						NewFilter("1010", 0),
+						nil,
+						nil,
+					},
+				},
+			},
+		},
+		{
+			"add an existing subscription (and update)",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{"00110000", "3-0_new"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0_new",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obst := &OptimalBST{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				matchNext:       tt.fields.matchNext,
+				mismatchNext:    tt.fields.mismatchNext,
+			}
+			obst.add(tt.args.fs, tt.args.notificationURI)
+			if obst.Dump() != tt.want.Dump() {
+				t.Errorf("add() = \n%v, want \n%v", obst.Dump(), tt.want.Dump())
+			}
+		})
+	}
+}
+
+func TestOptimalBST_delete(t *testing.T) {
+	type args struct {
+		fs              string
+		notificationURI string
+	}
+	tests := []struct {
+		name   string
+		fields *OptimalBST
+		args   args
+		want   *OptimalBST
+	}{
+		{
+			"delete a subscription from the top branch",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			args{"11111010", "15-10"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+		},
+		{
+			"delete the top branch edge",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					&OptimalBST{
+						"10",
+						NewFilter("1010", 0),
+						nil,
+						nil,
+					},
+				},
+			},
+			args{"1010", "10"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+		},
+		{
+			"delete a subset of subscription 2",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							&OptimalBST{
+								"3-3-8",
+								NewFilter("1100", 8),
+								nil,
+								nil,
+							},
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+			args{"001100111100", "3-3-8"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					nil,
+					nil,
+				},
+			},
+		},
+		{
+			"delete a subset of subscription and replace it with the mismatchNext node",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			args{"00110000", "3-0"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-3",
+					NewFilter("0011", 4),
+					&OptimalBST{
+						"3-3-0",
+						NewFilter("0000", 8),
+						nil,
+						nil,
+					},
+					nil,
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+		},
+		{
+			"delete a subset of subscription and concatenate with the to-be-deleted node",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			args{"00110011", "3-3"},
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3-0",
+						NewFilter("00110000", 4),
+						nil,
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+		},
+		{
+			"delete a subset of subscription and to-be-deleted node becomes an aggregation node",
+			&OptimalBST{
+				"3",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+			args{"0011", "3"},
+			&OptimalBST{
+				"",
+				NewFilter("0011", 0),
+				&OptimalBST{
+					"3-0",
+					NewFilter("0000", 4),
+					nil,
+					&OptimalBST{
+						"3-3",
+						NewFilter("0011", 4),
+						&OptimalBST{
+							"3-3-0",
+							NewFilter("0000", 8),
+							nil,
+							nil,
+						},
+						nil,
+					},
+				},
+				&OptimalBST{
+					"15",
+					NewFilter("1111", 0),
+					&OptimalBST{
+						"15-10",
+						NewFilter("1010", 4),
+						nil,
+						nil,
+					},
+					nil,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obst := &OptimalBST{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				matchNext:       tt.fields.matchNext,
+				mismatchNext:    tt.fields.mismatchNext,
+			}
+			obst.delete(tt.args.fs, tt.args.notificationURI)
+			if obst.Dump() != tt.want.Dump() {
+				t.Errorf("delete() = \n%v, want \n%v", obst.Dump(), tt.want.Dump())
+			}
+		})
+	}
+}
