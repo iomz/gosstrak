@@ -41,12 +41,27 @@ func TestSubscriptions_Dump(t *testing.T) {
 		sub  Subscriptions
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			"Test Dump Subscriptions",
+			Subscriptions{
+				"0011":         &Info{0, "3", 10, nil},
+				"00110011":     &Info{0, "3-3", 5, nil},
+				"1111":         &Info{0, "15", 2, nil},
+				"00110000":     &Info{0, "3-0", 5, nil},
+				"001100110000": &Info{0, "3-3-0", 5, nil},
+			},
+			"--0011 10.000000\n" +
+				"--00110000 5.000000\n" +
+				"--00110011 5.000000\n" +
+				"--001100110000 5.000000\n" +
+				"--1111 2.000000\n",
+		},
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sub.Dump(); got != tt.want {
-				t.Errorf("Subscriptions.Dump() = %v, want %v", got, tt.want)
+				t.Errorf("Subscriptions.Dump() = \n%v, want \n%v", got, tt.want)
 			}
 		})
 	}

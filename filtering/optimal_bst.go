@@ -223,11 +223,13 @@ func (obst *OptimalBST) print(writer io.Writer, indent int) {
 	if len(obst.notificationURI) != 0 {
 		n = "-> " + obst.notificationURI
 	}
-	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), obst.filterObject.ToString(), n)
+	fmt.Fprintf(writer, "--%s %s\n", obst.filterObject.ToString(), n)
 	if obst.matchNext != nil {
+		fmt.Fprintf(writer, "%sok", strings.Repeat(" ", indent+2))
 		obst.matchNext.print(writer, indent+2)
 	}
 	if obst.mismatchNext != nil {
+		fmt.Fprintf(writer, "%sng", strings.Repeat(" ", indent+2))
 		obst.mismatchNext.print(writer, indent+2)
 	}
 }
@@ -239,7 +241,8 @@ func BuildOptimalBST(sub *Subscriptions) *OptimalBST {
 	sub.linkSubset()
 
 	// recalculate the cumulative evs if it has subset subscriptions
-	for _, info := range *sub {
+	for _, fs := range (*sub).keys() {
+		info := (*sub)[fs]
 		if info.Subset != nil {
 			info.EntropyValue += recalculateEntropyValue(info.Subset)
 		}

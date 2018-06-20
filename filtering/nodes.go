@@ -43,7 +43,8 @@ func (nds *Nodes) sortByP() {
 func NewNodes(sub *Subscriptions) *Nodes {
 	nds := make(Nodes, len(*sub))
 	i := 0
-	for fs, info := range *sub {
+	for _, fs := range (*sub).keys() {
+		info := (*sub)[fs]
 		nds[i] = &node{fs, info.Offset, info.NotificationURI, info.EntropyValue}
 		i++
 	}

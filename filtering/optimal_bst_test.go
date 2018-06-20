@@ -105,7 +105,7 @@ func TestOptimalBST_Dump(t *testing.T) {
 					nil,
 				},
 			},
-			"--00(0 2) -> 00\n  --11(2 2) -> 0011\n  --11(0 2) -> 11\n",
+			"--00(0 2) -> 00\n  ok--11(2 2) -> 0011\n  ng--11(0 2) -> 11\n",
 		},
 	}
 	for _, tt := range tests {

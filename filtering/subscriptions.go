@@ -46,7 +46,8 @@ func (sub Subscriptions) keys() []string {
 func (sub Subscriptions) linkSubset() {
 	nds := *NewNodes(&sub)
 	for _, nd := range nds {
-		for fs, info := range sub {
+		for _, fs := range sub.keys() {
+			info := sub[fs]
 			linkCandidate := nd.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
@@ -91,10 +92,10 @@ func recalculateEntropyValue(sub *Subscriptions) float64 {
 }
 
 func (sub Subscriptions) print(writer io.Writer, indent int) {
-	for fs, info := range sub {
-		fmt.Fprintf(writer, "%s--%s %f\n", strings.Repeat(" ", indent), fs, info.EntropyValue)
-		if info.Subset != nil {
-			info.Subset.print(writer, indent+2)
+	for _, fs := range sub.keys() {
+		fmt.Fprintf(writer, "%s--%s %f\n", strings.Repeat(" ", indent), fs, sub[fs].EntropyValue)
+		if sub[fs].Subset != nil {
+			sub[fs].Subset.print(writer, indent+2)
 		}
 	}
 }
