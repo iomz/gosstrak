@@ -236,18 +236,16 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
 				pt.one.notificationURI = notificationURI
 				return //end
-			} else {
-				pt.one.add(fs[pt.filterObject.Size:], notificationURI)
 			}
+			pt.one.add(fs[pt.filterObject.Size:], notificationURI)
 		case '0':
 			if pt.zero == nil {
 				pt.zero = &PatriciaTrie{}
 				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
 				pt.zero.notificationURI = notificationURI
 				return //end
-			} else {
-				pt.zero.add(fs[pt.filterObject.Size:], notificationURI)
 			}
+			pt.zero.add(fs[pt.filterObject.Size:], notificationURI)
 		}
 	}
 }

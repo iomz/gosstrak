@@ -3,6 +3,7 @@
 // Use of this source code is governed by The MIT License
 // that can be found in the LICENSE file.
 
+// Package tdt contains Tag Data Translation module from binary to Pure Identity
 package tdt
 
 import (
@@ -15,18 +16,21 @@ import (
 	//"xml"
 )
 
-type core struct {
+// Core is the TDT core
+type Core struct {
 	//schemePrefixMap map[schemePrefix]string
 	epcTDSVersion string
 }
 
-func NewCore() *core {
-	c := new(core)
+// NewCore returns a new instance of TDT core
+func NewCore() *Core {
+	c := new(Core)
 	//c.loadEPCTagDataTranslation()
 	return c
 }
 
-func (c *core) LoadEPCTagDataTranslation() {
+// LoadEPCTagDataTranslation loads EPC scheme from scheme files
+func (c *Core) LoadEPCTagDataTranslation() {
 	//schemaDir := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/vendor/schemes/"
 	//files, err := ioutil.ReadDir(schemaDir)
 	//if err != nil {
@@ -58,7 +62,8 @@ type schemeFiled struct {
 }
 */
 
-func (c *core) Translate(pc []byte, id []byte) (string, error) {
+// Translate takes ID in binary ([]byte) and returns the corresponding PureIdentity
+func (c *Core) Translate(pc []byte, id []byte) (string, error) {
 	if len(pc) != 2 {
 		return "", errors.New("Invalid PC bits")
 	}
@@ -75,7 +80,7 @@ func (c *core) Translate(pc []byte, id []byte) (string, error) {
 	return c.buildProprietary(id)
 }
 
-func (c *core) buildEPC(id []byte) (string, error) {
+func (c *Core) buildEPC(id []byte) (string, error) {
 	urn := ""
 
 	// EPC Header
@@ -735,7 +740,7 @@ func (c *core) buildEPC(id []byte) (string, error) {
 	return urn, nil
 }
 
-func (c *core) buildUII(id []byte, afi byte) (string, error) {
+func (c *Core) buildUII(id []byte, afi byte) (string, error) {
 	urn := "urn:epc:id:iso:"
 	switch afi {
 	case 161:
@@ -759,7 +764,7 @@ func (c *core) buildUII(id []byte, afi byte) (string, error) {
 	case 170:
 		urn += "17363h:"
 	default:
-		return "", errors.New("Invalid AFI.")
+		return "", errors.New("invalid afi")
 	}
 
 	sid, err := parse6BitEncodedByteSliceToString(id)
@@ -771,7 +776,7 @@ func (c *core) buildUII(id []byte, afi byte) (string, error) {
 	return urn, nil
 }
 
-func (c *core) buildProprietary(id []byte) (string, error) {
+func (c *Core) buildProprietary(id []byte) (string, error) {
 	return "", nil
 }
 

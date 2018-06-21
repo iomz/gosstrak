@@ -4,6 +4,7 @@ package tdt
 //	KeepaliveAckHeader = 1096
 //)
 
+// AFIAssignment is a table for AFI OID arch mapping
 var AFIAssignment = map[string]string{
 	"7B": "1.0.17363:",
 	"A1": "1.0.17367:",

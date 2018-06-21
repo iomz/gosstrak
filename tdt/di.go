@@ -1,5 +1,6 @@
 package tdt
 
+// DIMapping contains a map for DI to OID arc
 var DIMapping = map[string]string{
 	"J":  "1.0.15961.13.4:",
 	"1J": "1.0.15961.13.36:",
