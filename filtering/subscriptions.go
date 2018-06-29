@@ -31,10 +31,10 @@ func (sub Subscriptions) Dump() string {
 	return writer.String()
 }
 
-func (sub Subscriptions) keys() []string {
-	ks := make([]string, len(sub))
+func (sub *Subscriptions) keys() []string {
+	ks := make([]string, len(*sub))
 	i := 0
-	for k := range sub {
+	for k := range *sub {
 		ks[i] = k
 		i++
 	}
@@ -43,18 +43,18 @@ func (sub Subscriptions) keys() []string {
 }
 
 // linkSubset finds subsets and nest them under the parents
-func (sub Subscriptions) linkSubset() {
-	nds := *NewNodes(&sub)
+func (sub *Subscriptions) linkSubset() {
+	nds := *NewNodes(sub)
 	for _, nd := range nds {
 		for _, fs := range sub.keys() {
-			info := sub[fs]
+			info := (*sub)[fs]
 			linkCandidate := nd.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
 				// if there is no subset already
-				if sub[linkCandidate].Subset == nil {
-					sub[linkCandidate].Subset = &Subscriptions{
+				if (*sub)[linkCandidate].Subset == nil {
+					(*sub)[linkCandidate].Subset = &Subscriptions{
 						fs[len(linkCandidate):]: &Info{
 							Offset:          info.Offset + len(linkCandidate),
 							NotificationURI: info.NotificationURI,
@@ -63,7 +63,7 @@ func (sub Subscriptions) linkSubset() {
 						},
 					}
 				} else {
-					(*sub[linkCandidate].Subset)[fs[len(linkCandidate):]] = &Info{
+					(*(*sub)[linkCandidate].Subset)[fs[len(linkCandidate):]] = &Info{
 						Offset:          info.Offset + len(linkCandidate),
 						NotificationURI: info.NotificationURI,
 						EntropyValue:    info.EntropyValue,
@@ -71,9 +71,9 @@ func (sub Subscriptions) linkSubset() {
 					}
 				}
 				// recursively link the subset
-				sub[linkCandidate].Subset.linkSubset()
+				(*sub)[linkCandidate].Subset.linkSubset()
 				// finaly delete the filter from the upper Subscriptions
-				delete(sub, fs)
+				delete((*sub), fs)
 			}
 		}
 	}

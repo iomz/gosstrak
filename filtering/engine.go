@@ -7,14 +7,23 @@ package filtering
 
 // Engine provides interface for the filtering engines
 type Engine interface {
-	AddSubscription(sub Subscriptions)
-	AnalyzeLocality(id []byte, prefix string, lm *LocalityMap)
-	DeleteSubscription(sub Subscriptions)
+	AddSubscription(Subscriptions)
+	AnalyzeLocality([]byte, string, *LocalityMap)
+	DeleteSubscription(Subscriptions)
 	Dump() string
 	MarshalBinary() ([]byte, error)
-	Search(id []byte) []string
-	UnmarshalBinary(data []byte) error
+	Search([]byte) []string
+	UnmarshalBinary([]byte) error
 }
 
-// NotifyMap contains notificationURI sring as key and slice of ids in [][]byte
-type NotifyMap map[string][][]byte
+// EngineConstructor is a function signature for engine constructors
+type EngineConstructor func(*Subscriptions) Engine
+
+type Engines map[string]EngineConstructor
+
+// AvailableEngines is a map of EngineConstructor with the engine's names as keys
+var AvailableEngines = Engines{
+	"List":         NewList,
+	"PatriciaTrie": NewPatriciaTrie,
+	"SplayTree":    NewSplayTree,
+}

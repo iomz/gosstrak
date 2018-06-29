@@ -104,9 +104,9 @@ func (obst *OptimalBST) splaySearch(spt *SplayTree, parent *OptimalBST, id []byt
 	return matches
 }
 
-// BuildSplayTree builds SplayTree from Subscriptions
+// NewSplayTree builds SplayTree from Subscriptions
 // returns the pointer to the node node
-func BuildSplayTree(sub *Subscriptions) *SplayTree {
+func NewSplayTree(sub *Subscriptions) Engine {
 	// make subsets to the child subscriptions of the corresponding parents
 	sub.linkSubset()
 

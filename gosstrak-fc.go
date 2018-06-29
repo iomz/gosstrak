@@ -255,7 +255,7 @@ func loadList(filterFile string, engineFile string, isRebuilding bool) *filterin
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var listBuf bytes.Buffer
-		list = filtering.BuildList(sub)
+		list = filtering.NewList(&sub)
 		enc := gob.NewEncoder(&listBuf)
 		err = enc.Encode(list)
 		if err != nil {
@@ -288,7 +288,7 @@ func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *fi
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildOptimalBST(&sub)
+		head = filtering.NewOptimalBST(&sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -318,7 +318,7 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildPatriciaTrie(sub)
+		head = filtering.NewPatriciaTrie(&sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
@@ -351,7 +351,7 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 		sub := loadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
-		head = filtering.BuildSplayTree(&sub)
+		head = filtering.NewSplayTree(&sub)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {

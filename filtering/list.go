@@ -128,14 +128,14 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-// BuildList builds a simple list of filters from filter.Subscriptions
+// NewList builds a simple list of filters from filter.Subscriptions
 // returns the pointer to the slice of ExactMatch struct
-func BuildList(sub Subscriptions) *List {
-	list := make(List, len(sub))
+func NewList(sub *Subscriptions) Engine {
+	list := make(List, len(*sub))
 
 	// store ExactMatch in sorted order from sub
 	for i, fs := range sub.keys() {
-		list[i] = &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, 0)}
+		list[i] = &ExactMatch{(*sub)[fs].NotificationURI, NewFilter(fs, 0)}
 	}
 
 	return &list

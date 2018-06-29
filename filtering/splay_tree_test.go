@@ -177,7 +177,7 @@ func TestOptimalBST_splaySearch(t *testing.T) {
 	}
 }
 
-func TestBuildSplayTree(t *testing.T) {
+func TestNewSplayTree(t *testing.T) {
 	type args struct {
 		sub *Subscriptions
 	}
@@ -229,8 +229,8 @@ func TestBuildSplayTree(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildSplayTree(tt.args.sub); got.Dump() != tt.want.Dump() {
-				t.Errorf("BuildSplayTree() = \n%v, want \n%v", got.Dump(), tt.want.Dump())
+			if got := NewSplayTree(tt.args.sub); got.Dump() != tt.want.Dump() {
+				t.Errorf("NewSplayTree() = \n%v, want \n%v", got.Dump(), tt.want.Dump())
 			}
 		})
 	}

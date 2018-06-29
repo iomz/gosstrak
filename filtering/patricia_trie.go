@@ -250,7 +250,7 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 	}
 }
 
-func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
+func (pt *PatriciaTrie) build(prefix string, sub *Subscriptions) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
 	fks := sub.keys()
@@ -291,7 +291,7 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		pt.one.filterObject = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
-		if info, ok := sub[cumulativePrefix]; ok {
+		if info, ok := (*sub)[cumulativePrefix]; ok {
 			pt.one.notificationURI = info.NotificationURI
 		}
 		pt.one.build(cumulativePrefix, sub)
@@ -302,7 +302,7 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		pt.zero.filterObject = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
-		if info, ok := sub[cumulativePrefix]; ok {
+		if info, ok := (*sub)[cumulativePrefix]; ok {
 			pt.zero.notificationURI = info.NotificationURI
 		}
 		pt.zero.build(cumulativePrefix, sub)
@@ -374,20 +374,6 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	if pt.zero != nil {
 		pt.zero.print(writer, indent+2)
 	}
-}
-
-// BuildPatriciaTrie builds PatriciaTrie from filter.Subscriptions
-// returns the pointer to the node node
-func BuildPatriciaTrie(sub Subscriptions) *PatriciaTrie {
-	p1 := lcp(sub.keys())
-	if len(p1) == 0 {
-		// do something if there's no common prefix
-	}
-	head := &PatriciaTrie{}
-	head.filterObject = NewFilter(p1, 0)
-	head.build(p1, sub)
-
-	return head
 }
 
 func (pt *PatriciaTrie) equal(want *PatriciaTrie) (ok bool, got *PatriciaTrie, wanted *PatriciaTrie) {
@@ -462,4 +448,18 @@ func lcp(l []string) string {
 	// In the case where lengths are not equal but all bytes
 	// are equal, min is the answer ("foo" < "foobar").
 	return min
+}
+
+// NewPatriciaTrie builds PatriciaTrie from filter.Subscriptions
+// returns the pointer to the node
+func NewPatriciaTrie(sub *Subscriptions) Engine {
+	p1 := lcp(sub.keys())
+	if len(p1) == 0 {
+		// do something if there's no common prefix
+	}
+	head := &PatriciaTrie{}
+	head.filterObject = NewFilter(p1, 0)
+	head.build(p1, sub)
+
+	return head
 }

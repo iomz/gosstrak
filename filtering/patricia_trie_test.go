@@ -456,37 +456,6 @@ func TestPatriciaTrie_UnmarshalBinary(t *testing.T) {
 	}
 }
 
-func TestPatriciaTrie_build(t *testing.T) {
-	type fields struct {
-		notificationURI string
-		filterObject    *FilterObject
-		one             *PatriciaTrie
-		zero            *PatriciaTrie
-	}
-	type args struct {
-		prefix string
-		sub    Subscriptions
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pt := &PatriciaTrie{
-				notificationURI: tt.fields.notificationURI,
-				filterObject:    tt.fields.filterObject,
-				one:             tt.fields.one,
-				zero:            tt.fields.zero,
-			}
-			pt.build(tt.args.prefix, tt.args.sub)
-		})
-	}
-}
-
 func TestPatriciaTrie_equal(t *testing.T) {
 	type fields struct {
 		notificationURI string
@@ -727,9 +696,9 @@ func TestPatriciaTrie_print(t *testing.T) {
 	}
 }
 
-func TestBuildPatriciaTrie(t *testing.T) {
+func TestNewPatriciaTrie(t *testing.T) {
 	type args struct {
-		sub Subscriptions
+		sub *Subscriptions
 	}
 	tests := []struct {
 		name string
@@ -739,7 +708,7 @@ func TestBuildPatriciaTrie(t *testing.T) {
 		{
 			"simple patricia",
 			args{
-				Subscriptions{
+				&Subscriptions{
 					"0011":         &Info{0, "3", 10, nil},
 					"00110011":     &Info{0, "3-3", 5, nil},
 					"1111":         &Info{0, "15", 2, nil},
@@ -787,9 +756,9 @@ func TestBuildPatriciaTrie(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildPatriciaTrie(tt.args.sub)
-			if ok, g, w := got.equal(tt.want); !ok {
-				t.Errorf("BuildPatriciaTrie() = \n%v, want \n%v", g.Dump(), w.Dump())
+			got := NewPatriciaTrie(tt.args.sub)
+			if ok, g, w := got.(*PatriciaTrie).equal(tt.want); !ok {
+				t.Errorf("NewPatriciaTrie() = \n%v, want \n%v", g.Dump(), w.Dump())
 			}
 		})
 	}

@@ -120,9 +120,9 @@ func TestList_Search(t *testing.T) {
 	}
 }
 
-func TestBuildList(t *testing.T) {
+func TestNewList(t *testing.T) {
 	type args struct {
-		sub Subscriptions
+		sub *Subscriptions
 	}
 	tests := []struct {
 		name string
@@ -130,9 +130,9 @@ func TestBuildList(t *testing.T) {
 		want *List
 	}{
 		{
-			"BuildList testing...",
+			"NewList testing...",
 			args{
-				Subscriptions{
+				&Subscriptions{
 					"0011":         &Info{0, "3", 10, nil},
 					"1111":         &Info{0, "15", 2, nil},
 					"00110000":     &Info{0, "3-0", 5, nil},
@@ -149,12 +149,12 @@ func TestBuildList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildList(tt.args.sub); !reflect.DeepEqual(got, tt.want) {
-				for i, em := range *got {
+			if got := NewList(tt.args.sub); !reflect.DeepEqual(got, tt.want) {
+				for i, em := range *got.(*List) {
 					if !reflect.DeepEqual(em.filter, (*tt.want)[i].filter) {
-						t.Errorf("(*BuildList())[%v].filter = \n%v, want \n%v", i, em.filter, (*tt.want)[i].filter)
+						t.Errorf("(*NewList())[%v].filter = \n%v, want \n%v", i, em.filter, (*tt.want)[i].filter)
 					} else if em.notificationURI != (*tt.want)[i].notificationURI {
-						t.Errorf("(*BuildList())[%v].notificationURI = \n%v, want \n%v", i, em.notificationURI, (*tt.want)[i].notificationURI)
+						t.Errorf("(*NewList())[%v].notificationURI = \n%v, want \n%v", i, em.notificationURI, (*tt.want)[i].notificationURI)
 					}
 				}
 			}

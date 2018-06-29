@@ -319,9 +319,9 @@ func (obst *OptimalBST) print(writer io.Writer, indent int) {
 	}
 }
 
-// BuildOptimalBST builds OptimalBST from Subscriptions
+// NewOptimalBST builds OptimalBST from Subscriptions
 // returns the pointer to the node node
-func BuildOptimalBST(sub *Subscriptions) *OptimalBST {
+func NewOptimalBST(sub *Subscriptions) Engine {
 	// make subsets to the child subscriptions of the corresponding parents
 	sub.linkSubset()
 

@@ -614,7 +614,7 @@ func TestOptimalBST_print(t *testing.T) {
 	}
 }
 
-func TestBuildOptimalBST(t *testing.T) {
+func TestNewOptimalBST(t *testing.T) {
 	type args struct {
 		sub *Subscriptions
 	}
@@ -666,9 +666,9 @@ func TestBuildOptimalBST(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildOptimalBST(tt.args.sub)
-			if ok, g, w := got.equal(tt.want); !ok {
-				t.Errorf("BuildOptimalBST() = \n%v, want \n%v", g.Dump(), w.Dump())
+			got := NewOptimalBST(tt.args.sub)
+			if ok, g, w := got.(*OptimalBST).equal(tt.want); !ok {
+				t.Errorf("NewOptimalBST() = \n%v, want \n%v", g.Dump(), w.Dump())
 			}
 		})
 	}
