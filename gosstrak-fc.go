@@ -33,7 +33,7 @@ type Notification struct {
 	ID []byte
 }
 
-// Event is the struct to hold data on RFTags
+// ReadEvent is the struct to hold data on RFTags
 type ReadEvent struct {
 	id []byte
 	pc []byte
@@ -567,6 +567,7 @@ func runMaster(f string) {
 			c, err := managementListener.Accept()
 			if err != nil {
 				log.Fatal(err)
+				break
 			}
 			p, err := spdy.NewSpdyStreamProvider(c, true)
 			if err != nil {

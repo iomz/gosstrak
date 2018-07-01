@@ -62,12 +62,12 @@ func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFacto
 	// Calculate the priority of deployment
 	ef.deploymentPriority = map[string]uint8{}
 	priority := uint8(0)
-	for name, _ := range AvailableEngines {
+	for name := range AvailableEngines {
 		ef.deploymentPriority[name] = priority
 		priority++
 	}
 
-	log.Print("[EngineFactory] deploymentPriority: %v", ef.deploymentPriority)
+	log.Printf("[EngineFactory] deploymentPriority: %v", ef.deploymentPriority)
 
 	return ef
 }
