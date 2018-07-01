@@ -350,40 +350,6 @@ func TestOptimalBST_UnmarshalBinary(t *testing.T) {
 	}
 }
 
-func TestOptimalBST_build(t *testing.T) {
-	type fields struct {
-		notificationURI string
-		filterObject    *FilterObject
-		matchNext       *OptimalBST
-		mismatchNext    *OptimalBST
-	}
-	type args struct {
-		sub *Subscriptions
-		nds *Nodes
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *OptimalBST
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			obst := &OptimalBST{
-				notificationURI: tt.fields.notificationURI,
-				filterObject:    tt.fields.filterObject,
-				matchNext:       tt.fields.matchNext,
-				mismatchNext:    tt.fields.mismatchNext,
-			}
-			if got := obst.build(tt.args.sub, tt.args.nds); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("OptimalBST.build() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestOptimalBST_equal(t *testing.T) {
 	type fields struct {
 		notificationURI string
@@ -616,7 +582,7 @@ func TestOptimalBST_print(t *testing.T) {
 
 func TestNewOptimalBST(t *testing.T) {
 	type args struct {
-		sub *Subscriptions
+		sub Subscriptions
 	}
 	tests := []struct {
 		name string

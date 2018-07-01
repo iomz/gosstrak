@@ -8,94 +8,93 @@ package main
 import (
 	"math/rand"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak/filtering"
 )
 
-// Build engines -----------------------------------------------------
+// New engines -----------------------------------------------------
 
-func BenchmarkBuildList15915_4763(b *testing.B) {
+func BenchmarkNewList15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
 	b.ResetTimer()
-	filtering.BuildList(sub)
+	filtering.NewList(sub)
 }
 
-func BenchmarkBuildPatricia15915_4763(b *testing.B) {
+func BenchmarkNewPatricia15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
 	b.ResetTimer()
-	filtering.BuildPatriciaTrie(sub)
+	filtering.NewPatriciaTrie(sub)
 }
 
-func BenchmarkBuildOBST15915_4763(b *testing.B) {
+func BenchmarkNewOBST15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
 	b.ResetTimer()
-	filtering.BuildOptimalBST(&sub)
+	filtering.NewOptimalBST(sub)
 }
 
-func BenchmarkBuildSplay15915_4763(b *testing.B) {
+func BenchmarkNewSplay15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
 	b.ResetTimer()
-	filtering.BuildSplayTree(&sub)
+	filtering.NewSplayTree(sub)
 }
 
-func BenchmarkBuildList148825_721(b *testing.B) {
+func BenchmarkNewList148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
 	b.ResetTimer()
-	filtering.BuildList(sub)
+	filtering.NewList(sub)
 }
 
-func BenchmarkBuildPatricia148825_721(b *testing.B) {
+func BenchmarkNewPatricia148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
 	b.ResetTimer()
-	filtering.BuildPatriciaTrie(sub)
+	filtering.NewPatriciaTrie(sub)
 }
 
-func BenchmarkBuildOBST148825_721(b *testing.B) {
+func BenchmarkNewOBST148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
 	b.ResetTimer()
-	filtering.BuildOptimalBST(&sub)
+	filtering.NewOptimalBST(sub)
 }
 
-func BenchmarkBuildSplay148825_721(b *testing.B) {
+func BenchmarkNewSplay148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
 	b.ResetTimer()
-	filtering.BuildSplayTree(&sub)
+	filtering.NewSplayTree(sub)
 }
 
-func BenchmarkBuildList44456_47561(b *testing.B) {
+func BenchmarkNewList44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
 	b.ResetTimer()
-	filtering.BuildList(sub)
+	filtering.NewList(sub)
 }
 
 /* Run too long
-func BenchmarkBuildPatricia44456_47561(b *testing.B) {
+func BenchmarkNewPatricia44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
 	b.ResetTimer()
-	filtering.BuildPatriciaTrie(sub)
+	filtering.NewPatriciaTrie(sub)
 }
 */
 
-func BenchmarkBuildOBST44456_47561(b *testing.B) {
+func BenchmarkNewOBST44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
 	b.ResetTimer()
-	filtering.BuildOptimalBST(&sub)
+	filtering.NewOptimalBST(sub)
 }
 
-func BenchmarkBuildSplay44456_47561(b *testing.B) {
+func BenchmarkNewSplay44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
 	b.ResetTimer()
-	filtering.BuildSplayTree(&sub)
+	filtering.NewSplayTree(sub)
 }
 
 // Filter IDs -----------------------------------------------------
 
 func BenchmarkFilterList15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -113,7 +112,7 @@ func BenchmarkFilterList15915_4763(b *testing.B) {
 
 func BenchmarkFilterPatricia15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildPatriciaTrie(sub)
+	engine := filtering.NewPatriciaTrie(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -131,7 +130,7 @@ func BenchmarkFilterPatricia15915_4763(b *testing.B) {
 
 func BenchmarkFilterOBST15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -149,7 +148,7 @@ func BenchmarkFilterOBST15915_4763(b *testing.B) {
 
 func BenchmarkFilterSplay15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -167,7 +166,7 @@ func BenchmarkFilterSplay15915_4763(b *testing.B) {
 
 func BenchmarkFilterList148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -185,7 +184,7 @@ func BenchmarkFilterList148825_721(b *testing.B) {
 
 func BenchmarkFilterPatricia148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildPatriciaTrie(sub)
+	engine := filtering.NewPatriciaTrie(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -203,7 +202,7 @@ func BenchmarkFilterPatricia148825_721(b *testing.B) {
 
 func BenchmarkFilterOBST148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -221,7 +220,7 @@ func BenchmarkFilterOBST148825_721(b *testing.B) {
 
 func BenchmarkFilterSplay148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -239,7 +238,7 @@ func BenchmarkFilterSplay148825_721(b *testing.B) {
 
 func BenchmarkFilterList44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -258,7 +257,7 @@ func BenchmarkFilterList44456_47561(b *testing.B) {
 /* Run too long
 func BenchmarkFilterPatricia44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildPatriciaTrie(sub)
+	engine := filtering.NewPatriciaTrie(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -277,7 +276,7 @@ func BenchmarkFilterPatricia44456_47561(b *testing.B) {
 
 func BenchmarkFilterOBST44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -295,7 +294,7 @@ func BenchmarkFilterOBST44456_47561(b *testing.B) {
 
 func BenchmarkFilterSplay44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -315,7 +314,7 @@ func BenchmarkFilterSplay44456_47561(b *testing.B) {
 
 func BenchmarkFilterListRandom15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -335,7 +334,7 @@ func BenchmarkFilterListRandom15915_4763(b *testing.B) {
 
 func BenchmarkFilterPatriciaRandom15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildPatriciaTrie(sub)
+	engine := filtering.NewPatriciaTrie(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -355,7 +354,7 @@ func BenchmarkFilterPatriciaRandom15915_4763(b *testing.B) {
 
 func BenchmarkFilterOBSTRandom15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -375,7 +374,7 @@ func BenchmarkFilterOBSTRandom15915_4763(b *testing.B) {
 
 func BenchmarkFilterSplayRandom15915_4763(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/15915-4763/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/15915-4763/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -395,7 +394,7 @@ func BenchmarkFilterSplayRandom15915_4763(b *testing.B) {
 
 func BenchmarkFilterListRandom148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -415,7 +414,7 @@ func BenchmarkFilterListRandom148825_721(b *testing.B) {
 
 func BenchmarkFilterPatriciaRandom148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildPatriciaTrie(sub)
+	engine := filtering.NewPatriciaTrie(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -435,7 +434,7 @@ func BenchmarkFilterPatriciaRandom148825_721(b *testing.B) {
 
 func BenchmarkFilterOBSTRandom148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -455,7 +454,7 @@ func BenchmarkFilterOBSTRandom148825_721(b *testing.B) {
 
 func BenchmarkFilterSplayRandom148825_721(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/148825-721/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/148825-721/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -475,7 +474,7 @@ func BenchmarkFilterSplayRandom148825_721(b *testing.B) {
 
 func BenchmarkFilterListRandom44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildList(sub)
+	engine := filtering.NewList(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -495,7 +494,7 @@ func BenchmarkFilterListRandom44456_47561(b *testing.B) {
 
 func BenchmarkFilterOBSTRandom44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildOptimalBST(&sub)
+	engine := filtering.NewOptimalBST(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -515,7 +514,7 @@ func BenchmarkFilterOBSTRandom44456_47561(b *testing.B) {
 
 func BenchmarkFilterSplayRandom44456_47561(b *testing.B) {
 	sub := loadFiltersFromCSVFile("scenarios/44456-47561/filters.csv")
-	engine := filtering.BuildSplayTree(&sub)
+	engine := filtering.NewSplayTree(sub)
 	ids := new([][]byte)
 	binutil.Load("scenarios/44456-47561/ids.gob", ids)
 	notifies := filtering.NotifyMap{}
@@ -535,6 +534,7 @@ func BenchmarkFilterSplayRandom44456_47561(b *testing.B) {
 
 // Other tests for main.go -----------------------------------------------------
 
+/*
 func Test_loadFiltersFromCSVFile(t *testing.T) {
 	type args struct {
 		f string
@@ -546,13 +546,11 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 	}{
 		{"SGTIN-96_3_3_458960468_102",
 			args{getPackagePath() + "/testdata/filters.csv"},
-			filtering.Subscriptions{
-				"0011000001101101101101011011001011100101010000000001100110": &filtering.Info{
-					NotificationURI: "SGTIN-96_3_3_458960468_102",
-					EntropyValue:    0,
-					Subset:          nil,
-				},
-			}},
+			filtering.Subscriptions{}.Set("0011000001101101101101011011001011100101010000000001100110", &filtering.Info{
+				Offset:          0,
+				NotificationURI: "SGTIN-96_3_3_458960468_102",
+				EntropyValue:    0,
+			})},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -562,6 +560,7 @@ func Test_loadFiltersFromCSVFile(t *testing.T) {
 		})
 	}
 }
+*/
 
 func Test_getPackagePath(t *testing.T) {
 	tests := []struct {

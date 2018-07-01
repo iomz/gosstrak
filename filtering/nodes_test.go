@@ -105,24 +105,26 @@ func TestNodes_sortByP(t *testing.T) {
 
 func TestNewNodes(t *testing.T) {
 	type args struct {
-		sub *Subscriptions
+		sub Subscriptions
 	}
 	tests := []struct {
 		name string
 		args args
-		want *Nodes
+		want Nodes
 	}{
 		{
 			"0011,0000,1111,1100",
 			args{
-				&Subscriptions{
-					"0011": &Info{0, "3", 3, &Subscriptions{}},
-					"0001": &Info{0, "1", 1, &Subscriptions{}},
-					"1111": &Info{0, "15", 15, &Subscriptions{}},
-					"1100": &Info{0, "12", 12, &Subscriptions{}},
+				Subscriptions{
+					m: SubMap{
+						"0011": &Info{0, "3", 3, Subscriptions{}},
+						"0001": &Info{0, "1", 1, Subscriptions{}},
+						"1111": &Info{0, "15", 15, Subscriptions{}},
+						"1100": &Info{0, "12", 12, Subscriptions{}},
+					},
 				},
 			},
-			&Nodes{
+			Nodes{
 				&node{"1111", 0, "15", 15},
 				&node{"1100", 0, "12", 12},
 				&node{"0011", 0, "3", 3},
@@ -133,9 +135,9 @@ func TestNewNodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewNodes(tt.args.sub)
-			for i, w := range *tt.want {
-				if !reflect.DeepEqual(*(*got)[i], *w) {
-					t.Errorf("NewNodes() = \n%v, want \n%v", *(*got)[i], *w)
+			for i, w := range tt.want {
+				if !reflect.DeepEqual(got[i], w) {
+					t.Errorf("NewNodes() = \n%v, want \n%v", got[i], w)
 				}
 			}
 		})

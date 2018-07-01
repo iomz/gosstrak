@@ -179,7 +179,7 @@ func TestOptimalBST_splaySearch(t *testing.T) {
 
 func TestNewSplayTree(t *testing.T) {
 	type args struct {
-		sub *Subscriptions
+		sub Subscriptions
 	}
 	tests := []struct {
 		name string
@@ -189,12 +189,14 @@ func TestNewSplayTree(t *testing.T) {
 		{
 			"",
 			args{
-				&Subscriptions{
-					"0011":         &Info{0, "3", 10, nil},
-					"00110000":     &Info{0, "3-0", 5, nil},
-					"00110011":     &Info{0, "3-3", 5, nil},
-					"001100110000": &Info{0, "3-3-0", 5, nil},
-					"1111":         &Info{0, "15", 2, nil},
+				Subscriptions{
+					m: SubMap{
+						"0011":         &Info{0, "3", 10, Subscriptions{}},
+						"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
+						"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
+						"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
+						"1111":         &Info{0, "15", 2, Subscriptions{}},
+					},
 				},
 			},
 			&SplayTree{

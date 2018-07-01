@@ -25,8 +25,8 @@ type ExactMatch struct {
 // AddSubscription adds a set of subscriptions if not exists yet
 func (list *List) AddSubscription(sub Subscriptions) {
 	// store ExactMatch in sorted order from sub
-	for _, fs := range sub.keys() {
-		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+	for _, fs := range sub.Keys() {
+		em := &ExactMatch{sub.Get(fs).NotificationURI, NewFilter(fs, sub.Get(fs).Offset)}
 		if list.IndexOf(em) < 0 {
 			*list = append(*list, em)
 		}
@@ -40,8 +40,8 @@ func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (list *List) DeleteSubscription(sub Subscriptions) {
 	// store ExactMatch in sorted order from sub
-	for _, fs := range sub.keys() {
-		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+	for _, fs := range sub.Keys() {
+		em := &ExactMatch{sub.Get(fs).NotificationURI, NewFilter(fs, sub.Get(fs).Offset)}
 		if i := list.IndexOf(em); i > -1 {
 			*list = append((*list)[:i], (*list)[i+1:]...)
 		}
@@ -130,12 +130,12 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 
 // NewList builds a simple list of filters from filter.Subscriptions
 // returns the pointer to the slice of ExactMatch struct
-func NewList(sub *Subscriptions) Engine {
-	list := make(List, len(*sub))
+func NewList(sub Subscriptions) Engine {
+	list := List{}
 
 	// store ExactMatch in sorted order from sub
-	for i, fs := range sub.keys() {
-		list[i] = &ExactMatch{(*sub)[fs].NotificationURI, NewFilter(fs, 0)}
+	for _, f := range sub.Keys() {
+		list = append(list, &ExactMatch{sub.Get(f).NotificationURI, NewFilter(f, 0)})
 	}
 
 	return &list

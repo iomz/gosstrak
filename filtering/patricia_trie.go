@@ -25,8 +25,8 @@ type PatriciaTrie struct {
 
 // AddSubscription adds a set of subscriptions if not exists yet
 func (pt *PatriciaTrie) AddSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		pt.add(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		pt.add(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -63,8 +63,8 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		pt.delete(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		pt.delete(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -250,10 +250,10 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 	}
 }
 
-func (pt *PatriciaTrie) build(prefix string, sub *Subscriptions) {
+func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
-	fks := sub.keys()
+	fks := sub.Keys()
 	for _, fk := range fks {
 		// if the prefix is already longer than the testee
 		if len(fk) < len(prefix) {
@@ -291,8 +291,8 @@ func (pt *PatriciaTrie) build(prefix string, sub *Subscriptions) {
 		pt.one.filterObject = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
-		if info, ok := (*sub)[cumulativePrefix]; ok {
-			pt.one.notificationURI = info.NotificationURI
+		if sub.Has(cumulativePrefix) {
+			pt.one.notificationURI = sub.Get(cumulativePrefix).NotificationURI
 		}
 		pt.one.build(cumulativePrefix, sub)
 	}
@@ -302,8 +302,8 @@ func (pt *PatriciaTrie) build(prefix string, sub *Subscriptions) {
 		pt.zero.filterObject = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
-		if info, ok := (*sub)[cumulativePrefix]; ok {
-			pt.zero.notificationURI = info.NotificationURI
+		if sub.Has(cumulativePrefix) {
+			pt.zero.notificationURI = sub.Get(cumulativePrefix).NotificationURI
 		}
 		pt.zero.build(cumulativePrefix, sub)
 	}
@@ -452,8 +452,10 @@ func lcp(l []string) string {
 
 // NewPatriciaTrie builds PatriciaTrie from filter.Subscriptions
 // returns the pointer to the node
-func NewPatriciaTrie(sub *Subscriptions) Engine {
-	p1 := lcp(sub.keys())
+func NewPatriciaTrie(s Subscriptions) Engine {
+	// copy subscription
+	sub := s.Clone()
+	p1 := lcp(sub.Keys())
 	if len(p1) == 0 {
 		// do something if there's no common prefix
 	}

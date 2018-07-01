@@ -698,7 +698,7 @@ func TestPatriciaTrie_print(t *testing.T) {
 
 func TestNewPatriciaTrie(t *testing.T) {
 	type args struct {
-		sub *Subscriptions
+		sub Subscriptions
 	}
 	tests := []struct {
 		name string
@@ -708,12 +708,14 @@ func TestNewPatriciaTrie(t *testing.T) {
 		{
 			"simple patricia",
 			args{
-				&Subscriptions{
-					"0011":         &Info{0, "3", 10, nil},
-					"00110011":     &Info{0, "3-3", 5, nil},
-					"1111":         &Info{0, "15", 2, nil},
-					"00110000":     &Info{0, "3-0", 5, nil},
-					"001100110000": &Info{0, "3-3-0", 5, nil},
+				Subscriptions{
+					m: SubMap{
+						"0011":         &Info{0, "3", 10, Subscriptions{}},
+						"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
+						"1111":         &Info{0, "15", 2, Subscriptions{}},
+						"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
+						"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
+					},
 				},
 			},
 			&PatriciaTrie{

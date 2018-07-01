@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/libchan/spdy"
 	"github.com/iomz/go-llrp"
@@ -32,10 +33,17 @@ type Notification struct {
 	ID []byte
 }
 
+// Event is the struct to hold data on RFTags
+type ReadEvent struct {
+	id []byte
+	pc []byte
+}
+
 // Constant Values
 const (
 	// BufferSize is a general size for a buffer
 	BufferSize = 64 * 1024 // 64 KiB
+	QueueSize  = 128
 	SGTINHOST  = "192.168.22.1:9323"
 	//SGTINHOST = "localhost:9323"
 	SSCCHOST = "192.168.22.4:9323"
@@ -45,7 +53,7 @@ const (
 // Environmental variables
 var (
 	// Current Version
-	version = "0.2.0"
+	version = "0.3.0"
 
 	// Data cache directory
 	dataCacheDir = "/var/tmp/gosstrak-fc-cache"
@@ -91,12 +99,12 @@ var (
 				Default("1000").
 				Int()
 	ip = app.
-		Flag("ip", "LLRP listening address.").
+		Flag("ip", "LLRP emulator address.").
 		Short('a').
 		Default("0.0.0.0").
 		IP()
 	port = app.
-		Flag("port", "LLRP listening port.").
+		Flag("port", "LLRP emulator port.").
 		Short('p').
 		Default("5084").
 		Int()
@@ -114,32 +122,25 @@ var (
 			String()
 
 	// dumb command
-	cmdDumb = app.
-		Command("dumb", "Run in dumb filter mode.")
+	cmdDumb = app.Command("dumb", "Run in dumb filter mode.")
 
 	// list command
-	cmdList = app.
-		Command("list", "Use list of byte filtering engine.")
-
-	// master command
-	cmdMaster = app.
-			Command("master", "Run gosstrak-fc in master mode.")
+	cmdList = app.Command("list", "Use list of byte filtering engine.")
 
 	// obst command
-	cmdOBST = app.
-		Command("obst", "Use Optimal Binary Search Tree filtering engine.")
+	cmdOBST = app.Command("obst", "Use Optimal Binary Search Tree filtering engine.")
 
 	// patricia command
-	cmdPatricia = app.
-			Command("patricia", "Use Patricia Trie filtering engine.")
+	cmdPatricia = app.Command("patricia", "Use Patricia Trie filtering engine.")
 
 	// obst command
-	cmdSplay = app.
-			Command("splay", "Use Splay Tree filtering engine.")
+	cmdSplay = app.Command("splay", "Use Splay Tree filtering engine.")
 
 	// run command
-	cmdRun = app.
-		Command("run", "Run the F&C middleware.")
+	cmdRun = app.Command("run", "Run the F&C middleware.")
+
+	// start command
+	cmdStart = app.Command("start", "Start the gosstrak-fc.")
 
 	// Current messageID
 	messageID = uint32(*initialMessageID)
@@ -160,7 +161,7 @@ func analyze(head filtering.Engine, inFile string, outFile string) {
 	// Save to file
 	file, err := os.Create(outFile)
 	if err != nil {
-		log.Fatal("file:", err)
+		log.Fatal(err)
 	}
 	file.Write(lm.ToJSON())
 	file.Close()
@@ -231,7 +232,12 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 		if len(record) < 3 {
 			// Default case
 			// prefix as key, *filtering.Info as value
-			sub[record[1]] = &filtering.Info{Offset: 0, NotificationURI: record[0], EntropyValue: 0, Subset: nil}
+			sub.Set(record[1], &filtering.Info{
+				Offset:          0,
+				NotificationURI: record[0],
+				EntropyValue:    0,
+				Subset:          filtering.Subscriptions{},
+			})
 		} else {
 			// For OptimalBST, filter with EntropyValue
 			// prefix as key, *filtering.Info as value
@@ -241,7 +247,12 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 			}
 			fs := record[1]
 			uri := record[0]
-			sub[fs] = &filtering.Info{Offset: 0, NotificationURI: uri, EntropyValue: pValue, Subset: nil}
+			sub.Set(fs, &filtering.Info{
+				Offset:          0,
+				NotificationURI: uri,
+				EntropyValue:    pValue,
+				Subset:          filtering.Subscriptions{},
+			})
 		}
 	}
 	return sub
@@ -253,18 +264,18 @@ func loadList(filterFile string, engineFile string, isRebuilding bool) *filterin
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
 		var listBuf bytes.Buffer
-		list = filtering.NewList(&sub)
+		list = filtering.NewList(sub).(*filtering.List)
 		enc := gob.NewEncoder(&listBuf)
 		err = enc.Encode(list)
 		if err != nil {
-			log.Fatal("encode:", err)
+			log.Fatal(err)
 		}
 		// Save to file
 		file, err := os.Create(engineFile)
 		if err != nil {
-			log.Fatal("file:", err)
+			log.Fatal(err)
 		}
 		file.Write(listBuf.Bytes())
 		file.Close()
@@ -273,7 +284,7 @@ func loadList(filterFile string, engineFile string, isRebuilding bool) *filterin
 		// Tree decode
 		err = binutil.Load(engineFile, &list)
 		if err != nil {
-			log.Fatal("engine: ", err)
+			log.Fatal(err)
 		}
 		log.Print("Loaded the List filtering engine from ", engineFile)
 	}
@@ -286,18 +297,18 @@ func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *fi
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
 		var tree bytes.Buffer
-		head = filtering.NewOptimalBST(&sub)
+		head = filtering.NewOptimalBST(sub).(*filtering.OptimalBST)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
-			log.Fatal("encode:", err)
+			log.Fatal(err)
 		}
 		// Save to file
 		file, err := os.Create(engineFile)
 		if err != nil {
-			log.Fatal("file:", err)
+			log.Fatal(err)
 		}
 		file.Write(tree.Bytes())
 		file.Close()
@@ -316,18 +327,18 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
 		var tree bytes.Buffer
-		head = filtering.NewPatriciaTrie(&sub)
+		head = filtering.NewPatriciaTrie(sub).(*filtering.PatriciaTrie)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
-			log.Fatal("encode:", err)
+			log.Fatal(err)
 		}
 		// Save to file
 		file, err := os.Create(engineFile)
 		if err != nil {
-			log.Fatal("file:", err)
+			log.Fatal(err)
 		}
 		file.Write(tree.Bytes())
 		file.Close()
@@ -336,7 +347,7 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 		// Tree decode
 		err = binutil.Load(engineFile, &head)
 		if err != nil {
-			log.Fatal("engine: ", err)
+			log.Fatal(err)
 		}
 		log.Print("Loaded the Patricia Trie filtering engine from ", engineFile)
 	}
@@ -349,18 +360,18 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
+		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
 		var tree bytes.Buffer
-		head = filtering.NewSplayTree(&sub)
+		head = filtering.NewSplayTree(sub).(*filtering.SplayTree)
 		enc := gob.NewEncoder(&tree)
 		err = enc.Encode(head)
 		if err != nil {
-			log.Fatal("encode:", err)
+			log.Fatal(err)
 		}
 		// Save to file
 		file, err := os.Create(engineFile)
 		if err != nil {
-			log.Fatal("file:", err)
+			log.Fatal(err)
 		}
 		file.Write(tree.Bytes())
 		file.Close()
@@ -369,7 +380,7 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 		// Tree decode
 		err = binutil.Load(engineFile, &head)
 		if err != nil {
-			log.Fatal("engine: ", err)
+			log.Fatal(err)
 		}
 		log.Print("Loaded the Splay Tree filtering engine from ", engineFile)
 	}
@@ -386,7 +397,7 @@ func run(filterFile string, engineFile string) {
 	// SGTIN
 	sgtinConn, err := net.Dial("tcp", SGTINHOST)
 	if err != nil {
-		log.Fatal("sgtin notify connection:", err)
+		log.Fatal(err)
 	}
 	sgtinp, err := spdy.NewSpdyStreamProvider(sgtinConn, false)
 	if err != nil {
@@ -400,7 +411,7 @@ func run(filterFile string, engineFile string) {
 	// SSCC
 	ssccConn, err := net.Dial("tcp", SSCCHOST)
 	if err != nil {
-		log.Fatal("sscc notify connection:", err)
+		log.Fatal(err)
 	}
 	ssccp, err := spdy.NewSpdyStreamProvider(ssccConn, false)
 	if err != nil {
@@ -417,7 +428,7 @@ llrpinit:
 	// Establish a connection to the llrp client
 	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
 	if err != nil {
-		log.Fatal("connection:", err)
+		log.Fatal(err)
 	}
 	buf := make([]byte, BufferSize)
 	for {
@@ -427,7 +438,7 @@ llrpinit:
 			// Close the connection when you're done with it.
 			return
 		} else if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal(err)
 			conn.Close()
 			break
 		}
@@ -500,20 +511,192 @@ llrpinit:
 				}
 			}()
 		} else {
-			log.Fatalf("Unknown header: %v\n", header)
-			log.Fatalf("%v\n", buf[:msgLength])
+			log.Printf("Unknown header: %v\n", header)
+			log.Printf("%v\n", buf[:msgLength])
 			goto llrpinit
 		}
 	}
 }
 
-func runMaster() {
-	log.Println("Initializing gosstrak-fc for master mode...")
+func runMaster(f string) {
+	log.Println("initializing gosstrak-fc for master mode...")
 
 	// Load existing subscriptions from file
+	log.Println("loading subscriptions from file")
+	sub := loadFiltersFromCSVFile(f)
+	log.Println("...complete")
 
-	// Load existing filtering engines from file
+	// Receive the engine instance
+	log.Println("setting up a management channel")
+	var currentEngine filtering.Engine
+	mc := make(chan filtering.ManagementMessage, QueueSize)
+	go func() {
+		for {
+			msg, ok := <-mc
+			if !ok {
+				break
+			}
+			switch msg.Type {
+			case filtering.DeployEngine:
+				currentEngine = msg.EngineGeneratorInstance.Engine
+				log.Printf("currentEngine switched to %s\n", msg.EngineGeneratorInstance.Name)
+			}
+		}
+		log.Fatalln("managementChannel listener exited in gosstrak-fc")
+	}()
+	log.Println("...complete")
 
+	// Set up an EngineFactory with a management channel
+	log.Println("setting up an engine factory")
+	engineFactory := filtering.NewEngineFactory(sub, mc)
+	go engineFactory.Run()
+	// Wait until the first engine becomes available
+	for currentEngine == nil {
+		time.Sleep(time.Second)
+	}
+	log.Println("...complete")
+
+	// Receive management access
+	log.Println("setting up an management interface")
+	go func() {
+		managementListener, err := net.Listen("tcp", "0.0.0.0:2784")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for {
+			c, err := managementListener.Accept()
+			if err != nil {
+				log.Fatal(err)
+			}
+			p, err := spdy.NewSpdyStreamProvider(c, true)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			t := spdy.NewTransport(p)
+
+			receiver, err := t.WaitReceiveChannel()
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+
+			mm := &filtering.ManagementMessage{}
+			err = receiver.Receive(mm)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			log.Print(mm)
+			mc <- *mm
+		}
+		log.Fatalln("managementListener closed in gosstrak-fc")
+	}()
+	log.Println("...complete")
+
+	// Receive incoming IDs
+	log.Println("setting up an incoming ReadEvent channel")
+	var rq = make(chan ReadEvent, QueueSize)
+	go func() {
+		for {
+			re, ok := <-rq
+			if !ok {
+				break
+			}
+			matches := currentEngine.Search(re.id)
+			//notify matches
+			for _, m := range matches {
+				log.Printf("match: %s <- %v,%v\n", m, re.pc, re.id)
+			}
+		}
+		log.Fatalln("ic listener exited in gosstrak-fc")
+	}()
+	log.Println("...complete")
+
+	// Establish a connection to the llrp client
+	log.Println("starting a connection to an interrogator")
+	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Prepare LLRP header storage
+	header := make([]byte, 2)
+	length := make([]byte, 4)
+	for {
+		_, err = io.ReadFull(conn, header)
+		h := binary.BigEndian.Uint16(header)
+		if h == llrp.ReaderEventNotificationHeader {
+			_, err = io.ReadFull(conn, length)
+			message := make([]byte, binary.BigEndian.Uint32(length)-6)
+			_, err = io.ReadFull(conn, message)
+			log.Println(">>> READER_EVENT_NOTIFICATION")
+			conn.Write(llrp.SetReaderConfig(messageID))
+		} else if h == llrp.KeepaliveHeader {
+			_, err = io.ReadFull(conn, length)
+			message := make([]byte, binary.BigEndian.Uint32(length)-6)
+			_, err = io.ReadFull(conn, message)
+			log.Println(">>> KEEP_ALIVE")
+			conn.Write(llrp.KeepaliveAck())
+		} else if h == llrp.SetReaderConfigResponseHeader {
+			_, err = io.ReadFull(conn, length)
+			message := make([]byte, binary.BigEndian.Uint32(length)-6)
+			_, err = io.ReadFull(conn, message)
+			log.Println(">>> SET_READER_CONFIG_RESPONSE")
+		} else if h == llrp.ROAccessReportHeader {
+			_, err = io.ReadFull(conn, length)
+			l := binary.BigEndian.Uint32(length)
+			message := make([]byte, l-6)
+			_, err = io.ReadFull(conn, message)
+			log.Println(">>> RO_ACCESS_REPORT")
+			decapsulateROAccessReport(l, message, rq)
+		} else {
+			log.Fatalf("Unknown header: %v\n", h)
+		}
+	}
+}
+
+// decapsulate the ROAccessReport and extract IDs
+func decapsulateROAccessReport(roarLength uint32, buf []byte, rq chan ReadEvent) {
+	//defer timeTrack(time.Now(), fmt.Sprintf("unpacking %v bytes", len(buf)))
+	trds := buf[4 : roarLength-6] // TRD stack
+	trdLength := uint16(0)        // First TRD size
+	offset := uint32(0)           // the start of TRD
+	//for trdLength != 0 && int(offset) != len(trds) {
+	for {
+		if uint32(10+offset) < roarLength {
+			trdLength = binary.BigEndian.Uint16(trds[offset+2 : offset+4])
+		} else {
+			break
+		}
+		var id, pc []byte
+		if trds[offset+4] == 141 { // EPC-96
+			id = trds[offset+5 : offset+17]
+			if trds[offset+17] == 140 { // C1G2-PC parameter
+				pc = trds[offset+18 : offset+20]
+			}
+			//log.Printf("EPC: %v, (%x)\n", id, pc)
+		} else if binary.BigEndian.Uint16(trds[offset+4:offset+6]) == 241 { // EPCData
+			epcDataLength := binary.BigEndian.Uint16(trds[offset+6 : offset+8])  // length
+			epcLengthBits := binary.BigEndian.Uint16(trds[offset+8 : offset+10]) // EPCLengthBits
+			epcLengthBytes := uint32(epcLengthBits / 8)
+			/*
+				// ID length in byte = Length - (6 + 10 + 16 + 16)/8
+				//id = trds[offset+6 : offset+epcDataSize-6]
+				// trim the last 1 byte if it's not a multiple of a word
+				//id = id[0 : epcLengthBits/8]
+			*/
+			id = trds[offset+10 : offset+10+epcLengthBytes]
+			if 4+epcDataLength < trdLength && trds[offset+10+epcLengthBytes] == 140 { // C1G2-PC parameter
+				pc = trds[offset+10+epcLengthBytes+1 : offset+10+epcLengthBytes+3]
+			}
+			//log.Printf("EPC: %v, (%x)\n", id, pc)
+		}
+		rq <- ReadEvent{id, pc}
+		offset += uint32(trdLength) // move the offset at the end of this TRD
+		//log.Printf("offset: %v, roarLength: %v\n", offset, roarLength)
+		//log.Printf("trdLength: %v, len(trds): %v\n", trdLength, len(trds))
+	}
 }
 
 func runDumb(idFile string, sub filtering.Subscriptions) {
@@ -525,8 +708,9 @@ func runDumb(idFile string, sub filtering.Subscriptions) {
 	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
-		for f, info := range sub {
+		for _, f := range sub.Keys() {
 			if strings.HasPrefix(i, f) {
+				info := sub.Get(f)
 				if _, ok := matches[info.NotificationURI]; !ok {
 					matches[info.NotificationURI] = []string{}
 				}
@@ -566,13 +750,13 @@ func main() {
 		}
 	case cmdDumb.FullCommand():
 		sub := loadFiltersFromCSVFile(*filterFile)
-		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
+		log.Printf("Loaded %v filters from %s\n", sub.Length(), *filterFile)
 		runDumb(*idFile, sub)
 	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, list, *outFile)
-	case cmdMaster.FullCommand():
-		runMaster()
+	case cmdStart.FullCommand():
+		runMaster(*filterFile)
 	case cmdOBST.FullCommand():
 		head := loadOptimalBST(*filterFile, *engineFile, *isRebuilding)
 		execute(*idFile, head, *outFile)

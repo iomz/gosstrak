@@ -17,7 +17,7 @@ type Engine interface {
 }
 
 // EngineConstructor is a function signature for engine constructors
-type EngineConstructor func(*Subscriptions) Engine
+type EngineConstructor func(Subscriptions) Engine
 
 type Engines map[string]EngineConstructor
 

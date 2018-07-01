@@ -18,8 +18,8 @@ type SplayTree struct {
 
 // AddSubscription adds a set of subscriptions if not exists yet
 func (spt *SplayTree) AddSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		spt.root.add(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		spt.root.add(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -30,8 +30,8 @@ func (spt *SplayTree) AnalyzeLocality(id []byte, path string, lm *LocalityMap) {
 
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (spt *SplayTree) DeleteSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		spt.root.delete(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		spt.root.delete(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -106,7 +106,7 @@ func (obst *OptimalBST) splaySearch(spt *SplayTree, parent *OptimalBST, id []byt
 
 // NewSplayTree builds SplayTree from Subscriptions
 // returns the pointer to the node node
-func NewSplayTree(sub *Subscriptions) Engine {
+func NewSplayTree(sub Subscriptions) Engine {
 	// make subsets to the child subscriptions of the corresponding parents
 	sub.linkSubset()
 

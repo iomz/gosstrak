@@ -25,8 +25,8 @@ type OptimalBST struct {
 
 // AddSubscription adds a set of subscriptions if not exists yet
 func (obst *OptimalBST) AddSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		obst.add(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		obst.add(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -68,8 +68,8 @@ func (obst *OptimalBST) AnalyzeLocality(id []byte, path string, lm *LocalityMap)
 
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (obst *OptimalBST) DeleteSubscription(sub Subscriptions) {
-	for _, fs := range sub.keys() {
-		obst.delete(fs, sub[fs].NotificationURI)
+	for _, fs := range sub.Keys() {
+		obst.delete(fs, sub.Get(fs).NotificationURI)
 	}
 }
 
@@ -211,21 +211,21 @@ func (obst *OptimalBST) add(fs string, notificationURI string) {
 	return
 }
 
-func (obst *OptimalBST) build(sub *Subscriptions, nds *Nodes) *OptimalBST {
+func (obst *OptimalBST) build(sub Subscriptions, nds Nodes) *OptimalBST {
 	current := obst
-	for i, nd := range *nds {
+	for i, nd := range nds {
 		current.filterObject = NewFilter(nd.filter, nd.offset)
 		current.notificationURI = nd.notificationURI
 		// if this node has subset
-		if _, ok := (*sub)[nd.filter]; ok && (*sub)[nd.filter].Subset != nil {
-			subset := (*sub)[nd.filter].Subset
+		if sub.Has(nd.filter) && sub.Get(nd.filter).Subset.Length() != 0 {
+			subset := sub.Get(nd.filter).Subset
 			subnds := NewNodes(subset)
 			subobst := &OptimalBST{}
 			current.matchNext = subobst.build(subset, subnds)
 		} else {
 			current.matchNext = nil
 		}
-		if i+1 < len(*nds) {
+		if i+1 < len(nds) {
 			current.mismatchNext = &OptimalBST{}
 			current = current.mismatchNext
 		} else {
@@ -321,14 +321,14 @@ func (obst *OptimalBST) print(writer io.Writer, indent int) {
 
 // NewOptimalBST builds OptimalBST from Subscriptions
 // returns the pointer to the node node
-func NewOptimalBST(sub *Subscriptions) Engine {
+func NewOptimalBST(sub Subscriptions) Engine {
 	// make subsets to the child subscriptions of the corresponding parents
 	sub.linkSubset()
 
 	// recalculate the cumulative evs if it has subset subscriptions
-	for _, fs := range (*sub).keys() {
-		info := (*sub)[fs]
-		if info.Subset != nil {
+	for _, fs := range sub.Keys() {
+		info := sub.Get(fs)
+		if info.Subset.Length() != 0 {
 			info.EntropyValue += recalculateEntropyValue(info.Subset)
 		}
 	}
