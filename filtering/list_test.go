@@ -133,12 +133,10 @@ func TestNewList(t *testing.T) {
 			"NewList testing...",
 			args{
 				Subscriptions{
-					m: SubMap{
-						"0011":         &Info{0, "3", 10, Subscriptions{}},
-						"1111":         &Info{0, "15", 2, Subscriptions{}},
-						"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
-						"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
-					},
+					"0011":         &Info{0, "3", 10, Subscriptions{}},
+					"1111":         &Info{0, "15", 2, Subscriptions{}},
+					"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
+					"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
 				},
 			},
 			&List{
@@ -249,9 +247,7 @@ func TestList_AddSubscription(t *testing.T) {
 			},
 			args{
 				Subscriptions{
-					m: SubMap{
-						"00111100": &Info{0, "3-12", 0, Subscriptions{}},
-					},
+					"00111100": &Info{0, "3-12", 0, Subscriptions{}},
 				},
 			},
 		},
@@ -260,7 +256,7 @@ func TestList_AddSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.list.AddSubscription(tt.args.sub)
 			for _, fs := range tt.args.sub.Keys() {
-				newSub := &ExactMatch{tt.args.sub.Get(fs).NotificationURI, NewFilter(fs, tt.args.sub.Get(fs).Offset)}
+				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
 				if tt.list.IndexOf(newSub) < 0 {
 					t.Errorf("List.AddSubscription() didn't append %v", *newSub)
 				}
@@ -288,9 +284,7 @@ func TestList_DeleteSubscription(t *testing.T) {
 			},
 			args{
 				Subscriptions{
-					m: SubMap{
-						"00110000": &Info{0, "3-0", 0, Subscriptions{}},
-					},
+					"00110000": &Info{0, "3-0", 0, Subscriptions{}},
 				},
 			},
 		},
@@ -299,7 +293,7 @@ func TestList_DeleteSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.list.DeleteSubscription(tt.args.sub)
 			for _, fs := range tt.args.sub.Keys() {
-				newSub := &ExactMatch{tt.args.sub.Get(fs).NotificationURI, NewFilter(fs, tt.args.sub.Get(fs).Offset)}
+				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
 				if tt.list.IndexOf(newSub) > -1 {
 					t.Errorf("List.AddSubscription() didn't delete %v", *newSub)
 					t.Errorf("List: %s", tt.list.Dump())

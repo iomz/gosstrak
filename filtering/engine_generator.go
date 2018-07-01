@@ -80,20 +80,16 @@ func (eg *EngineGenerator) enterPending(e *fsm.Event) {
 	switch msg.Type {
 	case AddSubscription:
 		eg.Engine.AddSubscription(Subscriptions{
-			m: SubMap{
-				msg.FilterString: &Info{
-					Offset:          0,
-					NotificationURI: msg.NotificationURI,
-				},
+			msg.FilterString: &Info{
+				Offset:          0,
+				NotificationURI: msg.NotificationURI,
 			},
 		})
 	case DeleteSubscription:
 		eg.Engine.DeleteSubscription(Subscriptions{
-			m: SubMap{
-				msg.FilterString: &Info{
-					Offset:          0,
-					NotificationURI: msg.NotificationURI,
-				},
+			msg.FilterString: &Info{
+				Offset:          0,
+				NotificationURI: msg.NotificationURI,
 			},
 		})
 	}

@@ -26,7 +26,7 @@ type OptimalBST struct {
 // AddSubscription adds a set of subscriptions if not exists yet
 func (obst *OptimalBST) AddSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		obst.add(fs, sub.Get(fs).NotificationURI)
+		obst.add(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -69,7 +69,7 @@ func (obst *OptimalBST) AnalyzeLocality(id []byte, path string, lm *LocalityMap)
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (obst *OptimalBST) DeleteSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		obst.delete(fs, sub.Get(fs).NotificationURI)
+		obst.delete(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -217,8 +217,8 @@ func (obst *OptimalBST) build(sub Subscriptions, nds Nodes) *OptimalBST {
 		current.filterObject = NewFilter(nd.filter, nd.offset)
 		current.notificationURI = nd.notificationURI
 		// if this node has subset
-		if sub.Has(nd.filter) && sub.Get(nd.filter).Subset.Length() != 0 {
-			subset := sub.Get(nd.filter).Subset
+		if _, ok := sub[nd.filter]; ok && len(sub[nd.filter].Subset) != 0 {
+			subset := sub[nd.filter].Subset
 			subnds := NewNodes(subset)
 			subobst := &OptimalBST{}
 			current.matchNext = subobst.build(subset, subnds)
@@ -327,8 +327,8 @@ func NewOptimalBST(sub Subscriptions) Engine {
 
 	// recalculate the cumulative evs if it has subset subscriptions
 	for _, fs := range sub.Keys() {
-		info := sub.Get(fs)
-		if info.Subset.Length() != 0 {
+		info := sub[fs]
+		if len(info.Subset) != 0 {
 			info.EntropyValue += recalculateEntropyValue(info.Subset)
 		}
 	}

@@ -26,7 +26,7 @@ type ExactMatch struct {
 func (list *List) AddSubscription(sub Subscriptions) {
 	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub.Get(fs).NotificationURI, NewFilter(fs, sub.Get(fs).Offset)}
+		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
 		if list.IndexOf(em) < 0 {
 			*list = append(*list, em)
 		}
@@ -41,7 +41,7 @@ func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
 func (list *List) DeleteSubscription(sub Subscriptions) {
 	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub.Get(fs).NotificationURI, NewFilter(fs, sub.Get(fs).Offset)}
+		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
 		if i := list.IndexOf(em); i > -1 {
 			*list = append((*list)[:i], (*list)[i+1:]...)
 		}
@@ -134,8 +134,8 @@ func NewList(sub Subscriptions) Engine {
 	list := List{}
 
 	// store ExactMatch in sorted order from sub
-	for _, f := range sub.Keys() {
-		list = append(list, &ExactMatch{sub.Get(f).NotificationURI, NewFilter(f, 0)})
+	for _, fs := range sub.Keys() {
+		list = append(list, &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, 0)})
 	}
 
 	return &list

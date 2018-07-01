@@ -20,10 +20,8 @@ func TestSubscriptions_keys(t *testing.T) {
 		{
 			"0,8",
 			Subscriptions{
-				m: SubMap{
-					"0000": &Info{0, "0", 100, Subscriptions{}},
-					"1000": &Info{0, "8", 10, Subscriptions{}},
-				},
+				"0000": &Info{0, "0", 100, Subscriptions{}},
+				"1000": &Info{0, "8", 10, Subscriptions{}},
 			},
 			[]string{"0000", "1000"},
 		},
@@ -46,13 +44,11 @@ func TestSubscriptions_Dump(t *testing.T) {
 		{
 			"Test Dump Subscriptions",
 			Subscriptions{
-				m: SubMap{
-					"0011":         &Info{0, "3", 10, Subscriptions{}},
-					"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
-					"1111":         &Info{0, "15", 2, Subscriptions{}},
-					"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
-					"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
-				},
+				"0011":         &Info{0, "3", 10, Subscriptions{}},
+				"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
+				"1111":         &Info{0, "15", 2, Subscriptions{}},
+				"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
+				"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
 			},
 			"--0011 10.000000\n" +
 				"--00110000 5.000000\n" +
@@ -80,37 +76,27 @@ func TestSubscriptions_linkSubset(t *testing.T) {
 		{
 			"Subset linking test for Subscriptions",
 			Subscriptions{
-				m: SubMap{
-					"0011":         &Info{0, "3", 10, Subscriptions{}},
-					"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
-					"1111":         &Info{0, "15", 2, Subscriptions{}},
-					"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
-					"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
-				},
+				"0011":         &Info{0, "3", 10, Subscriptions{}},
+				"00110011":     &Info{0, "3-3", 5, Subscriptions{}},
+				"1111":         &Info{0, "15", 2, Subscriptions{}},
+				"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
+				"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
 			},
 			Subscriptions{
-				m: SubMap{
-					"0011": &Info{0, "3", 10,
-						Subscriptions{
-							m: SubMap{
-								"0000": &Info{4, "3-0", 5, Subscriptions{}},
-								"0011": &Info{4, "3-3", 5, Subscriptions{
-									m: SubMap{
-										"0000": &Info{8, "3-3-0", 5, Subscriptions{}},
-									},
-								}},
-							},
-						},
-					},
-					"1111": &Info{0, "15", 2, Subscriptions{}},
-				},
+				"0011": &Info{0, "3", 10, Subscriptions{
+					"0000": &Info{4, "3-0", 5, Subscriptions{}},
+					"0011": &Info{4, "3-3", 5, Subscriptions{
+						"0000": &Info{8, "3-3-0", 5, Subscriptions{}},
+					}},
+				}},
+				"1111": &Info{0, "15", 2, Subscriptions{}},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.sub.linkSubset()
-			if !reflect.DeepEqual(tt.sub, tt.want) {
+			if tt.sub.Dump() != tt.want.Dump() {
 				t.Errorf("Subscriptions.linkSubset() -> \n%v, want \n%v", tt.sub.Dump(), tt.want.Dump())
 			}
 		})
@@ -153,14 +139,10 @@ func Test_recalculateEntropyValue(t *testing.T) {
 			"15",
 			args{
 				Subscriptions{
-					m: SubMap{
-						"00110000": &Info{0, "3-0", 5, Subscriptions{}},
-						"00110011": &Info{0, "3-3", 5, Subscriptions{
-							m: SubMap{
-								"0000": &Info{8, "3-3-0", 5, Subscriptions{}},
-							},
-						}},
-					},
+					"00110000": &Info{0, "3-0", 5, Subscriptions{}},
+					"00110011": &Info{0, "3-3", 5, Subscriptions{
+						"0000": &Info{8, "3-3-0", 5, Subscriptions{}},
+					}},
 				},
 			},
 			float64(15),

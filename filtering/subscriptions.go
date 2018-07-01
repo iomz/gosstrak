@@ -11,17 +11,10 @@ import (
 	"io"
 	"sort"
 	"strings"
-	"sync"
 )
 
-// SubMap contains filter string as keys and &Info as values
-type SubMap map[string]*Info
-
 // Subscriptions contains filter string as key and Info as value
-type Subscriptions struct {
-	sync.RWMutex
-	m SubMap
-}
+type Subscriptions map[string]*Info
 
 // Info contains notificationURI and pValue for a filter
 type Info struct {
@@ -33,14 +26,21 @@ type Info struct {
 
 // Clone retuns a new copy of subscriptions
 func (sub Subscriptions) Clone() Subscriptions {
-	return Subscriptions{}
-}
+	clone := Subscriptions{}
 
-// Delete takes a key and delete it
-func (sub Subscriptions) Delete(s string) {
-	sub.Lock()
-	delete(sub.m, s)
-	sub.Unlock()
+	for _, fs := range sub.Keys() {
+		info := Info{}
+		info.Offset = sub[fs].Offset
+		info.NotificationURI = sub[fs].NotificationURI
+		info.EntropyValue = sub[fs].EntropyValue
+		if len(sub[fs].Subset) == 0 {
+			info.Subset = Subscriptions{}
+		} else {
+			info.Subset = sub[fs].Subset.Clone()
+		}
+		clone[fs] = &info
+	}
+	return clone
 }
 
 // Dump retuns a string representation of the Subscriptions
@@ -50,52 +50,16 @@ func (sub Subscriptions) Dump() string {
 	return writer.String()
 }
 
-// Get takes a key and returns value
-func (sub Subscriptions) Get(s string) *Info {
-	sub.RLock()
-	info := sub.m[s]
-	sub.RUnlock()
-	return info
-}
-
 // Keys return a slice of keys in m
 func (sub Subscriptions) Keys() []string {
-	ks := make([]string, len(sub.m))
+	ks := make([]string, len(sub))
 	i := 0
-	sub.RLock()
-	for k := range sub.m {
+	for k := range sub {
 		ks[i] = k
 		i++
 	}
-	sub.RUnlock()
 	sort.Strings(ks)
 	return ks
-}
-
-// Length returns len(sub.m)
-func (sub Subscriptions) Length() int {
-	sub.RLock()
-	len := len(sub.m)
-	sub.RUnlock()
-	return len
-}
-
-// Has takes a key and returns true if it's in the map
-func (sub Subscriptions) Has(s string) bool {
-	sub.RLock()
-	_, ok := sub.m[s]
-	sub.RUnlock()
-	return ok
-}
-
-// Set takes a key and a value
-func (sub Subscriptions) Set(s string, info *Info) {
-	sub.Lock()
-	if sub.m == nil {
-		sub.m = make(SubMap)
-	}
-	sub.m[s] = info
-	sub.Unlock()
 }
 
 // linkSubset finds subsets and nest them under the parents
@@ -103,29 +67,30 @@ func (sub Subscriptions) linkSubset() {
 	nds := NewNodes(sub)
 	for _, nd := range nds {
 		for _, fs := range sub.Keys() {
-			info := sub.Get(fs)
+			info := sub[fs]
 			linkCandidate := nd.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
 				// if there is no subset already
-				if sub.Get(linkCandidate).Subset.Length() == 0 {
-					sub.Get(linkCandidate).Subset.Set(fs[len(linkCandidate):], &Info{
+				if len(sub[linkCandidate].Subset) == 0 {
+					sub[linkCandidate].Subset = Subscriptions{}
+					sub[linkCandidate].Subset[fs[len(linkCandidate):]] = &Info{
 						Offset:          info.Offset + len(linkCandidate),
 						NotificationURI: info.NotificationURI,
 						EntropyValue:    info.EntropyValue,
-					})
+					}
 				} else {
-					sub.Get(linkCandidate).Subset.Set(fs[len(linkCandidate):], &Info{
+					sub[linkCandidate].Subset[fs[len(linkCandidate):]] = &Info{
 						Offset:          info.Offset + len(linkCandidate),
 						NotificationURI: info.NotificationURI,
 						EntropyValue:    info.EntropyValue,
-					})
+					}
 				}
 				// recursively link the subset
-				sub.Get(linkCandidate).Subset.linkSubset()
+				sub[linkCandidate].Subset.linkSubset()
 				// finaly delete the filter from the upper Subscriptions
-				sub.Delete(fs)
+				delete(sub, fs)
 			}
 		}
 	}
@@ -135,22 +100,20 @@ func (sub Subscriptions) linkSubset() {
 func recalculateEntropyValue(sub Subscriptions) float64 {
 	ev := float64(0)
 	for _, fs := range sub.Keys() {
-		ss := sub.Get(fs).Subset
-		if ss.Length() != 0 {
-			sub.Lock()
-			sub.m[fs].EntropyValue += recalculateEntropyValue(ss)
-			sub.Unlock()
+		ss := sub[fs].Subset
+		if len(ss) != 0 {
+			sub[fs].EntropyValue += recalculateEntropyValue(ss)
 		}
-		ev += sub.Get(fs).EntropyValue
+		ev += sub[fs].EntropyValue
 	}
 	return ev
 }
 
 func (sub Subscriptions) print(writer io.Writer, indent int) {
 	for _, fs := range sub.Keys() {
-		fmt.Fprintf(writer, "%s--%s %f\n", strings.Repeat(" ", indent), fs, sub.Get(fs).EntropyValue)
-		ss := sub.Get(fs).Subset
-		if ss.Length() != 0 {
+		fmt.Fprintf(writer, "%s--%s %f\n", strings.Repeat(" ", indent), fs, sub[fs].EntropyValue)
+		ss := sub[fs].Subset
+		if len(ss) != 0 {
 			ss.print(writer, indent+2)
 		}
 	}

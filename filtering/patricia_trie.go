@@ -26,7 +26,7 @@ type PatriciaTrie struct {
 // AddSubscription adds a set of subscriptions if not exists yet
 func (pt *PatriciaTrie) AddSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		pt.add(fs, sub.Get(fs).NotificationURI)
+		pt.add(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -64,7 +64,7 @@ func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMa
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		pt.delete(fs, sub.Get(fs).NotificationURI)
+		pt.delete(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -291,8 +291,8 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		pt.one.filterObject = NewFilter(onePrefixBranch, len(prefix))
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
-		if sub.Has(cumulativePrefix) {
-			pt.one.notificationURI = sub.Get(cumulativePrefix).NotificationURI
+		if _, ok := sub[cumulativePrefix]; ok {
+			pt.one.notificationURI = sub[cumulativePrefix].NotificationURI
 		}
 		pt.one.build(cumulativePrefix, sub)
 	}
@@ -302,8 +302,8 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		pt.zero.filterObject = NewFilter(zeroPrefixBranch, len(prefix))
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
-		if sub.Has(cumulativePrefix) {
-			pt.zero.notificationURI = sub.Get(cumulativePrefix).NotificationURI
+		if _, ok := sub[cumulativePrefix]; ok {
+			pt.zero.notificationURI = sub[cumulativePrefix].NotificationURI
 		}
 		pt.zero.build(cumulativePrefix, sub)
 	}

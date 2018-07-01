@@ -19,7 +19,7 @@ type SplayTree struct {
 // AddSubscription adds a set of subscriptions if not exists yet
 func (spt *SplayTree) AddSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		spt.root.add(fs, sub.Get(fs).NotificationURI)
+		spt.root.add(fs, sub[fs].NotificationURI)
 	}
 }
 
@@ -31,7 +31,7 @@ func (spt *SplayTree) AnalyzeLocality(id []byte, path string, lm *LocalityMap) {
 // DeleteSubscription deletes a set of subscriptions if already exist
 func (spt *SplayTree) DeleteSubscription(sub Subscriptions) {
 	for _, fs := range sub.Keys() {
-		spt.root.delete(fs, sub.Get(fs).NotificationURI)
+		spt.root.delete(fs, sub[fs].NotificationURI)
 	}
 }
 

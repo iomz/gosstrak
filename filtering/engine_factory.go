@@ -94,11 +94,11 @@ func (ef *EngineFactory) Run() {
 			}
 			switch msg.Type {
 			case AddSubscription:
-				if !ef.currentSubscriptions.Has(msg.FilterString) {
-					ef.currentSubscriptions.Set(msg.FilterString, &Info{
+				if _, ok := ef.currentSubscriptions[msg.FilterString]; !ok {
+					ef.currentSubscriptions[msg.FilterString] = &Info{
 						Offset:          0,
 						NotificationURI: msg.NotificationURI,
-					})
+					}
 					for _, eg := range ef.productionLines {
 						err := eg.FSM.Event("update", &msg)
 						if err != nil {
@@ -107,8 +107,8 @@ func (ef *EngineFactory) Run() {
 					}
 				}
 			case DeleteSubscription:
-				if ef.currentSubscriptions.Has(msg.FilterString) {
-					ef.currentSubscriptions.Delete(msg.FilterString)
+				if _, ok := ef.currentSubscriptions[msg.FilterString]; ok {
+					delete(ef.currentSubscriptions, msg.FilterString)
 					for _, eg := range ef.productionLines {
 						err := eg.FSM.Event("update", &msg)
 						if err != nil {
@@ -142,6 +142,7 @@ func (ef *EngineFactory) Run() {
 
 	// initialize the engines
 	for _, eg := range ef.productionLines {
-		eg.FSM.Event("init", ef.currentSubscriptions)
+		// pass the cloned subscriptions
+		eg.FSM.Event("init", ef.currentSubscriptions.Clone())
 	}
 }

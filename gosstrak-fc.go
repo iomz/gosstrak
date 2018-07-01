@@ -232,12 +232,12 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 		if len(record) < 3 {
 			// Default case
 			// prefix as key, *filtering.Info as value
-			sub.Set(record[1], &filtering.Info{
+			sub[record[1]] = &filtering.Info{
 				Offset:          0,
 				NotificationURI: record[0],
 				EntropyValue:    0,
 				Subset:          filtering.Subscriptions{},
-			})
+			}
 		} else {
 			// For OptimalBST, filter with EntropyValue
 			// prefix as key, *filtering.Info as value
@@ -247,12 +247,12 @@ func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
 			}
 			fs := record[1]
 			uri := record[0]
-			sub.Set(fs, &filtering.Info{
+			sub[fs] = &filtering.Info{
 				Offset:          0,
 				NotificationURI: uri,
 				EntropyValue:    pValue,
 				Subset:          filtering.Subscriptions{},
-			})
+			}
 		}
 	}
 	return sub
@@ -264,7 +264,7 @@ func loadList(filterFile string, engineFile string, isRebuilding bool) *filterin
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var listBuf bytes.Buffer
 		list = filtering.NewList(sub).(*filtering.List)
 		enc := gob.NewEncoder(&listBuf)
@@ -297,7 +297,7 @@ func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *fi
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewOptimalBST(sub).(*filtering.OptimalBST)
 		enc := gob.NewEncoder(&tree)
@@ -327,7 +327,7 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewPatriciaTrie(sub).(*filtering.PatriciaTrie)
 		enc := gob.NewEncoder(&tree)
@@ -360,7 +360,7 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
 		sub := loadFiltersFromCSVFile(filterFile)
-		log.Printf("Loaded %v filters from %s\n", sub.Length(), filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewSplayTree(sub).(*filtering.SplayTree)
 		enc := gob.NewEncoder(&tree)
@@ -708,9 +708,9 @@ func runDumb(idFile string, sub filtering.Subscriptions) {
 	matches := map[string][]string{}
 	for _, id := range *ids {
 		i := binutil.ParseByteSliceToBinString(id)
-		for _, f := range sub.Keys() {
-			if strings.HasPrefix(i, f) {
-				info := sub.Get(f)
+		for _, fs := range sub.Keys() {
+			if strings.HasPrefix(i, fs) {
+				info := sub[fs]
 				if _, ok := matches[info.NotificationURI]; !ok {
 					matches[info.NotificationURI] = []string{}
 				}
@@ -750,7 +750,7 @@ func main() {
 		}
 	case cmdDumb.FullCommand():
 		sub := loadFiltersFromCSVFile(*filterFile)
-		log.Printf("Loaded %v filters from %s\n", sub.Length(), *filterFile)
+		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
 		runDumb(*idFile, sub)
 	case cmdList.FullCommand():
 		list := loadList(*filterFile, *engineFile, *isRebuilding)
