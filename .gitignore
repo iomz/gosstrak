@@ -5,6 +5,9 @@
 *.dylib
 *.gob
 
+# Test data
+testdata/*
+
 # Test binary, build with `go test -c`
 *.test
 
