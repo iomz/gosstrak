@@ -31,16 +31,16 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 		"unavailable",
 		fsm.Events{
 			{Name: "init", Src: []string{"unavailable"}, Dst: "generating"},
-			{Name: "generated", Src: []string{"generating", "pending"}, Dst: "ready"},
-			{Name: "deploy", Src: []string{"ready"}, Dst: "deployed"},
-			{Name: "update", Src: []string{"generating", "ready", "deployed"}, Dst: "pending"},
+			{Name: "deploy", Src: []string{"generating", "rebuilding"}, Dst: "ready"},
+			{Name: "update", Src: []string{"ready"}, Dst: "pending"},
+			{Name: "rebuild", Src: []string{"pending"}, Dst: "rebuilding"},
 		},
 		fsm.Callbacks{
 			"enter_state":      func(e *fsm.Event) { eg.enterState(e) },
 			"enter_generating": func(e *fsm.Event) { eg.enterGenerating(e) },
 			"enter_ready":      func(e *fsm.Event) { eg.enterReady(e) },
-			//"enter_deployed":   func(e *fsm.Event) { eg.enterDeployed(e) },
-			"enter_pending": func(e *fsm.Event) { eg.enterPending(e) },
+			"enter_pending":    func(e *fsm.Event) { eg.enterPending(e) },
+			"enter_rebuilding": func(e *fsm.Event) { eg.enterRebuilding(e) },
 		},
 	)
 
@@ -48,34 +48,19 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 }
 
 func (eg *EngineGenerator) enterState(e *fsm.Event) {
-	log.Printf("[EngineGenerator] %s, entering %s\n", e.Event, e.Dst)
+	log.Printf("[EngineGenerator] %s event, %s entering %s", e.Event, eg.Name, e.Dst)
 }
 
 func (eg *EngineGenerator) enterGenerating(e *fsm.Event) {
 	go func() {
+		//log.Printf("[EngineGenerator] start generating %s engine", eg.Name)
 		sub := e.Args[0].(Subscriptions)
 		eg.Engine = AvailableEngines[eg.Name](sub)
-		eg.FSM.Event("generated")
+		eg.FSM.Event("deploy")
 	}()
 }
 
-func (eg *EngineGenerator) enterReady(e *fsm.Event) {
-	log.Printf("[EngineGenerator] finished gererating %s engine\n", eg.Name)
-	eg.managementChannel <- ManagementMessage{
-		Type: OnEngineGenerated,
-		EngineGeneratorInstance: eg,
-	}
-	err := eg.FSM.Event("deploy")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (eg *EngineGenerator) enterDeployed(e *fsm.Event) {
-	// do nothing
-}
-
-func (eg *EngineGenerator) enterPending(e *fsm.Event) {
+func (eg *EngineGenerator) enterRebuilding(e *fsm.Event) {
 	msg := e.Args[0].(*ManagementMessage)
 	switch msg.Type {
 	case AddSubscription:
@@ -93,5 +78,18 @@ func (eg *EngineGenerator) enterPending(e *fsm.Event) {
 			},
 		})
 	}
-	eg.FSM.Event("generated")
+	eg.FSM.Event("deploy")
+}
+
+func (eg *EngineGenerator) enterReady(e *fsm.Event) {
+	log.Printf("[EngineGenerator] finished gererating %s engine", eg.Name)
+	eg.managementChannel <- ManagementMessage{
+		Type: OnEngineGenerated,
+		EngineGeneratorInstance: eg,
+	}
+}
+
+func (eg *EngineGenerator) enterPending(e *fsm.Event) {
+	// Wait until the engine finishes the current execution
+	eg.FSM.Event("rebuild", e.Args[0].(*ManagementMessage))
 }

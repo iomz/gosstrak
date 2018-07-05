@@ -8,7 +8,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/csv"
 	"encoding/gob"
 	"io"
 	"log"
@@ -31,12 +30,6 @@ import (
 // Notification is the struct to send/receive captured ID
 type Notification struct {
 	ID []byte
-}
-
-// ReadEvent is the struct to hold data on RFTags
-type ReadEvent struct {
-	id []byte
-	pc []byte
 }
 
 // Constant Values
@@ -211,59 +204,12 @@ func getPackagePath() string {
 	return path.Dir(filename)
 }
 
-func loadFiltersFromCSVFile(f string) filtering.Subscriptions {
-	sub := filtering.Subscriptions{}
-	fp, err := os.Open(f)
-	if err != nil {
-		panic(err)
-	}
-	defer fp.Close()
-
-	reader := csv.NewReader(fp)
-	reader.Comma = ','
-	reader.LazyQuotes = true
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-		if len(record) < 3 {
-			// Default case
-			// prefix as key, *filtering.Info as value
-			sub[record[1]] = &filtering.Info{
-				Offset:          0,
-				NotificationURI: record[0],
-				EntropyValue:    0,
-				Subset:          filtering.Subscriptions{},
-			}
-		} else {
-			// For OptimalBST, filter with EntropyValue
-			// prefix as key, *filtering.Info as value
-			pValue, err := strconv.ParseFloat(record[2], 64)
-			if err != nil {
-				panic(err)
-			}
-			fs := record[1]
-			uri := record[0]
-			sub[fs] = &filtering.Info{
-				Offset:          0,
-				NotificationURI: uri,
-				EntropyValue:    pValue,
-				Subset:          filtering.Subscriptions{},
-			}
-		}
-	}
-	return sub
-}
-
 func loadList(filterFile string, engineFile string, isRebuilding bool) *filtering.List {
 	var list *filtering.List
 	// List encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		sub := loadFiltersFromCSVFile(filterFile)
+		sub := filtering.LoadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var listBuf bytes.Buffer
 		list = filtering.NewList(sub).(*filtering.List)
@@ -296,7 +242,7 @@ func loadOptimalBST(filterFile string, engineFile string, isRebuilding bool) *fi
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		sub := loadFiltersFromCSVFile(filterFile)
+		sub := filtering.LoadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewOptimalBST(sub).(*filtering.OptimalBST)
@@ -326,7 +272,7 @@ func loadPatriciaTrie(filterFile string, engineFile string, isRebuilding bool) *
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		sub := loadFiltersFromCSVFile(filterFile)
+		sub := filtering.LoadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewPatriciaTrie(sub).(*filtering.PatriciaTrie)
@@ -359,7 +305,7 @@ func loadSplayTree(filterFile string, engineFile string, isRebuilding bool) *fil
 	// Tree encode
 	_, err := os.Stat(engineFile)
 	if isRebuilding || os.IsNotExist(err) {
-		sub := loadFiltersFromCSVFile(filterFile)
+		sub := filtering.LoadFiltersFromCSVFile(filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), filterFile)
 		var tree bytes.Buffer
 		head = filtering.NewSplayTree(sub).(*filtering.SplayTree)
@@ -523,7 +469,7 @@ func runMaster(f string) {
 
 	// Load existing subscriptions from file
 	log.Println("loading subscriptions from file")
-	sub := loadFiltersFromCSVFile(f)
+	sub := filtering.LoadFiltersFromCSVFile(f)
 	log.Println("...complete")
 
 	// Receive the engine instance
@@ -597,17 +543,17 @@ func runMaster(f string) {
 
 	// Receive incoming IDs
 	log.Println("setting up an incoming ReadEvent channel")
-	var rq = make(chan ReadEvent, QueueSize)
+	var rq = make(chan filtering.ReadEvent, QueueSize)
 	go func() {
 		for {
 			re, ok := <-rq
 			if !ok {
 				break
 			}
-			matches := currentEngine.Search(re.id)
+			matches := currentEngine.Search(re.ID)
 			//notify matches
 			for _, m := range matches {
-				log.Printf("match: %s <- %v,%v\n", m, re.pc, re.id)
+				log.Printf("match: %s <- %v,%v\n", m, re.PC, re.ID)
 			}
 		}
 		log.Fatalln("ic listener exited in gosstrak-fc")
@@ -617,8 +563,11 @@ func runMaster(f string) {
 	// Establish a connection to the llrp client
 	log.Println("starting a connection to an interrogator")
 	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
-	if err != nil {
-		log.Fatal(err)
+	for err != nil {
+		log.Print(err)
+		log.Println("wait 5 seconds for the interrogator to becom online...")
+		time.Sleep(5 * time.Second)
+		conn, err = net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
 	}
 
 	// Prepare LLRP header storage
@@ -658,7 +607,7 @@ func runMaster(f string) {
 }
 
 // decapsulate the ROAccessReport and extract IDs
-func decapsulateROAccessReport(roarLength uint32, buf []byte, rq chan ReadEvent) {
+func decapsulateROAccessReport(roarLength uint32, buf []byte, rq chan filtering.ReadEvent) {
 	//defer timeTrack(time.Now(), fmt.Sprintf("unpacking %v bytes", len(buf)))
 	trds := buf[4 : roarLength-6] // TRD stack
 	trdLength := uint16(0)        // First TRD size
@@ -693,7 +642,7 @@ func decapsulateROAccessReport(roarLength uint32, buf []byte, rq chan ReadEvent)
 			}
 			//log.Printf("EPC: %v, (%x)\n", id, pc)
 		}
-		rq <- ReadEvent{id, pc}
+		rq <- filtering.ReadEvent{id, pc}
 		offset += uint32(trdLength) // move the offset at the end of this TRD
 		//log.Printf("offset: %v, roarLength: %v\n", offset, roarLength)
 		//log.Printf("trdLength: %v, len(trds): %v\n", trdLength, len(trds))
@@ -750,7 +699,7 @@ func main() {
 			analyze(head, *analyzeInput, aoFile)
 		}
 	case cmdDumb.FullCommand():
-		sub := loadFiltersFromCSVFile(*filterFile)
+		sub := filtering.LoadFiltersFromCSVFile(*filterFile)
 		log.Printf("Loaded %v filters from %s\n", len(sub), *filterFile)
 		runDumb(*idFile, sub)
 	case cmdList.FullCommand():

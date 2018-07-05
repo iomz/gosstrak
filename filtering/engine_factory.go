@@ -74,12 +74,14 @@ func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFacto
 
 // Run starts the engine factory to react with the ManagementChannel
 func (ef *EngineFactory) Run() {
+	log.Println("[EngineFactory] start running")
 	// set channels from EngineGenerators + main
 	cases := make([]reflect.SelectCase, len(ef.generatorChannels)+1)
 	for i, ch := range append(ef.generatorChannels, ef.mainChannel) {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
 	go func() {
+		log.Println("[EngineFactory] setting up managementChannel listener")
 		for {
 			_, val, ok := reflect.Select(cases)
 			if !ok {
@@ -117,7 +119,7 @@ func (ef *EngineFactory) Run() {
 					}
 				}
 			case OnEngineGenerated:
-				log.Printf("[EngineFactory] received OnEngineGenerated from %s\n", msg.EngineGeneratorInstance.Name)
+				log.Printf("[EngineFactory] received OnEngineGenerated from %s", msg.EngineGeneratorInstance.Name)
 				if len(ef.currentEngineName) == 0 {
 					ef.currentEngineName = msg.EngineGeneratorInstance.Name
 					ef.mainChannel <- ManagementMessage{
@@ -141,6 +143,7 @@ func (ef *EngineFactory) Run() {
 	}()
 
 	// initialize the engines
+	log.Println("[EngineFactory] initializing engines")
 	for _, eg := range ef.productionLines {
 		// pass the cloned subscriptions
 		eg.FSM.Event("init", ef.currentSubscriptions.Clone())
