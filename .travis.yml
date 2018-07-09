@@ -4,6 +4,8 @@ go:
   - tip
 before_install:
   - go get github.com/mattn/goveralls
+  - go get github.com/iomz/golemu
+  - $GOPATH/bin/gobtags -i $GOPATH/src/github.com/iomz/gosstrak/testdata/1000-tags.csv $GOPATH/src/github.com/iomz/gosstrak/testdata/1000-tags.gob
 script:
   - $GOPATH/bin/goveralls -service=travis-ci
   - go test -v
