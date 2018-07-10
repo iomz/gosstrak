@@ -302,3 +302,24 @@ func TestList_DeleteSubscription(t *testing.T) {
 		})
 	}
 }
+
+func TestList_Name(t *testing.T) {
+	tests := []struct {
+		name string
+		list *List
+		want string
+	}{
+		{
+			"List.Name",
+			&List{},
+			"List",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.list.Name(); got != tt.want {
+				t.Errorf("List.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

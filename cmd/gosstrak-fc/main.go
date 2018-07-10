@@ -97,29 +97,14 @@ func run(f string) {
 
 	// Receive the engine instance
 	log.Println("setting up a management channel")
-	var currentEngine filtering.Engine
 	mc := make(chan filtering.ManagementMessage, QueueSize)
-	go func() {
-		for {
-			msg, ok := <-mc
-			if !ok {
-				break
-			}
-			switch msg.Type {
-			case filtering.DeployEngine:
-				currentEngine = msg.EngineGeneratorInstance.Engine
-				log.Printf("currentEngine switched to %s\n", msg.EngineGeneratorInstance.Name)
-			}
-		}
-		log.Fatalln("managementChannel listener exited in gosstrak-fc")
-	}()
 
 	// Set up an EngineFactory with a management channel
 	log.Println("setting up an engine factory")
 	engineFactory := filtering.NewEngineFactory(sub, mc)
 	go engineFactory.Run()
 	// Wait until the first engine becomes available
-	for currentEngine == nil {
+	for !engineFactory.IsActive() {
 		time.Sleep(time.Second)
 	}
 
@@ -174,7 +159,7 @@ func run(f string) {
 			log.Printf("%v tags received", len(res))
 			matches := map[string][]byte{}
 			for _, re := range res {
-				dests := currentEngine.Search(re.ID)
+				dests := engineFactory.Search(re.ID)
 				for _, d := range dests {
 					matches[d] = re.ID
 				}

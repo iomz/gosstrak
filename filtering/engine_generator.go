@@ -7,6 +7,7 @@ package filtering
 
 import (
 	"log"
+	"time"
 	//"reflect"
 
 	"github.com/looplab/fsm"
@@ -14,10 +15,15 @@ import (
 
 // EngineGenerator produce an engine according to the FSM
 type EngineGenerator struct {
-	managementChannel chan ManagementMessage
-	Name              string
-	Engine            Engine
-	FSM               *fsm.FSM
+	managementChannel   chan ManagementMessage
+	Name                string
+	Engine              Engine
+	FSM                 *fsm.FSM
+	statInterval        int
+	nEvent              int
+	totalTime           float32
+	timePerEventChannel chan float32
+	CurrentThroughput   float32
 }
 
 // NewEngineGenerator returns the pointer to a new EngineGenerator instance
@@ -25,6 +31,10 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 	eg := &EngineGenerator{
 		managementChannel: mc,
 		Name:              name,
+		statInterval:      60,
+		nEvent:            0,
+		totalTime:         0,
+		CurrentThroughput: 0,
 	}
 
 	eg.FSM = fsm.NewFSM(
@@ -43,6 +53,29 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 			"enter_rebuilding": func(e *fsm.Event) { eg.enterRebuilding(e) },
 		},
 	)
+
+	eg.timePerEventChannel = make(chan float32)
+	go func() {
+		for {
+			intervalTicker := time.NewTicker(time.Duration(eg.statInterval) * time.Second)
+
+			select {
+			case t, ok := <-eg.timePerEventChannel:
+				if !ok {
+					log.Fatalf("throughput monitor in EngingGenerator[%s] died", eg.Name)
+				}
+				eg.totalTime += t
+				eg.nEvent++
+			case <-intervalTicker.C:
+				throughput := eg.totalTime / float32(eg.nEvent)
+				if throughput != 0 {
+					eg.CurrentThroughput = throughput
+				}
+				eg.nEvent = 0
+				eg.totalTime = 0
+			}
+		}
+	}()
 
 	return eg
 }

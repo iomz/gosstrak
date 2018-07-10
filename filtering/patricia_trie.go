@@ -111,6 +111,11 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// Name returs the name of this engine type
+func (pt *PatriciaTrie) Name() string {
+	return "PatriciaTrie"
+}
+
 // Search returns a slice of notificationURI
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately

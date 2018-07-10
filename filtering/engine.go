@@ -12,6 +12,7 @@ type Engine interface {
 	DeleteSubscription(Subscriptions)
 	Dump() string
 	MarshalBinary() ([]byte, error)
+	Name() string
 	Search([]byte) []string
 	UnmarshalBinary([]byte) error
 }

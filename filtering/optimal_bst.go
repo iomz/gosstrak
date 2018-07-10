@@ -115,6 +115,11 @@ func (obst *OptimalBST) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// Name returs the name of this engine type
+func (obst *OptimalBST) Name() string {
+	return "OptimalBST"
+}
+
 // Search returns a slice of notificationURI
 func (obst *OptimalBST) Search(id []byte) []string {
 	matches := []string{}

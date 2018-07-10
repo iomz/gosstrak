@@ -235,3 +235,78 @@ func TestNewSplayTree(t *testing.T) {
 		})
 	}
 }
+
+func TestSplayTree_AddSubscription(t *testing.T) {
+	type fields struct {
+		root *OptimalBST
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spt := &SplayTree{
+				root: tt.fields.root,
+			}
+			spt.AddSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestSplayTree_DeleteSubscription(t *testing.T) {
+	type fields struct {
+		root *OptimalBST
+	}
+	type args struct {
+		sub Subscriptions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spt := &SplayTree{
+				root: tt.fields.root,
+			}
+			spt.DeleteSubscription(tt.args.sub)
+		})
+	}
+}
+
+func TestSplayTree_Name(t *testing.T) {
+	type fields struct {
+		root *OptimalBST
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			"SplayTree.Name",
+			fields{},
+			"SplayTree",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spt := &SplayTree{
+				root: tt.fields.root,
+			}
+			if got := spt.Name(); got != tt.want {
+				t.Errorf("SplayTree.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

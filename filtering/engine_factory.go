@@ -37,7 +37,20 @@ type EngineFactory struct {
 	currentSubscriptions Subscriptions
 	productionLines      []*EngineGenerator
 	deploymentPriority   map[string]uint8
-	currentEngineName    string
+	currentEngine        Engine
+}
+
+// IsActive returns false if no engine is available
+func (ef *EngineFactory) IsActive() bool {
+	if ef.currentEngine == nil {
+		return false
+	}
+	return true
+}
+
+// Search is a wrapper for Search() with the currentEngine
+func (ef *EngineFactory) Search(id []byte) []string {
+	return ef.currentEngine.Search(id)
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
@@ -119,24 +132,18 @@ func (ef *EngineFactory) Run() {
 					}
 				}
 			case OnEngineGenerated:
-				log.Printf("[EngineFactory] received OnEngineGenerated from %s", msg.EngineGeneratorInstance.Name)
-				if len(ef.currentEngineName) == 0 {
-					ef.currentEngineName = msg.EngineGeneratorInstance.Name
-					ef.mainChannel <- ManagementMessage{
-						Type: DeployEngine,
-						EngineGeneratorInstance: msg.EngineGeneratorInstance,
-					}
+				log.Printf("[EngineFactory] received OnEngineGenerated from %s", msg.EngineGeneratorInstance.Engine.Name())
+				if ef.currentEngine == nil {
+					log.Printf("[EngineFactory] set %s as an initial engine", msg.EngineGeneratorInstance.Name)
+					ef.currentEngine = msg.EngineGeneratorInstance.Engine
 					continue
 				}
-				if ef.deploymentPriority[ef.currentEngineName] < ef.deploymentPriority[msg.EngineGeneratorInstance.Name] {
-					ef.currentEngineName = msg.EngineGeneratorInstance.Name
-					ef.mainChannel <- ManagementMessage{
-						Type: DeployEngine,
-						EngineGeneratorInstance: msg.EngineGeneratorInstance,
-					}
+				if ef.deploymentPriority[ef.currentEngine.Name()] < ef.deploymentPriority[msg.EngineGeneratorInstance.Engine.Name()] {
+					log.Printf("[EngineFactory] %s replaces the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngine.Name())
+					ef.currentEngine = msg.EngineGeneratorInstance.Engine
 					continue
 				}
-				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)
+				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngine.Name())
 			}
 		}
 		log.Fatalln("mainChannel listener exited in gosstrak-fc")

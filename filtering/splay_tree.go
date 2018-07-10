@@ -56,6 +56,11 @@ func (spt *SplayTree) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// Name returs the name of this engine type
+func (spt *SplayTree) Name() string {
+	return "SplayTree"
+}
+
 // Search returns a slice of notificationURI
 func (spt *SplayTree) Search(id []byte) []string {
 	return spt.root.splaySearch(spt, nil, id)

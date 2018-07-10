@@ -1754,3 +1754,36 @@ func TestPatriciaTrie_delete(t *testing.T) {
 		})
 	}
 }
+
+func TestPatriciaTrie_Name(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		one             *PatriciaTrie
+		zero            *PatriciaTrie
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			"PatriciaTrie.Name",
+			fields{},
+			"PatriciaTrie",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pt := &PatriciaTrie{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				one:             tt.fields.one,
+				zero:            tt.fields.zero,
+			}
+			if got := pt.Name(); got != tt.want {
+				t.Errorf("PatriciaTrie.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

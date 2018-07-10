@@ -88,6 +88,11 @@ func (list *List) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// Name returs the name of this engine type
+func (list *List) Name() string {
+	return "List"
+}
+
 // Search returns a slice of notificationURI
 func (list *List) Search(id []byte) (matches []string) {
 	for _, em := range *list {

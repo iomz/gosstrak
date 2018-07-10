@@ -1365,3 +1365,36 @@ func TestOptimalBST_delete(t *testing.T) {
 		})
 	}
 }
+
+func TestOptimalBST_Name(t *testing.T) {
+	type fields struct {
+		notificationURI string
+		filterObject    *FilterObject
+		matchNext       *OptimalBST
+		mismatchNext    *OptimalBST
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   string
+	}{
+		{
+			"OptimalBST.Name",
+			fields{},
+			"OptimalBST",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obst := &OptimalBST{
+				notificationURI: tt.fields.notificationURI,
+				filterObject:    tt.fields.filterObject,
+				matchNext:       tt.fields.matchNext,
+				mismatchNext:    tt.fields.mismatchNext,
+			}
+			if got := obst.Name(); got != tt.want {
+				t.Errorf("OptimalBST.Name() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
