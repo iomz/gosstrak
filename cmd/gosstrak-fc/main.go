@@ -18,7 +18,6 @@ import (
 
 	"github.com/docker/libchan/spdy"
 	"github.com/iomz/go-llrp"
-	"github.com/iomz/gosstrak/adapter"
 	"github.com/iomz/gosstrak/filtering"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -164,7 +163,7 @@ func run(f string) {
 
 	// Receive incoming IDs
 	log.Println("setting up an incoming LLRPReadEvent channel")
-	var rq = make(chan []*adapter.LLRPReadEvent)
+	var rq = make(chan []*llrp.LLRPReadEvent)
 	go func() {
 		for {
 			res, ok := <-rq
@@ -242,7 +241,7 @@ func run(f string) {
 			log.Println(">>> SET_READER_CONFIG_RESPONSE")
 		case llrp.ROAccessReportHeader:
 			log.Println(">>> RO_ACCESS_REPORT")
-			rq <- adapter.UnmarshalROAccessReportBody(messageValue)
+			rq <- llrp.UnmarshalROAccessReportBody(messageValue)
 		default:
 			log.Fatalf("Unknown LLRP Message Header: %v\n", h)
 		}
