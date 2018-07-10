@@ -35,7 +35,7 @@ type EngineFactory struct {
 	mainChannel          chan ManagementMessage
 	generatorChannels    []chan ManagementMessage
 	currentSubscriptions Subscriptions
-	productionLines      []*EngineGenerator
+	productionSystem     map[string]*EngineGenerator
 	deploymentPriority   map[string]uint8
 	currentEngine        Engine
 }
@@ -63,13 +63,13 @@ func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFacto
 	ef.currentSubscriptions = sub
 
 	// Load all the possible engines
-	ef.productionLines = []*EngineGenerator{}
+	ef.productionSystem = make(map[string]*EngineGenerator)
 	ef.generatorChannels = []chan ManagementMessage{}
 	for name, constructor := range AvailableEngines {
 		ch := make(chan ManagementMessage)
 		ef.generatorChannels = append(ef.generatorChannels, ch)
 		eg := NewEngineGenerator(name, constructor, ch)
-		ef.productionLines = append(ef.productionLines, eg)
+		ef.productionSystem[name] = eg
 	}
 
 	// Calculate the priority of deployment
@@ -114,7 +114,7 @@ func (ef *EngineFactory) Run() {
 						Offset:          0,
 						NotificationURI: msg.NotificationURI,
 					}
-					for _, eg := range ef.productionLines {
+					for _, eg := range ef.productionSystem {
 						err := eg.FSM.Event("update", &msg)
 						if err != nil {
 							log.Println(err)
@@ -124,7 +124,7 @@ func (ef *EngineFactory) Run() {
 			case DeleteSubscription:
 				if _, ok := ef.currentSubscriptions[msg.FilterString]; ok {
 					delete(ef.currentSubscriptions, msg.FilterString)
-					for _, eg := range ef.productionLines {
+					for _, eg := range ef.productionSystem {
 						err := eg.FSM.Event("update", &msg)
 						if err != nil {
 							log.Println(err)
@@ -151,7 +151,7 @@ func (ef *EngineFactory) Run() {
 
 	// initialize the engines
 	log.Println("[EngineFactory] initializing engines")
-	for _, eg := range ef.productionLines {
+	for _, eg := range ef.productionSystem {
 		// pass the cloned subscriptions
 		eg.FSM.Event("init", ef.currentSubscriptions.Clone())
 	}
