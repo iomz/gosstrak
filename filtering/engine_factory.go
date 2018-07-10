@@ -48,9 +48,14 @@ func (ef *EngineFactory) IsActive() bool {
 	return true
 }
 
-// Search is a wrapper for Search() with the currentEngine
+// Search is a wrapper for Search() with the current EngineGenerator
 func (ef *EngineFactory) Search(id []byte) []string {
-	return ef.productionSystem[ef.currentEngineName].Engine.Search(id)
+	for name, eg := range ef.productionSystem {
+		if name != ef.currentEngineName {
+			_ = eg.Search(id)
+		}
+	}
+	return ef.productionSystem[ef.currentEngineName].Search(id)
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
@@ -73,11 +78,10 @@ func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFacto
 	}
 
 	// Calculate the priority of deployment
-	ef.deploymentPriority = map[string]uint8{}
-	priority := uint8(0)
-	for name := range AvailableEngines {
-		ef.deploymentPriority[name] = priority
-		priority++
+	ef.deploymentPriority = map[string]uint8{
+		"List":         3,
+		"PatriciaTrie": 1,
+		"SplayTree":    2,
 	}
 
 	log.Printf("[EngineFactory] deploymentPriority: %v", ef.deploymentPriority)

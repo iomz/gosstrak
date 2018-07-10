@@ -7,6 +7,7 @@ package filtering
 
 import (
 	"log"
+	"math"
 	"time"
 	//"reflect"
 
@@ -21,9 +22,9 @@ type EngineGenerator struct {
 	FSM                 *fsm.FSM
 	statInterval        int
 	nEvent              int
-	totalTime           float32
-	timePerEventChannel chan float32
-	CurrentThroughput   float32
+	totalTime           int64
+	timePerEventChannel chan time.Duration
+	CurrentThroughput   float64
 }
 
 // NewEngineGenerator returns the pointer to a new EngineGenerator instance
@@ -31,7 +32,7 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 	eg := &EngineGenerator{
 		managementChannel: mc,
 		Name:              name,
-		statInterval:      60,
+		statInterval:      5,
 		nEvent:            0,
 		totalTime:         0,
 		CurrentThroughput: 0,
@@ -54,22 +55,25 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 		},
 	)
 
-	eg.timePerEventChannel = make(chan float32)
+	eg.timePerEventChannel = make(chan time.Duration)
 	go func() {
-		for {
-			intervalTicker := time.NewTicker(time.Duration(eg.statInterval) * time.Second)
+		intervalTicker := time.NewTicker(time.Duration(eg.statInterval) * time.Second)
 
+		for {
 			select {
 			case t, ok := <-eg.timePerEventChannel:
 				if !ok {
 					log.Fatalf("throughput monitor in EngingGenerator[%s] died", eg.Name)
 				}
-				eg.totalTime += t
+				//log.Printf("[EngineGenerator] %s: %v us/event", eg.Name, t.Nanoseconds())
+				eg.totalTime += t.Nanoseconds() / 1000 // microseconds
 				eg.nEvent++
 			case <-intervalTicker.C:
-				throughput := eg.totalTime / float32(eg.nEvent)
-				if throughput != 0 {
+				throughput := float64(eg.totalTime) / float64(eg.nEvent)
+				//log.Printf("%s total: %v, n: %v", eg.Name, eg.totalTime, eg.nEvent)
+				if throughput != 0 && !math.IsNaN(throughput) {
 					eg.CurrentThroughput = throughput
+					log.Printf("[EngineGenerator] %s current throughput: %v us/event", eg.Name, eg.CurrentThroughput)
 				}
 				eg.nEvent = 0
 				eg.totalTime = 0
@@ -78,6 +82,11 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 	}()
 
 	return eg
+}
+
+func (eg *EngineGenerator) Search(id []byte) []string {
+	defer timeTrack(time.Now(), eg.timePerEventChannel)
+	return eg.Engine.Search(id)
 }
 
 func (eg *EngineGenerator) enterState(e *fsm.Event) {
@@ -125,4 +134,10 @@ func (eg *EngineGenerator) enterReady(e *fsm.Event) {
 func (eg *EngineGenerator) enterPending(e *fsm.Event) {
 	// Wait until the engine finishes the current execution
 	eg.FSM.Event("rebuild", e.Args[0].(*ManagementMessage))
+}
+
+/* internal helper func */
+// timeTrack measures the time it taken from the start
+func timeTrack(start time.Time, tpech chan time.Duration) {
+	tpech <- time.Since(start)
 }

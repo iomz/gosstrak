@@ -156,7 +156,7 @@ func run(f string) {
 				break
 			}
 
-			log.Printf("%v tags received", len(res))
+			//log.Printf("%v tags received", len(res))
 			matches := map[string][]byte{}
 			for _, re := range res {
 				dests := engineFactory.Search(re.ID)
@@ -164,7 +164,7 @@ func run(f string) {
 					matches[d] = re.ID
 				}
 			}
-			log.Printf("%v matches", len(matches))
+			//log.Printf("%v matches", len(matches))
 			//notify matches
 			/*
 				for _, m := range matches {
