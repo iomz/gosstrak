@@ -19,7 +19,7 @@ import (
 
 func benchmarkEngineGeneration(size int, constructor EngineConstructor, b *testing.B) {
 	// Load up the subs from the file
-	largeSubsCSV := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/testdata/large-subs.csv"
+	largeSubsCSV := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/large-subs.csv"
 	largeSubs := LoadFiltersFromCSVFile(largeSubsCSV)
 
 	// cap the Subscriptions with the given size
