@@ -73,7 +73,10 @@ func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMes
 				//log.Printf("%s total: %v, n: %v", eg.Name, eg.totalTime, eg.nEvent)
 				if throughput != 0 && !math.IsNaN(throughput) {
 					eg.CurrentThroughput = throughput
-					log.Printf("[EngineGenerator] %s current throughput: %v us/event", eg.Name, eg.CurrentThroughput)
+					eg.managementChannel <- ManagementMessage{
+						Type: EngineStatus,
+						EngineGeneratorInstance: eg,
+					}
 				}
 				eg.nEvent = 0
 				eg.totalTime = 0

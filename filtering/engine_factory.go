@@ -20,6 +20,7 @@ const (
 	DeleteSubscription
 	OnEngineGenerated
 	DeployEngine
+	EngineStatus
 )
 
 // ManagementMessage holds management action for the EngineFactory
@@ -148,6 +149,8 @@ func (ef *EngineFactory) Run() {
 					continue
 				}
 				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)
+			case EngineStatus:
+				ef.mainChannel <- msg // bypass the status message from generators to main
 			}
 		}
 		log.Fatalln("mainChannel listener exited in gosstrak-fc")

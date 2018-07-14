@@ -22,20 +22,3 @@ func Test_getPackagePath(t *testing.T) {
 		})
 	}
 }
-
-func Test_run(t *testing.T) {
-	type args struct {
-		f string
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			run(tt.args.f)
-		})
-	}
-}

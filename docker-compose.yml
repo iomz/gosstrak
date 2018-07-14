@@ -1,0 +1,67 @@
+version: '2'
+
+services:
+  # gosstrak-fc:
+  #   image: iomz/gosstrak-fc:0.1
+  #   container_name: gosstrak-fc
+  #   hostname: gosstrak-fc
+  #   # volumes:
+  #   # - /opt/gosstrak/fc:/opt/gosstrak/fc
+  #   stop_grace_period: 30s
+  #   links:
+  #   - influxdb:influxdb
+  #   depends_on:
+  #   - influxdb
+  #   # environment:
+  #   # LLRP_PORT
+  #   networks:
+  #     gosstrak:
+  #       ipv4_address: 172.2.234.2
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    environment:
+      - INFLUXDB_GRAPHITE_ENABLED=true
+      - INFLUXDB_DATA_ENGINE=tsm1
+      - INFLUXDB_REPORTING_DISABLED=false
+    ports:
+      - "8086:8086"
+    restart: always
+    volumes:
+      - /opt/gosstrak/influxdb:/var/lib/influxdb
+    networks:
+      gosstrak:
+        ipv4_address: 172.1.234.2
+
+  # telegraf:
+  #   image: telegraf:latest
+  #   container_name: telegraf
+  #   links:
+  #     - influxdb
+  #   voluems:
+  #     - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    links:
+      - influxdb
+    volumes:
+      - /opt/gosstrak/grafana:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
+    networks:
+      gosstrak:
+        ipv4_address: 172.1.234.3
+
+networks:
+  gosstrak:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.1.234.0/24
+

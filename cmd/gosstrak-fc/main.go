@@ -13,12 +13,12 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/docker/libchan/spdy"
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/filtering"
+	"github.com/iomz/gosstrak/monitoring"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -56,27 +56,50 @@ var (
 			String()
 
 	// LLRP related values
-	initialMessageID = app.
+	llrpInitialMessageID = app.
 				Flag("initialMessageID", "The initial messageID to start from.").
 				Short('m').
 				Default("1000").
 				Int()
-	ip = app.
-		Flag("ip", "LLRP emulator address.").
-		Short('a').
-		Default("127.0.0.1").
-		IP()
-	port = app.
-		Flag("port", "LLRP emulator port.").
-		Short('p').
-		Default("5084").
-		Int()
+	llrpAddr = app.
+			Flag("ip", "LLRP emulator address.").
+			Short('l').
+			Default("127.0.0.1:5084").
+			String()
+
+	// ALE related values
+	managementAddr = app.
+			Flag("managementAddr", "Psuedo ALE management endpoint").
+			Default("127.0.0.1:2784").
+			String()
+
+	// stat related values
+	enableStat = app.
+			Flag("enableStat", "Enable statistical monitoring.").
+			Default("false").
+			Bool()
+	influxAddr = app.
+			Flag("influxAddr", "The endpoint of influxdb.").
+			Default("http://127.0.0.1:8086").
+			String()
+	influxUser = app.
+			Flag("influxUser", "The username for influxdb.").
+			Default("gosstrak").
+			String()
+	influxPass = app.
+			Flag("influxPass", "The password for influxdb.").
+			Default("gosstrak").
+			String()
+	influxDB = app.
+			Flag("influxDB", "The database in influxdb.").
+			Default("gosstrak").
+			String()
 
 	// start command
 	cmdStart = app.Command("start", "Start the gosstrak-fc.")
 
 	// Current messageID
-	currentMessageID = uint32(*initialMessageID)
+	currentMessageID = uint32(*llrpInitialMessageID)
 )
 
 func getPackagePath() string {
@@ -88,30 +111,56 @@ func getPackagePath() string {
 	return path.Dir(filename)
 }
 
-func run(f string) {
+func run() {
 	log.Println("initializing gosstrak-fc for master mode...")
 
-	// Load existing subscriptions from file
-	log.Println("loading subscriptions from file")
-	sub := filtering.LoadFiltersFromCSVFile(f)
+	// setup StatManager
+	var sm *monitoring.StatManager
+	if *enableStat {
+		log.Println("setting up a stat manager for InfluxDB")
+		sm = monitoring.NewStatManager(*influxAddr, *influxUser, *influxPass, *influxDB)
+	}
 
-	// Receive the engine instance
+	// load existing subscriptions from file
+	log.Println("loading subscriptions from file")
+	sub := filtering.LoadFiltersFromCSVFile(*filterFile)
+
+	// receive the engine instance
 	log.Println("setting up a management channel")
 	mc := make(chan filtering.ManagementMessage, QueueSize)
+	go func() {
+		for {
+			msg, ok := <-mc
+			if !ok {
+				break
+			}
+			switch msg.Type {
+			case filtering.EngineStatus:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.EngineThroughput,
+						Value: []interface{}{msg.EngineGeneratorInstance.CurrentThroughput},
+						Name:  msg.EngineGeneratorInstance.Name,
+					}
+				}
+			}
+		}
+		log.Fatalln("management channel closed, dying...")
+	}()
 
-	// Set up an EngineFactory with a management channel
+	// set up an EngineFactory with a management channel
 	log.Println("setting up an engine factory")
 	engineFactory := filtering.NewEngineFactory(sub, mc)
 	go engineFactory.Run()
-	// Wait until the first engine becomes available
+	// wait until the first engine becomes available
 	for !engineFactory.IsActive() {
 		time.Sleep(time.Second)
 	}
 
-	// Receive management access
+	// receive management access
 	log.Println("setting up an management interface")
 	go func() {
-		managementListener, err := net.Listen("tcp", "0.0.0.0:2784")
+		managementListener, err := net.Listen("tcp", *managementAddr)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -146,7 +195,7 @@ func run(f string) {
 		log.Fatalln("managementListener closed in gosstrak-fc")
 	}()
 
-	// Receive incoming IDs
+	// receive incoming IDs
 	log.Println("setting up an incoming LLRPReadEvent channel")
 	var rq = make(chan []*llrp.LLRPReadEvent)
 	go func() {
@@ -164,6 +213,12 @@ func run(f string) {
 					matches[d] = re.ID
 				}
 			}
+			if *enableStat {
+				sm.StatMessageChannel <- monitoring.StatMessage{
+					Type:  monitoring.Traffic,
+					Value: []interface{}{len(res), len(matches)},
+				}
+			}
 			//log.Printf("%v matches", len(matches))
 			//notify matches
 			/*
@@ -175,17 +230,17 @@ func run(f string) {
 		log.Fatalln("LLRPReadEvent listener exited in gosstrak-fc")
 	}()
 
-	// Establish a connection to the llrp client
+	// establish a connection to the llrp client
 	log.Println("starting a connection to an interrogator")
-	conn, err := net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
+	conn, err := net.Dial("tcp", *llrpAddr)
 	for err != nil {
 		log.Print(err)
 		log.Println("wait 5 seconds for the interrogator to becom online...")
 		time.Sleep(5 * time.Second)
-		conn, err = net.Dial("tcp", ip.String()+":"+strconv.Itoa(*port))
+		conn, err = net.Dial("tcp", *llrpAddr)
 	}
 
-	// Prepare LLRP header storage
+	// prepare LLRP header storage
 	header := make([]byte, 2)
 	length := make([]byte, 4)
 	messageID := make([]byte, 4)
@@ -249,6 +304,6 @@ func main() {
 
 	switch parse {
 	case cmdStart.FullCommand():
-		run(*filterFile)
+		run()
 	}
 }
