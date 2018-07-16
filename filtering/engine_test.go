@@ -25,6 +25,7 @@ func benchmarkEngineGeneration(size int, constructor EngineConstructor, b *testi
 	// cap the Subscriptions with the given size
 	limitedSubs := Subscriptions{}
 	keys := largeSubs.Keys()
+	rand.Seed(time.Now().UTC().UnixNano())
 	perms := rand.Perm(len(keys))
 	for n, i := range perms {
 		if n < size {
