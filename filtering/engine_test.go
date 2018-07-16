@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 	//"unsafe"
 	//"github.com/iomz/go-llrp"
 	//"github.com/iomz/go-llrp/binutil"

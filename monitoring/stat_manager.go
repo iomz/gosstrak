@@ -25,7 +25,7 @@ type StatMessage struct {
 }
 
 // NewStatManager creates a new instance of StatManager
-func NewStatManager(addr string, user string, pass string, db string) *StatManager {
+func NewStatManager(mode string, addr string, user string, pass string, db string) *StatManager {
 	// create a new HTTPClient
 	c, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr:     addr,
@@ -56,7 +56,7 @@ func NewStatManager(addr string, user string, pass string, db string) *StatManag
 				break
 			}
 
-			tags := make(map[string]string)
+			tags := map[string]string{"mode": mode}
 			fields := make(map[string]interface{})
 			var measurement string
 

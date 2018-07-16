@@ -98,6 +98,9 @@ var (
 	// start command
 	cmdStart = app.Command("start", "Start the gosstrak-fc.")
 
+	// legacy mode command
+	cmdLegacy = app.Command("legacy", "Run in legacy mode.")
+
 	// Current messageID
 	currentMessageID = uint32(*llrpInitialMessageID)
 )
@@ -118,7 +121,7 @@ func run() {
 	var sm *monitoring.StatManager
 	if *enableStat {
 		log.Println("setting up a stat manager for InfluxDB")
-		sm = monitoring.NewStatManager(*influxAddr, *influxUser, *influxPass, *influxDB)
+		sm = monitoring.NewStatManager("master", *influxAddr, *influxUser, *influxPass, *influxDB)
 	}
 
 	// load existing subscriptions from file
@@ -288,6 +291,110 @@ func run() {
 	}
 }
 
+func runLegacy() {
+	log.Println("initializing gosstrak-fc for legacy mode...")
+
+	// setup StatManager
+	var sm *monitoring.StatManager
+	if *enableStat {
+		log.Println("setting up a stat manager for InfluxDB")
+		sm = monitoring.NewStatManager("legacy", *influxAddr, *influxUser, *influxPass, *influxDB)
+	}
+
+	// create legacy filtering engine from ECSpecs
+	log.Println("creating legacy filtering engine from %v", *filterFile)
+	legacyEngine := filtering.NewLegacyEngine(*filterFile)
+
+	// receive incoming IDs
+	log.Println("setting up an incoming LLRPReadEvent channel")
+	var rq = make(chan []*llrp.LLRPReadEvent)
+	go func() {
+		for {
+			res, ok := <-rq
+			if !ok {
+				break
+			}
+
+			//log.Printf("%v tags received", len(res))
+			matches := make(map[string]string)
+			for _, re := range res {
+				matched, pureIdentity, err := legacyEngine.Search(re)
+				if err != nil {
+					continue
+				}
+				for _, m := range matched {
+					matches[m] = pureIdentity
+					log.Printf("match %v: %v", pureIdentity, m)
+				}
+			}
+			if *enableStat {
+				sm.StatMessageChannel <- monitoring.StatMessage{
+					Type:  monitoring.Traffic,
+					Value: []interface{}{len(res), len(matches)},
+				}
+			}
+		}
+		log.Fatalln("LLRPReadEvent listener exited in gosstrak-fc")
+	}()
+
+	// establish a connection to the llrp client
+	log.Println("starting a connection to an interrogator")
+	conn, err := net.Dial("tcp", *llrpAddr)
+	for err != nil {
+		log.Print(err)
+		log.Println("wait 5 seconds for the interrogator to becom online...")
+		time.Sleep(5 * time.Second)
+		conn, err = net.Dial("tcp", *llrpAddr)
+	}
+
+	// prepare LLRP header storage
+	header := make([]byte, 2)
+	length := make([]byte, 4)
+	messageID := make([]byte, 4)
+	for {
+		_, err = io.ReadFull(conn, header)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = io.ReadFull(conn, length)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = io.ReadFull(conn, messageID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// length containts the size of the entire message in octets
+		// starting from bit offset 0, hence, the message size is
+		// length - 10 bytes
+		var messageValue []byte
+		if messageSize := binary.BigEndian.Uint32(length) - 10; messageSize != 0 {
+			messageValue = make([]byte, binary.BigEndian.Uint32(length)-10)
+			_, err = io.ReadFull(conn, messageValue)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		h := binary.BigEndian.Uint16(header)
+		switch h {
+		case llrp.ReaderEventNotificationHeader:
+			log.Println(">>> READER_EVENT_NOTIFICATION")
+			conn.Write(llrp.SetReaderConfig(currentMessageID))
+		case llrp.KeepaliveHeader:
+			log.Println(">>> KEEP_ALIVE")
+			conn.Write(llrp.KeepaliveAck())
+		case llrp.SetReaderConfigResponseHeader:
+			log.Println(">>> SET_READER_CONFIG_RESPONSE")
+		case llrp.ROAccessReportHeader:
+			log.Println(">>> RO_ACCESS_REPORT")
+			rq <- llrp.UnmarshalROAccessReportBody(messageValue)
+		default:
+			log.Fatalf("Unknown LLRP Message Header: %v\n", h)
+		}
+	}
+}
+
 func main() {
 	app.Version(version)
 	parse := kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -305,5 +412,7 @@ func main() {
 	switch parse {
 	case cmdStart.FullCommand():
 		run()
+	case cmdLegacy.FullCommand():
+		runLegacy()
 	}
 }
