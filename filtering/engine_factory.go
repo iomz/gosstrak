@@ -29,6 +29,7 @@ type ManagementMessage struct {
 	FilterString            string
 	NotificationURI         string
 	EngineGeneratorInstance *EngineGenerator
+	CurrentThroughput       float64
 }
 
 // EngineFactory manages the FC's subscriptions and engine instances
@@ -60,7 +61,7 @@ func (ef *EngineFactory) Search(id []byte) []string {
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
-func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFactory {
+func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
 	ef := &EngineFactory{
 		mainChannel: mc,
 	}
@@ -74,7 +75,7 @@ func NewEngineFactory(sub Subscriptions, mc chan ManagementMessage) *EngineFacto
 	for name, constructor := range AvailableEngines {
 		ch := make(chan ManagementMessage)
 		ef.generatorChannels = append(ef.generatorChannels, ch)
-		eg := NewEngineGenerator(name, constructor, ch)
+		eg := NewEngineGenerator(name, constructor, statInterval, ch)
 		ef.productionSystem[name] = eg
 	}
 

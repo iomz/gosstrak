@@ -28,11 +28,11 @@ type EngineGenerator struct {
 }
 
 // NewEngineGenerator returns the pointer to a new EngineGenerator instance
-func NewEngineGenerator(name string, ec EngineConstructor, mc chan ManagementMessage) *EngineGenerator {
+func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc chan ManagementMessage) *EngineGenerator {
 	eg := &EngineGenerator{
 		managementChannel: mc,
 		Name:              name,
-		statInterval:      5,
+		statInterval:      statInterval,
 		nEvent:            0,
 		totalTime:         0,
 		CurrentThroughput: 0,
@@ -137,10 +137,4 @@ func (eg *EngineGenerator) enterReady(e *fsm.Event) {
 func (eg *EngineGenerator) enterPending(e *fsm.Event) {
 	// Wait until the engine finishes the current execution
 	eg.FSM.Event("rebuild", e.Args[0].(*ManagementMessage))
-}
-
-/* internal helper func */
-// timeTrack measures the time it taken from the start
-func timeTrack(start time.Time, tpech chan time.Duration) {
-	tpech <- time.Since(start)
 }

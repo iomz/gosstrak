@@ -19,6 +19,7 @@ import (
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/filtering"
 	"github.com/iomz/gosstrak/monitoring"
+	"github.com/iomz/gosstrak/tdt"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -78,6 +79,10 @@ var (
 			Flag("enableStat", "Enable statistical monitoring.").
 			Default("false").
 			Bool()
+	statInterval = app.
+			Flag("statInterval", "Measurement interval in seconds for the engine throughput.").
+			Default("5").
+			Int()
 	influxAddr = app.
 			Flag("influxAddr", "The endpoint of influxdb.").
 			Default("http://127.0.0.1:8086").
@@ -128,7 +133,7 @@ func run() {
 	log.Println("loading subscriptions from file")
 	sub := filtering.LoadFiltersFromCSVFile(*filterFile)
 
-	// receive the engine instance
+	// receive the engine instance status
 	log.Println("setting up a management channel")
 	mc := make(chan filtering.ManagementMessage, QueueSize)
 	go func() {
@@ -153,7 +158,7 @@ func run() {
 
 	// set up an EngineFactory with a management channel
 	log.Println("setting up an engine factory")
-	engineFactory := filtering.NewEngineFactory(sub, mc)
+	engineFactory := filtering.NewEngineFactory(sub, *statInterval, mc)
 	go engineFactory.Run()
 	// wait until the first engine becomes available
 	for !engineFactory.IsActive() {
@@ -198,7 +203,9 @@ func run() {
 		log.Fatalln("managementListener closed in gosstrak-fc")
 	}()
 
-	// receive incoming IDs
+	// receive incoming IDs and translate them in PureIdentity
+	log.Println("setting up an TDT core")
+	tdtCore := tdt.NewCore()
 	log.Println("setting up an incoming LLRPReadEvent channel")
 	var rq = make(chan []*llrp.LLRPReadEvent)
 	go func() {
@@ -209,11 +216,18 @@ func run() {
 			}
 
 			//log.Printf("%v tags received", len(res))
-			matches := map[string][]byte{}
+			matches := map[string]string{}
 			for _, re := range res {
 				dests := engineFactory.Search(re.ID)
+				if len(dests) == 0 {
+					continue
+				}
+				pureIdentity, err := tdtCore.Translate(re.PC, re.ID)
+				if err != nil {
+					continue
+				}
 				for _, d := range dests {
-					matches[d] = re.ID
+					matches[d] = pureIdentity
 				}
 			}
 			if *enableStat {
@@ -301,9 +315,32 @@ func runLegacy() {
 		sm = monitoring.NewStatManager("legacy", *influxAddr, *influxUser, *influxPass, *influxDB)
 	}
 
+	// receive the engine instance status
+	log.Println("setting up a management channel")
+	mc := make(chan filtering.ManagementMessage, QueueSize)
+	go func() {
+		for {
+			msg, ok := <-mc
+			if !ok {
+				break
+			}
+			switch msg.Type {
+			case filtering.EngineStatus:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.EngineThroughput,
+						Value: []interface{}{msg.CurrentThroughput},
+						Name:  "LegacyEngine",
+					}
+				}
+			}
+		}
+		log.Fatalln("management channel closed, dying...")
+	}()
+
 	// create legacy filtering engine from ECSpecs
 	log.Println("creating legacy filtering engine from %v", *filterFile)
-	legacyEngine := filtering.NewLegacyEngine(*filterFile)
+	legacyEngine := filtering.NewLegacyEngine(*filterFile, *statInterval, mc)
 
 	// receive incoming IDs
 	log.Println("setting up an incoming LLRPReadEvent channel")

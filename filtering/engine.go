@@ -5,6 +5,10 @@
 
 package filtering
 
+import (
+	"time"
+)
+
 // Engine provides interface for the filtering engines
 type Engine interface {
 	AddSubscription(Subscriptions)
@@ -28,4 +32,10 @@ var AvailableEngines = Engines{
 	"List":         NewList,
 	"PatriciaTrie": NewPatriciaTrie,
 	"SplayTree":    NewSplayTree,
+}
+
+/* internal helper func */
+// timeTrack measures the time it taken from the start
+func timeTrack(start time.Time, tpech chan time.Duration) {
+	tpech <- time.Since(start)
 }

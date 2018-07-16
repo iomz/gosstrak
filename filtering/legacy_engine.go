@@ -5,19 +5,28 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/tdt"
 )
 
 type LegacyEngine struct {
-	subscriptions map[string][]string
-	tdtCore       *tdt.Core
+	mainChannel         chan ManagementMessage
+	subscriptions       map[string][]string
+	tdtCore             *tdt.Core
+	statInterval        int
+	nEvent              int
+	totalTime           int64
+	timePerEventChannel chan time.Duration
+	CurrentThroughput   float64
 }
 
 func (le *LegacyEngine) Search(re *llrp.LLRPReadEvent) (matched []string, pureIdentity string, err error) {
+	defer timeTrack(time.Now(), le.timePerEventChannel)
 	// translate the readevent to a PureIdentity
 	pureIdentity, err = le.tdtCore.Translate(re.PC, re.ID)
 	if err != nil {
@@ -35,9 +44,15 @@ func (le *LegacyEngine) Search(re *llrp.LLRPReadEvent) (matched []string, pureId
 	return matched, pureIdentity, nil
 }
 
-func NewLegacyEngine(filename string) *LegacyEngine {
+func NewLegacyEngine(filename string, statInterval int, mc chan ManagementMessage) *LegacyEngine {
 	// initialize LegacyEngine
-	le := LegacyEngine{}
+	le := LegacyEngine{
+		mainChannel:       mc,
+		statInterval:      statInterval,
+		nEvent:            0,
+		totalTime:         0,
+		CurrentThroughput: 0,
+	}
 	le.subscriptions = make(map[string][]string)
 
 	// initialize tdt.Core
@@ -74,6 +89,36 @@ func NewLegacyEngine(filename string) *LegacyEngine {
 		}
 	}
 	log.Printf("%v filters loaded from %v", len(le.subscriptions), filename)
+
+	le.timePerEventChannel = make(chan time.Duration)
+	go func() {
+		intervalTicker := time.NewTicker(time.Duration(le.statInterval) * time.Second)
+
+		for {
+			select {
+			case t, ok := <-le.timePerEventChannel:
+				if !ok {
+					log.Fatalln("throughput monitor in LegacyEngine died")
+				}
+				//log.Printf("[EngineGenerator] %s: %v us/event", eg.Name, t.Nanoseconds())
+				le.totalTime += t.Nanoseconds() / 1000 // microseconds
+				le.nEvent++
+			case <-intervalTicker.C:
+				throughput := float64(le.totalTime) / float64(le.nEvent)
+				//log.Printf("%s total: %v, n: %v", eg.Name, eg.totalTime, eg.nEvent)
+				if throughput != 0 && !math.IsNaN(throughput) {
+					le.CurrentThroughput = throughput
+					le.mainChannel <- ManagementMessage{
+						Type:              EngineStatus,
+						CurrentThroughput: le.CurrentThroughput,
+					}
+				}
+				le.nEvent = 0
+				le.totalTime = 0
+			}
+		}
+	}()
+
 	return &le
 }
 
