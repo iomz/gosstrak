@@ -8,6 +8,7 @@ package tdt
 
 import (
 	"errors"
+	"fmt"
 	//"io/ioutil"
 	//"log"
 	"math/big"
@@ -778,6 +779,27 @@ func (c *Core) buildUII(id []byte, afi byte) (string, error) {
 
 func (c *Core) buildProprietary(id []byte) (string, error) {
 	return "", nil
+}
+
+// MakePrefixFilterString takes a pattern type and a slice of fields
+// return a binary reporesentation of the prefix filter in string
+func MakePrefixFilterString(patternType string, fields []string) (string, error) {
+	switch patternType { // type
+	case "giai-96":
+		return NewPrefixFilterGIAI96(fields)
+	case "grai-96":
+		return NewPrefixFilterGRAI96(fields)
+	case "sgtin-96":
+		return NewPrefixFilterSGTIN96(fields)
+	case "sscc-96":
+		return NewPrefixFilterSSCC96(fields)
+	case "iso17363":
+		return NewPrefixFilterISO17363(fields)
+	case "iso17365":
+		return NewPrefixFilterISO17365(fields)
+	default:
+		return "", fmt.Errorf("unknown patternType: %v", patternType)
+	}
 }
 
 func parse6BitEncodedByteSliceToString(in []byte) (string, error) {

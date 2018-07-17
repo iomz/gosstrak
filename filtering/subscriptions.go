@@ -15,6 +15,8 @@ import (
 	"sort"
 	//"strconv"
 	"strings"
+
+	"github.com/iomz/gosstrak/tdt"
 )
 
 // ByteSubscriptions contains filter string as key and PartialSubscription as value
@@ -25,6 +27,68 @@ type PartialSubscription struct {
 	Offset    int
 	ReportURI string
 	Subset    ByteSubscriptions
+}
+
+// Subscriptions contains a slice of urn:epc:pat as values and a URI to report events as keys
+type Subscriptions map[string][]string
+
+func (sub Subscriptions) ToByteSubscriptions() ByteSubscriptions {
+	bsub := ByteSubscriptions{}
+	for reportURI, patterns := range sub {
+		for _, pat := range patterns {
+			tf := strings.Split(strings.TrimPrefix(pat, "urn:epc:pat:"), ":")
+			if len(tf) != 2 { // should only containts a type and fields
+				continue
+			}
+			fields := strings.Split(tf[1], ".")
+			pfs, err := tdt.MakePrefixFilterString(tf[0], fields)
+			if err != nil {
+				continue
+			}
+			bsub[pfs] = &PartialSubscription{
+				Offset:    0,
+				ReportURI: reportURI,
+				Subset:    ByteSubscriptions{},
+			}
+		}
+	}
+	return bsub
+}
+
+// LoadSubscriptionsFromCSVFile takes a csv file name and returns Subscriptions
+func LoadSubscriptionsFromCSVFile(f string) Subscriptions {
+	sub := Subscriptions{}
+	fp, err := os.Open(f)
+	if err != nil {
+		panic(err)
+	}
+	defer fp.Close()
+
+	reader := csv.NewReader(fp)
+	reader.Comma = ','
+	reader.LazyQuotes = true
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+		reportURI := strings.ToLower(record[0])
+		if !strings.HasPrefix(reportURI, "http") {
+			continue
+		}
+		for i := 1; i < len(record); i++ {
+			pat := strings.ToLower(record[i])
+			if strings.HasPrefix(pat, "urn:epc:pat:") {
+				if _, ok := sub[reportURI]; !ok {
+					sub[reportURI] = []string{}
+				}
+				sub[reportURI] = append(sub[reportURI], pat)
+			}
+		}
+	}
+	return sub
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *PartialSubscription

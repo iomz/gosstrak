@@ -1,8 +1,10 @@
-package tdt
+// Copyright (c) 2018 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
 
-//const (
-//	KeepaliveAckHeader = 1096
-//)
+// Package tdt contains Tag Data Translation module from binary to Pure Identity
+package tdt
 
 // AFIAssignment is a table for AFI OID arch mapping
 var AFIAssignment = map[string]string{

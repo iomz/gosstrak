@@ -1,3 +1,9 @@
+// Copyright (c) 2018 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
+// Package tdt contains Tag Data Translation module from binary to Pure Identity
 package tdt
 
 // DIMapping contains a map for DI to OID arc
