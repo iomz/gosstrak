@@ -72,26 +72,6 @@ func TestList_UnmarshalBinary(t *testing.T) {
 	}
 }
 
-func TestList_AnalyzeLocality(t *testing.T) {
-	type args struct {
-		id     []byte
-		prefix string
-		lm     *LocalityMap
-	}
-	tests := []struct {
-		name string
-		list *List
-		args args
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.list.AnalyzeLocality(tt.args.id, tt.args.prefix, tt.args.lm)
-		})
-	}
-}
-
 func TestList_Search(t *testing.T) {
 	type args struct {
 		id []byte
@@ -122,7 +102,7 @@ func TestList_Search(t *testing.T) {
 
 func TestNewList(t *testing.T) {
 	type args struct {
-		sub Subscriptions
+		sub ByteSubscriptions
 	}
 	tests := []struct {
 		name string
@@ -132,11 +112,11 @@ func TestNewList(t *testing.T) {
 		{
 			"NewList testing...",
 			args{
-				Subscriptions{
-					"0011":         &Info{0, "3", 10, Subscriptions{}},
-					"1111":         &Info{0, "15", 2, Subscriptions{}},
-					"00110000":     &Info{0, "3-0", 5, Subscriptions{}},
-					"001100110000": &Info{0, "3-3-0", 5, Subscriptions{}},
+				ByteSubscriptions{
+					"0011":         &PartialSubscription{0, "3", ByteSubscriptions{}},
+					"1111":         &PartialSubscription{0, "15", ByteSubscriptions{}},
+					"00110000":     &PartialSubscription{0, "3-0", ByteSubscriptions{}},
+					"001100110000": &PartialSubscription{0, "3-3-0", ByteSubscriptions{}},
 				},
 			},
 			&List{
@@ -153,8 +133,8 @@ func TestNewList(t *testing.T) {
 				for i, em := range *got.(*List) {
 					if !reflect.DeepEqual(em.filter, (*tt.want)[i].filter) {
 						t.Errorf("(*NewList())[%v].filter = \n%v, want \n%v", i, em.filter, (*tt.want)[i].filter)
-					} else if em.notificationURI != (*tt.want)[i].notificationURI {
-						t.Errorf("(*NewList())[%v].notificationURI = \n%v, want \n%v", i, em.notificationURI, (*tt.want)[i].notificationURI)
+					} else if em.reportURI != (*tt.want)[i].reportURI {
+						t.Errorf("(*NewList())[%v].reportURI = \n%v, want \n%v", i, em.reportURI, (*tt.want)[i].reportURI)
 					}
 				}
 			}
@@ -230,7 +210,7 @@ func TestList_IndexOf(t *testing.T) {
 
 func TestList_AddSubscription(t *testing.T) {
 	type args struct {
-		sub Subscriptions
+		sub ByteSubscriptions
 	}
 	tests := []struct {
 		name string
@@ -246,8 +226,8 @@ func TestList_AddSubscription(t *testing.T) {
 				&ExactMatch{"15", NewFilter("1111", 0)},
 			},
 			args{
-				Subscriptions{
-					"00111100": &Info{0, "3-12", 0, Subscriptions{}},
+				ByteSubscriptions{
+					"00111100": &PartialSubscription{0, "3-12", ByteSubscriptions{}},
 				},
 			},
 		},
@@ -256,7 +236,7 @@ func TestList_AddSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.list.AddSubscription(tt.args.sub)
 			for _, fs := range tt.args.sub.Keys() {
-				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
+				newSub := &ExactMatch{tt.args.sub[fs].ReportURI, NewFilter(fs, tt.args.sub[fs].Offset)}
 				if tt.list.IndexOf(newSub) < 0 {
 					t.Errorf("List.AddSubscription() didn't append %v", *newSub)
 				}
@@ -267,7 +247,7 @@ func TestList_AddSubscription(t *testing.T) {
 
 func TestList_DeleteSubscription(t *testing.T) {
 	type args struct {
-		sub Subscriptions
+		sub ByteSubscriptions
 	}
 	tests := []struct {
 		name string
@@ -283,8 +263,8 @@ func TestList_DeleteSubscription(t *testing.T) {
 				&ExactMatch{"15", NewFilter("1111", 0)},
 			},
 			args{
-				Subscriptions{
-					"00110000": &Info{0, "3-0", 0, Subscriptions{}},
+				ByteSubscriptions{
+					"00110000": &PartialSubscription{0, "3-0", ByteSubscriptions{}},
 				},
 			},
 		},
@@ -293,7 +273,7 @@ func TestList_DeleteSubscription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.list.DeleteSubscription(tt.args.sub)
 			for _, fs := range tt.args.sub.Keys() {
-				newSub := &ExactMatch{tt.args.sub[fs].NotificationURI, NewFilter(fs, tt.args.sub[fs].Offset)}
+				newSub := &ExactMatch{tt.args.sub[fs].ReportURI, NewFilter(fs, tt.args.sub[fs].Offset)}
 				if tt.list.IndexOf(newSub) > -1 {
 					t.Errorf("List.AddSubscription() didn't delete %v", *newSub)
 					t.Errorf("List: %s", tt.list.Dump())

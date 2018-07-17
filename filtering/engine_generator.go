@@ -11,6 +11,7 @@ import (
 	"time"
 	//"reflect"
 
+	//"github.com/iomz/go-llrp"
 	"github.com/looplab/fsm"
 )
 
@@ -99,7 +100,7 @@ func (eg *EngineGenerator) enterState(e *fsm.Event) {
 func (eg *EngineGenerator) enterGenerating(e *fsm.Event) {
 	go func() {
 		//log.Printf("[EngineGenerator] start generating %s engine", eg.Name)
-		sub := e.Args[0].(Subscriptions)
+		sub := e.Args[0].(ByteSubscriptions)
 		eg.Engine = AvailableEngines[eg.Name](sub)
 		eg.FSM.Event("deploy")
 	}()
@@ -109,19 +110,23 @@ func (eg *EngineGenerator) enterRebuilding(e *fsm.Event) {
 	msg := e.Args[0].(*ManagementMessage)
 	switch msg.Type {
 	case AddSubscription:
-		eg.Engine.AddSubscription(Subscriptions{
-			msg.FilterString: &Info{
-				Offset:          0,
-				NotificationURI: msg.NotificationURI,
-			},
-		})
+		/*
+			eg.Engine.AddSubscription(ByteSubscriptions{
+				msg.FilterString: &Info{
+					Offset:          0,
+					ReportURI: msg.ReportURI,
+				},
+			})
+		*/
 	case DeleteSubscription:
-		eg.Engine.DeleteSubscription(Subscriptions{
-			msg.FilterString: &Info{
-				Offset:          0,
-				NotificationURI: msg.NotificationURI,
-			},
-		})
+		/*
+			eg.Engine.DeleteSubscription(ByteSubscriptions{
+				msg.FilterString: &Info{
+					Offset:          0,
+					ReportURI: msg.ReportURI,
+				},
+			})
+		*/
 	}
 	eg.FSM.Event("deploy")
 }

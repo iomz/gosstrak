@@ -9,6 +9,7 @@ import (
 	"log"
 	"reflect"
 	"unsafe"
+	//"github.com/iomz/go-llrp"
 )
 
 // ManagementMessageType is to indicate the type of ManagementMessage
@@ -27,19 +28,19 @@ const (
 type ManagementMessage struct {
 	Type                    ManagementMessageType
 	FilterString            string
-	NotificationURI         string
+	ReportURI               string
 	EngineGeneratorInstance *EngineGenerator
 	CurrentThroughput       float64
 }
 
 // EngineFactory manages the FC's subscriptions and engine instances
 type EngineFactory struct {
-	mainChannel          chan ManagementMessage
-	generatorChannels    []chan ManagementMessage
-	currentSubscriptions Subscriptions
-	productionSystem     map[string]*EngineGenerator
-	deploymentPriority   map[string]uint8
-	currentEngineName    string
+	mainChannel              chan ManagementMessage
+	generatorChannels        []chan ManagementMessage
+	currentByteSubscriptions ByteSubscriptions
+	productionSystem         map[string]*EngineGenerator
+	deploymentPriority       map[string]uint8
+	currentEngineName        string
 }
 
 // IsActive returns false if no engine is available
@@ -61,13 +62,13 @@ func (ef *EngineFactory) Search(id []byte) []string {
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
-func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
+func NewEngineFactory(sub ByteSubscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
 	ef := &EngineFactory{
 		mainChannel: mc,
 	}
 
 	// Load saved subscriptions?
-	ef.currentSubscriptions = sub
+	ef.currentByteSubscriptions = sub
 
 	// Load all the possible engines
 	ef.productionSystem = make(map[string]*EngineGenerator)
@@ -110,33 +111,37 @@ func (ef *EngineFactory) Run() {
 			msg := ManagementMessage{
 				Type:                    val.FieldByName("Type").Interface().(ManagementMessageType),
 				FilterString:            val.FieldByName("FilterString").String(),
-				NotificationURI:         val.FieldByName("FilterString").String(),
+				ReportURI:               val.FieldByName("FilterString").String(),
 				EngineGeneratorInstance: (*EngineGenerator)(unsafe.Pointer(val.FieldByName("EngineGeneratorInstance").Pointer())),
 			}
 			switch msg.Type {
 			case AddSubscription:
-				if _, ok := ef.currentSubscriptions[msg.FilterString]; !ok {
-					ef.currentSubscriptions[msg.FilterString] = &Info{
-						Offset:          0,
-						NotificationURI: msg.NotificationURI,
-					}
-					for _, eg := range ef.productionSystem {
-						err := eg.FSM.Event("update", &msg)
-						if err != nil {
-							log.Println(err)
+				/*
+					if _, ok := ef.currentByteSubscriptions[msg.FilterString]; !ok {
+						ef.currentByteSubscriptions[msg.FilterString] = &PartialSubscription{
+							Offset:    0,
+							ReportURI: msg.ReportURI,
+						}
+						for _, eg := range ef.productionSystem {
+							err := eg.FSM.Event("update", &msg)
+							if err != nil {
+								log.Println(err)
+							}
 						}
 					}
-				}
+				*/
 			case DeleteSubscription:
-				if _, ok := ef.currentSubscriptions[msg.FilterString]; ok {
-					delete(ef.currentSubscriptions, msg.FilterString)
-					for _, eg := range ef.productionSystem {
-						err := eg.FSM.Event("update", &msg)
-						if err != nil {
-							log.Println(err)
+				/*
+					if _, ok := ef.currentByteSubscriptions[msg.FilterString]; ok {
+						delete(ef.currentByteSubscriptions, msg.FilterString)
+						for _, eg := range ef.productionSystem {
+							err := eg.FSM.Event("update", &msg)
+							if err != nil {
+								log.Println(err)
+							}
 						}
 					}
-				}
+				*/
 			case OnEngineGenerated:
 				log.Printf("[EngineFactory] received OnEngineGenerated from %s", msg.EngineGeneratorInstance.Engine.Name())
 				if len(ef.currentEngineName) == 0 {
@@ -161,6 +166,6 @@ func (ef *EngineFactory) Run() {
 	log.Println("[EngineFactory] initializing engines")
 	for _, eg := range ef.productionSystem {
 		// pass the cloned subscriptions
-		eg.FSM.Event("init", ef.currentSubscriptions.Clone())
+		eg.FSM.Event("init", ef.currentByteSubscriptions.Clone())
 	}
 }

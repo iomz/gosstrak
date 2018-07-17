@@ -16,32 +16,28 @@ import (
 // List is a slice of pointers to ExactMatch
 type List []*ExactMatch
 
-// ExactMatch is a raw filter directly taken from Subscriptions
+// ExactMatch is a raw filter directly taken from ByteSubscriptions
 type ExactMatch struct {
-	notificationURI string
-	filter          *FilterObject
+	reportURI string
+	filter    *FilterObject
 }
 
 // AddSubscription adds a set of subscriptions if not exists yet
-func (list *List) AddSubscription(sub Subscriptions) {
+func (list *List) AddSubscription(sub ByteSubscriptions) {
 	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+		em := &ExactMatch{sub[fs].ReportURI, NewFilter(fs, sub[fs].Offset)}
 		if list.IndexOf(em) < 0 {
 			*list = append(*list, em)
 		}
 	}
 }
 
-// AnalyzeLocality increments the locality per node for the specific id
-func (list *List) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
-}
-
 // DeleteSubscription deletes a set of subscriptions if already exist
-func (list *List) DeleteSubscription(sub Subscriptions) {
+func (list *List) DeleteSubscription(sub ByteSubscriptions) {
 	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, sub[fs].Offset)}
+		em := &ExactMatch{sub[fs].ReportURI, NewFilter(fs, sub[fs].Offset)}
 		if i := list.IndexOf(em); i > -1 {
 			*list = append((*list)[:i], (*list)[i+1:]...)
 		}
@@ -63,7 +59,7 @@ func (list *List) IndexOf(em *ExactMatch) int {
 func (list *List) Dump() string {
 	writer := &bytes.Buffer{}
 	for _, em := range *list {
-		fmt.Fprintf(writer, "--%s %s\n", em.filter.ToString(), em.notificationURI)
+		fmt.Fprintf(writer, "--%s %s\n", em.filter.ToString(), em.reportURI)
 	}
 	return writer.String()
 }
@@ -80,7 +76,7 @@ func (list *List) MarshalBinary() (_ []byte, err error) {
 	enc.Encode(len(*list))
 	for _, em := range *list {
 		// Notify
-		enc.Encode(em.notificationURI)
+		enc.Encode(em.reportURI)
 		// Filter
 		err = enc.Encode(em.filter)
 	}
@@ -93,11 +89,11 @@ func (list *List) Name() string {
 	return "List"
 }
 
-// Search returns a slice of notificationURI
+// Search returns a slice of reportURI
 func (list *List) Search(id []byte) (matches []string) {
 	for _, em := range *list {
 		if em.filter.Match(id) {
-			matches = append(matches, em.notificationURI)
+			matches = append(matches, em.reportURI)
 		}
 	}
 	return
@@ -122,7 +118,7 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 	for i := 0; i < listSize; i++ {
 		em := ExactMatch{}
 		// Notify
-		if err = dec.Decode(&em.notificationURI); err != nil {
+		if err = dec.Decode(&em.reportURI); err != nil {
 			return
 		}
 		// Filter
@@ -133,14 +129,14 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-// NewList builds a simple list of filters from filter.Subscriptions
+// NewList builds a simple list of filters from filter.ByteSubscriptions
 // returns the pointer to the slice of ExactMatch struct
-func NewList(sub Subscriptions) Engine {
+func NewList(sub ByteSubscriptions) Engine {
 	list := List{}
 
 	// store ExactMatch in sorted order from sub
 	for _, fs := range sub.Keys() {
-		list = append(list, &ExactMatch{sub[fs].NotificationURI, NewFilter(fs, 0)})
+		list = append(list, &ExactMatch{sub[fs].ReportURI, NewFilter(fs, 0)})
 	}
 
 	return &list

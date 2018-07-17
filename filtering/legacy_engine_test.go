@@ -14,7 +14,7 @@ func TestLegacyEngine_Search(t *testing.T) {
 		tdtCore       *tdt.Core
 	}
 	type args struct {
-		re *llrp.LLRPReadEvent
+		re *llrp.ReadEvent
 	}
 	tests := []struct {
 		name             string

@@ -23,8 +23,8 @@ func benchmarkEngineGeneration(size int, constructor EngineConstructor, b *testi
 	largeSubsCSV := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/large-subs.csv"
 	largeSubs := LoadFiltersFromCSVFile(largeSubsCSV)
 
-	// cap the Subscriptions with the given size
-	limitedSubs := Subscriptions{}
+	// cap the ByteSubscriptions with the given size
+	limitedSubs := ByteSubscriptions{}
 	keys := largeSubs.Keys()
 	rand.Seed(time.Now().UTC().UnixNano())
 	perms := rand.Perm(len(keys))

@@ -25,7 +25,7 @@ type LegacyEngine struct {
 	CurrentThroughput   float64
 }
 
-func (le *LegacyEngine) Search(re *llrp.LLRPReadEvent) (matched []string, pureIdentity string, err error) {
+func (le *LegacyEngine) Search(re *llrp.ReadEvent) (matched []string, pureIdentity string, err error) {
 	defer timeTrack(time.Now(), le.timePerEventChannel)
 	// translate the readevent to a PureIdentity
 	pureIdentity, err = le.tdtCore.Translate(re.PC, re.ID)

@@ -17,54 +17,23 @@ import (
 
 // PatriciaTrie struct
 type PatriciaTrie struct {
-	notificationURI string
-	filterObject    *FilterObject
-	one             *PatriciaTrie
-	zero            *PatriciaTrie
+	reportURI    string
+	filterObject *FilterObject
+	one          *PatriciaTrie
+	zero         *PatriciaTrie
 }
 
 // AddSubscription adds a set of subscriptions if not exists yet
-func (pt *PatriciaTrie) AddSubscription(sub Subscriptions) {
+func (pt *PatriciaTrie) AddSubscription(sub ByteSubscriptions) {
 	for _, fs := range sub.Keys() {
-		pt.add(fs, sub[fs].NotificationURI)
-	}
-}
-
-// AnalyzeLocality increments the locality per node for the specific id
-func (pt *PatriciaTrie) AnalyzeLocality(id []byte, prefix string, lm *LocalityMap) {
-	// if not match, return empty string immediately
-	if !pt.filterObject.Match(id) {
-		return
-	}
-
-	// if the node is the first two node
-	if len(pt.filterObject.String) != 0 {
-		prefix += "," + pt.filterObject.String
-	}
-
-	if _, ok := (*lm)[prefix]; !ok {
-		(*lm)[prefix] = 1
-	} else {
-		(*lm)[prefix]++
-	}
-
-	// Determine next filter
-	nextBitOffset := pt.filterObject.Offset + pt.filterObject.Size
-	nb, err := getNextBit(id, nextBitOffset)
-	if err != nil {
-		panic(err)
-	}
-	if nb == '1' && pt.one != nil {
-		pt.one.AnalyzeLocality(id, prefix, lm)
-	} else if nb == '0' && pt.zero != nil {
-		pt.zero.AnalyzeLocality(id, prefix, lm)
+		pt.add(fs, sub[fs].ReportURI)
 	}
 }
 
 // DeleteSubscription deletes a set of subscriptions if already exist
-func (pt *PatriciaTrie) DeleteSubscription(sub Subscriptions) {
+func (pt *PatriciaTrie) DeleteSubscription(sub ByteSubscriptions) {
 	for _, fs := range sub.Keys() {
-		pt.delete(fs, sub[fs].NotificationURI)
+		pt.delete(fs, sub[fs].ReportURI)
 	}
 }
 
@@ -84,7 +53,7 @@ func (pt *PatriciaTrie) MarshalBinary() (_ []byte, err error) {
 	enc.Encode("Engine:filtering.PatriciaTrie")
 
 	// Notify
-	enc.Encode(pt.notificationURI)
+	enc.Encode(pt.reportURI)
 
 	// Filter
 	hasFilter := pt.filterObject != nil
@@ -116,16 +85,16 @@ func (pt *PatriciaTrie) Name() string {
 	return "PatriciaTrie"
 }
 
-// Search returns a slice of notificationURI
+// Search returns a slice of reportURI
 func (pt *PatriciaTrie) Search(id []byte) (matches []string) {
 	// if not match, return empty slice immediately
 	if !pt.filterObject.Match(id) {
 		return
 	}
 
-	// if the id matched with this node, return notificationURI
-	if len(pt.notificationURI) != 0 {
-		matches = append(matches, pt.notificationURI)
+	// if the id matched with this node, return reportURI
+	if len(pt.reportURI) != 0 {
+		matches = append(matches, pt.reportURI)
 	}
 
 	// Determine next filter
@@ -153,7 +122,7 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 	}
 
 	// Notify
-	if err = dec.Decode(&pt.notificationURI); err != nil {
+	if err = dec.Decode(&pt.reportURI); err != nil {
 		return
 	}
 
@@ -196,12 +165,12 @@ func (pt *PatriciaTrie) UnmarshalBinary(data []byte) (err error) {
 // Internal helper methods -----------------------------------------------------
 
 // add a subscription if not exist yet
-func (pt *PatriciaTrie) add(fs string, notificationURI string) {
+func (pt *PatriciaTrie) add(fs string, reportURI string) {
 	if strings.HasPrefix(fs, pt.filterObject.String) { // fs \in pt.FilterObject.String
 		if fs == pt.filterObject.String { // the identical filter
-			// if the notificationURI is different, update it
-			if pt.notificationURI != notificationURI {
-				pt.notificationURI = notificationURI
+			// if the reportURI is different, update it
+			if pt.reportURI != reportURI {
+				pt.reportURI = reportURI
 			}
 			return //end
 		}
@@ -213,8 +182,8 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 		newNode.filterObject = NewFilter(pt.filterObject.String[ncpLength:], pt.filterObject.Offset+ncpLength)
 		newNode.one = pt.one
 		newNode.zero = pt.zero
-		newNode.notificationURI = pt.notificationURI
-		pt.notificationURI = ""
+		newNode.reportURI = pt.reportURI
+		pt.reportURI = ""
 		currentOffset := pt.filterObject.Offset
 		pt.filterObject = NewFilter(newCommonPrefix, currentOffset)
 		switch fs[ncpLength] {
@@ -222,12 +191,12 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 			pt.zero = newNode
 			pt.one = &PatriciaTrie{}
 			pt.one.filterObject = NewFilter(fs[ncpLength:], currentOffset+ncpLength)
-			pt.one.notificationURI = notificationURI
+			pt.one.reportURI = reportURI
 		case '0':
 			pt.one = newNode
 			pt.zero = &PatriciaTrie{}
 			pt.zero.filterObject = NewFilter(fs[ncpLength:], currentOffset+ncpLength)
-			pt.zero.notificationURI = notificationURI
+			pt.zero.reportURI = reportURI
 		}
 		return //end
 	}
@@ -239,23 +208,23 @@ func (pt *PatriciaTrie) add(fs string, notificationURI string) {
 			if pt.one == nil {
 				pt.one = &PatriciaTrie{}
 				pt.one.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
-				pt.one.notificationURI = notificationURI
+				pt.one.reportURI = reportURI
 				return //end
 			}
-			pt.one.add(fs[pt.filterObject.Size:], notificationURI)
+			pt.one.add(fs[pt.filterObject.Size:], reportURI)
 		case '0':
 			if pt.zero == nil {
 				pt.zero = &PatriciaTrie{}
 				pt.zero.filterObject = NewFilter(fs[pt.filterObject.Size:], pt.filterObject.Offset+pt.filterObject.Size)
-				pt.zero.notificationURI = notificationURI
+				pt.zero.reportURI = reportURI
 				return //end
 			}
-			pt.zero.add(fs[pt.filterObject.Size:], notificationURI)
+			pt.zero.add(fs[pt.filterObject.Size:], reportURI)
 		}
 	}
 }
 
-func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
+func (pt *PatriciaTrie) build(prefix string, sub ByteSubscriptions) {
 	onePrefixBranch := ""
 	zeroPrefixBranch := ""
 	fks := sub.Keys()
@@ -297,7 +266,7 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		cumulativePrefix = prefix + onePrefixBranch
 		// check if the prefix matches whole filter
 		if _, ok := sub[cumulativePrefix]; ok {
-			pt.one.notificationURI = sub[cumulativePrefix].NotificationURI
+			pt.one.reportURI = sub[cumulativePrefix].ReportURI
 		}
 		pt.one.build(cumulativePrefix, sub)
 	}
@@ -308,14 +277,14 @@ func (pt *PatriciaTrie) build(prefix string, sub Subscriptions) {
 		cumulativePrefix = prefix + zeroPrefixBranch
 		// check if the prefix matches whole filter
 		if _, ok := sub[cumulativePrefix]; ok {
-			pt.zero.notificationURI = sub[cumulativePrefix].NotificationURI
+			pt.zero.reportURI = sub[cumulativePrefix].ReportURI
 		}
 		pt.zero.build(cumulativePrefix, sub)
 	}
 }
 
 // delete a subscriptions if already exist
-func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
+func (pt *PatriciaTrie) delete(fs string, reportURI string) {
 	// No such filter exist in the trie
 	if !strings.HasPrefix(fs, pt.filterObject.String) {
 		return
@@ -324,17 +293,17 @@ func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
 	// This is the filter to delete
 	if fs == pt.filterObject.String {
 		if pt.one != nil && pt.zero != nil { // node in the middle
-			pt.notificationURI = ""
+			pt.reportURI = ""
 		} else if pt.one != nil { // has only one node
 			newFilter := NewFilter(pt.filterObject.String+pt.one.filterObject.String, pt.filterObject.Offset)
 			pt.filterObject = newFilter
-			pt.notificationURI = pt.one.notificationURI
+			pt.reportURI = pt.one.reportURI
 			pt.zero = pt.one.zero
 			pt.one = pt.one.one
 		} else if pt.zero != nil { // has only zero node
 			newFilter := NewFilter(pt.filterObject.String+pt.zero.filterObject.String, pt.filterObject.Offset)
 			pt.filterObject = newFilter
-			pt.notificationURI = pt.zero.notificationURI
+			pt.reportURI = pt.zero.reportURI
 			pt.one = pt.zero.one
 			pt.zero = pt.zero.zero
 		}
@@ -350,7 +319,7 @@ func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
 					pt.one.one == nil && pt.one.zero == nil {
 					pt.one = nil
 				} else {
-					pt.one.delete(fs[pt.filterObject.Size:], notificationURI)
+					pt.one.delete(fs[pt.filterObject.Size:], reportURI)
 				}
 			}
 		case '0':
@@ -359,7 +328,7 @@ func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
 					pt.zero.one == nil && pt.zero.zero == nil {
 					pt.zero = nil
 				} else {
-					pt.zero.delete(fs[pt.filterObject.Size:], notificationURI)
+					pt.zero.delete(fs[pt.filterObject.Size:], reportURI)
 				}
 			}
 		}
@@ -369,8 +338,8 @@ func (pt *PatriciaTrie) delete(fs string, notificationURI string) {
 
 func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 	var n string
-	if len(pt.notificationURI) != 0 {
-		n = "-> " + pt.notificationURI
+	if len(pt.reportURI) != 0 {
+		n = "-> " + pt.reportURI
 	}
 	fmt.Fprintf(writer, "%s--%s %s\n", strings.Repeat(" ", indent), pt.filterObject.ToString(), n)
 	if pt.one != nil {
@@ -382,7 +351,7 @@ func (pt *PatriciaTrie) print(writer io.Writer, indent int) {
 }
 
 func (pt *PatriciaTrie) equal(want *PatriciaTrie) (ok bool, got *PatriciaTrie, wanted *PatriciaTrie) {
-	if pt.notificationURI != want.notificationURI ||
+	if pt.reportURI != want.reportURI ||
 		!reflect.DeepEqual(pt.filterObject, want.filterObject) {
 		return false, pt, want
 	}
@@ -455,9 +424,9 @@ func lcp(l []string) string {
 	return min
 }
 
-// NewPatriciaTrie builds PatriciaTrie from filter.Subscriptions
+// NewPatriciaTrie builds PatriciaTrie from filter.ByteSubscriptions
 // returns the pointer to the node
-func NewPatriciaTrie(s Subscriptions) Engine {
+func NewPatriciaTrie(s ByteSubscriptions) Engine {
 	// copy subscription
 	sub := s.Clone()
 	p1 := lcp(sub.Keys())
