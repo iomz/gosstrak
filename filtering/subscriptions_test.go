@@ -7,6 +7,7 @@ package filtering
 
 import (
 	"bytes"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -50,11 +51,11 @@ func TestByteSubscriptions_Dump(t *testing.T) {
 				"00110000":     &PartialSubscription{0, "3-0", ByteSubscriptions{}},
 				"001100110000": &PartialSubscription{0, "3-3-0", ByteSubscriptions{}},
 			},
-			"--0011\n" +
-				"--00110000\n" +
-				"--00110011\n" +
-				"--001100110000\n" +
-				"--1111\n",
+			"--0011 0 3\n" +
+				"--00110000 0 3-0\n" +
+				"--00110011 0 3-3\n" +
+				"--001100110000 0 3-3-0\n" +
+				"--1111 0 15\n",
 		},
 		// TODO: Add test cases.
 	}
@@ -213,6 +214,169 @@ func TestLoadFiltersFromCSVFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := LoadFiltersFromCSVFile(tt.args.f); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("LoadFiltersFromCSVFile() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSubscriptions_ToByteSubscriptions(t *testing.T) {
+	tests := []struct {
+		name string
+		sub  Subscriptions
+		want ByteSubscriptions
+	}{
+		{
+			"ecspec_sample.csv -> ByteSubscriptions",
+			Subscriptions{
+				"http://localhost:8888/grai":  []string{"urn:epc:pat:grai-96:3.123456.1.1"},
+				"http://localhost:8888/17365": []string{"urn:epc:pat:iso17365:25S.UN.ABC.0THANK0YOU0FOR0READING0THIS1"},
+				"http://localhost:8888/giai":  []string{"urn:epc:pat:giai-96:3.02283922192.45325296932379"},
+				"http://localhost:8888/17363": []string{"urn:epc:pat:iso17363:7B.MTR"},
+				"http://localhost:8888/sgtin": []string{"urn:epc:pat:sgtin-96:3.999203.7757355"},
+				"http://localhost:8888/sscc":  []string{"urn:epc:pat:sscc-96:3.00039579721"},
+			},
+			ByteSubscriptions{
+				"0011000001111011110011111100100011011101100101111000101011":                                                                                                                                                               &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sgtin"},
+				"001100010110010000000000010010110111111000001001001":                                                                                                                                                                      &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sscc"},
+				"001100110111100001111000100100000000000000000000000000000100000000000000000000000000000000000001":                                                                                                                         &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/grai"},
+				"0011010001100100000100010000010000111100011000100001010010011100100011110001110010001011000011011":                                                                                                                        &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/giai"},
+				"110010110101010011010101001110000001000010000011110000010100001000000001001110001011110000011001001111010101110000000110001111010010110000010010000101000001000100001001001110000111110000010100001000001001010011110001": &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/17365"},
+				"110111000010001101010100010010": &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/17363"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.sub.ToByteSubscriptions()
+			for pfs, psub := range tt.want {
+				if got_psub, ok := got[pfs]; !ok {
+					t.Errorf("Subscriptions.ToByteSubscriptions() =  want %v", pfs)
+				} else if got_psub.Offset != psub.Offset {
+					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", got_psub, psub)
+				} else if got_psub.ReportURI != psub.ReportURI {
+					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", got_psub, psub)
+				}
+			}
+		})
+	}
+}
+
+func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
+	type args struct {
+		f string
+	}
+	tests := []struct {
+		name string
+		args args
+		want Subscriptions
+	}{
+		{
+			"ecspec_sample.csv",
+			args{os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec_sample.csv"},
+			Subscriptions{
+				"http://localhost:8888/grai":  []string{"urn:epc:pat:grai-96:3.123456.1.1"},
+				"http://localhost:8888/17365": []string{"urn:epc:pat:iso17365:25S.UN.ABC.0THANK0YOU0FOR0READING0THIS1"},
+				"http://localhost:8888/giai":  []string{"urn:epc:pat:giai-96:3.02283922192.45325296932379"},
+				"http://localhost:8888/17363": []string{"urn:epc:pat:iso17363:7B.MTR"},
+				"http://localhost:8888/sgtin": []string{"urn:epc:pat:sgtin-96:3.999203.7757355"},
+				"http://localhost:8888/sscc":  []string{"urn:epc:pat:sscc-96:3.00039579721"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := LoadSubscriptionsFromCSVFile(tt.args.f)
+			for reportURI, patterns := range got {
+				if wanted_patterns, ok := tt.want[reportURI]; !ok {
+					t.Errorf("LoadSubscriptionsFromCSVFile() = unknown key %v", reportURI)
+				} else if !reflect.DeepEqual(patterns, wanted_patterns) {
+					t.Errorf("LoadSubscriptionsFromCSVFile() = %q, want %q", patterns, wanted_patterns)
+				}
+			}
+		})
+	}
+}
+
+func TestPartialSubscription_MarshalBinary(t *testing.T) {
+	type fields struct {
+		Offset    int
+		ReportURI string
+		Subset    ByteSubscriptions
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    []byte
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			psub := &PartialSubscription{
+				Offset:    tt.fields.Offset,
+				ReportURI: tt.fields.ReportURI,
+				Subset:    tt.fields.Subset,
+			}
+			got, err := psub.MarshalBinary()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PartialSubscription.MarshalBinary() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PartialSubscription.MarshalBinary() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPartialSubscription_UnmarshalBinary(t *testing.T) {
+	type fields struct {
+		Offset    int
+		ReportURI string
+		Subset    ByteSubscriptions
+	}
+	type args struct {
+		data []byte
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			psub := &PartialSubscription{
+				Offset:    tt.fields.Offset,
+				ReportURI: tt.fields.ReportURI,
+				Subset:    tt.fields.Subset,
+			}
+			if err := psub.UnmarshalBinary(tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("PartialSubscription.UnmarshalBinary() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestByteSubscriptions_UnmarshalBinary(t *testing.T) {
+	type args struct {
+		data []byte
+	}
+	tests := []struct {
+		name    string
+		sub     *ByteSubscriptions
+		args    args
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.sub.UnmarshalBinary(tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("ByteSubscriptions.UnmarshalBinary() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

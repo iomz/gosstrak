@@ -11,6 +11,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sort"
 	//"strconv"
@@ -40,10 +41,10 @@ func (sub Subscriptions) ToByteSubscriptions() ByteSubscriptions {
 			if len(tf) != 2 { // should only containts a type and fields
 				continue
 			}
-			fields := strings.Split(tf[1], ".")
+			fields := strings.Split(strings.ToUpper(tf[1]), ".")
 			pfs, err := tdt.MakePrefixFilterString(tf[0], fields)
 			if err != nil {
-				continue
+				log.Print(err)
 			}
 			bsub[pfs] = &PartialSubscription{
 				Offset:    0,
@@ -74,7 +75,7 @@ func LoadSubscriptionsFromCSVFile(f string) Subscriptions {
 		} else if err != nil {
 			panic(err)
 		}
-		reportURI := strings.ToLower(record[0])
+		reportURI := strings.ToUpper(record[0])
 		if !strings.HasPrefix(reportURI, "http") {
 			continue
 		}
@@ -296,7 +297,7 @@ func LoadFiltersFromCSVFile(f string) ByteSubscriptions {
 
 func (sub ByteSubscriptions) print(writer io.Writer, indent int) {
 	for _, fs := range sub.Keys() {
-		fmt.Fprintf(writer, "%s--%s\n", strings.Repeat(" ", indent), fs)
+		fmt.Fprintf(writer, "%s--%s %v %s\n", strings.Repeat(" ", indent), fs, sub[fs].Offset, sub[fs].ReportURI)
 		ss := sub[fs].Subset
 		if len(ss) != 0 {
 			ss.print(writer, indent+2)

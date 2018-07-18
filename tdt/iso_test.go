@@ -73,7 +73,7 @@ func TestNewPrefixFilterISO17363(t *testing.T) {
 	}{
 		{
 			"ISO17363_7B_AAJ",
-			args{[]string{"AAJ"}},
+			args{[]string{"7B", "AAJ"}},
 			"110111000010000001000001001010",
 			false,
 		},
@@ -86,7 +86,7 @@ func TestNewPrefixFilterISO17363(t *testing.T) {
 				return
 			}
 			if got != tt.want {
-				t.Errorf("NewPrefixFilterISO17363() = %v, want %v", got, tt.want)
+				t.Errorf("NewPrefixFilterISO17363() = \n%v, want \n%v", got, tt.want)
 			}
 		})
 	}

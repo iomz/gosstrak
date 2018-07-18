@@ -18,7 +18,6 @@ func getISO6346CD(cn string) (int, error) {
 	if len(cn) != 10 {
 		return 0, fmt.Errorf("Invalid ISO6346 code provided: %v", cn)
 	}
-	cn = strings.ToUpper(cn)
 	n := 0.0
 	d := 0.5
 	for i := 0; i < 10; i++ {
@@ -50,27 +49,30 @@ func pad6BitEncodingRuneSlice(bs []rune) ([]rune, int) {
 func NewPrefixFilterISO17363(fields []string) (string, error) {
 	nFields := len(fields) // ownerCode, equipmentIdentifier, containerSerialNumber
 
-	// dataIdentifier
-	di := "7B"
-	dataIdentifier := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(di))
 	if nFields == 0 {
+		return "", fmt.Errorf("wrong fields: %q", fields)
+	}
+
+	// dataIdentifier
+	dataIdentifier := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(fields[0]))
+	if nFields == 1 {
 		return string(dataIdentifier), nil
 	}
 
 	// ownerCode
-	ownerCode := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(fields[0]))
-	if nFields == 1 {
+	ownerCode := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(fields[1]))
+	if nFields == 2 {
 		return string(dataIdentifier) + string(ownerCode), nil
 	}
 
 	// equipmentIdentifier
-	equipmentIdentifier := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(fields[1]))
-	if nFields == 2 {
+	equipmentIdentifier := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(fields[2]))
+	if nFields == 3 {
 		return string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier), nil
 	}
 
 	// containerSerialNumber
-	csn := fields[2]
+	csn := fields[3]
 	if 6 > len(csn) {
 		leftPadding := binutil.GenerateNLengthZeroPaddingRuneSlice(6 - len(csn))
 		csn = string(leftPadding) + csn
@@ -82,7 +84,7 @@ func NewPrefixFilterISO17363(fields []string) (string, error) {
 		return "", err
 	}
 	containerSerialNumber := binutil.ParseRuneSliceTo6BinRuneSlice([]rune(csn + fmt.Sprintf("%v", cd)))
-	if nFields == 3 {
+	if nFields == 4 {
 		return string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier) + string(containerSerialNumber), nil
 	}
 
