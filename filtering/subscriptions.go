@@ -33,6 +33,30 @@ type PartialSubscription struct {
 // Subscriptions contains a slice of urn:epc:pat as values and a URI to report events as keys
 type Subscriptions map[string][]string
 
+// Clone retuns a new copy of subscriptions
+func (sub Subscriptions) Clone() Subscriptions {
+	clone := Subscriptions{}
+	for _, f := range sub.Keys() {
+		clone[f] = []string{}
+		for _, dest := range sub[f] {
+			clone[f] = append(clone[f], dest)
+		}
+	}
+	return clone
+}
+
+// Keys return a slice of keys in Subscriptions
+func (sub Subscriptions) Keys() []string {
+	ks := make([]string, len(sub))
+	i := 0
+	for k := range sub {
+		ks[i] = k
+		i++
+	}
+	sort.Strings(ks)
+	return ks
+}
+
 func (sub Subscriptions) ToByteSubscriptions() ByteSubscriptions {
 	bsub := ByteSubscriptions{}
 	for reportURI, patterns := range sub {
@@ -132,36 +156,18 @@ func (psub *PartialSubscription) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-// Clone retuns a new copy of subscriptions
-func (sub ByteSubscriptions) Clone() ByteSubscriptions {
-	clone := ByteSubscriptions{}
-
-	for _, fs := range sub.Keys() {
-		psub := PartialSubscription{}
-		psub.Offset = sub[fs].Offset
-		psub.ReportURI = sub[fs].ReportURI
-		if len(sub[fs].Subset) == 0 {
-			psub.Subset = ByteSubscriptions{}
-		} else {
-			psub.Subset = sub[fs].Subset.Clone()
-		}
-		clone[fs] = &psub
-	}
-	return clone
-}
-
 // Dump retuns a string representation of the ByteSubscriptions
-func (sub ByteSubscriptions) Dump() string {
+func (bsub ByteSubscriptions) Dump() string {
 	writer := &bytes.Buffer{}
-	sub.print(writer, 0)
+	bsub.print(writer, 0)
 	return writer.String()
 }
 
 // Keys return a slice of keys in m
-func (sub ByteSubscriptions) Keys() []string {
-	ks := make([]string, len(sub))
+func (bsub ByteSubscriptions) Keys() []string {
+	ks := make([]string, len(bsub))
 	i := 0
-	for k := range sub {
+	for k := range bsub {
 		ks[i] = k
 		i++
 	}
@@ -170,7 +176,7 @@ func (sub ByteSubscriptions) Keys() []string {
 }
 
 // linkSubset finds subsets and nest them under the parents
-func (sub ByteSubscriptions) linkSubset() {
+func (bsub ByteSubscriptions) linkSubset() {
 	type element struct {
 		filter    string
 		offset    int
@@ -178,127 +184,48 @@ func (sub ByteSubscriptions) linkSubset() {
 	}
 
 	var elements []*element
-	for _, fs := range sub.Keys() {
+	for _, fs := range bsub.Keys() {
 		elements = append(elements, &element{
 			filter:    fs,
-			offset:    sub[fs].Offset,
-			reportURI: sub[fs].ReportURI,
+			offset:    bsub[fs].Offset,
+			reportURI: bsub[fs].ReportURI,
 		})
 	}
 
 	for _, e := range elements {
-		for _, fs := range sub.Keys() {
-			psub := sub[fs]
+		for _, fs := range bsub.Keys() {
+			psub := bsub[fs]
 			linkCandidate := e.filter
 			// check if fs is a subset of the linkCandidate
 			if strings.HasPrefix(fs, linkCandidate) &&
 				fs != linkCandidate { // they shouldn't be the same
 				// if there is no subset already
-				if len(sub[linkCandidate].Subset) == 0 {
-					sub[linkCandidate].Subset = ByteSubscriptions{}
-					sub[linkCandidate].Subset[fs[len(linkCandidate):]] = &PartialSubscription{
+				if len(bsub[linkCandidate].Subset) == 0 {
+					bsub[linkCandidate].Subset = ByteSubscriptions{}
+					bsub[linkCandidate].Subset[fs[len(linkCandidate):]] = &PartialSubscription{
 						Offset:    psub.Offset + len(linkCandidate),
 						ReportURI: psub.ReportURI,
 					}
 				} else {
-					sub[linkCandidate].Subset[fs[len(linkCandidate):]] = &PartialSubscription{
+					bsub[linkCandidate].Subset[fs[len(linkCandidate):]] = &PartialSubscription{
 						Offset:    psub.Offset + len(linkCandidate),
 						ReportURI: psub.ReportURI,
 					}
 				}
 				// recursively link the subset
-				sub[linkCandidate].Subset.linkSubset()
+				bsub[linkCandidate].Subset.linkSubset()
 				// finaly delete the filter from the upper ByteSubscriptions
-				delete(sub, fs)
+				delete(bsub, fs)
 			}
 		}
 	}
 	return
 }
 
-// MarshalBinary overwrites the marshaller in gob encoding *ByteSubscriptions
-func (sub *ByteSubscriptions) MarshalBinary() (_ []byte, err error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-
-	// Size of ByteSubscriptions
-	enc.Encode(len(*sub))
-	for _, fs := range (*sub).Keys() {
-		// FilterString
-		enc.Encode(fs)
-		// PartialSubscription
-		err = enc.Encode((*sub)[fs])
-	}
-
-	return buf.Bytes(), err
-}
-
-// UnmarshalBinary overwrites the unmarshaller in gob decoding List
-func (sub *ByteSubscriptions) UnmarshalBinary(data []byte) (err error) {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-
-	// Size of List
-	var subSize int
-	if err = dec.Decode(&subSize); err != nil {
-		return
-	}
-
-	for i := 0; i < subSize; i++ {
-		// FilterString
-		var fs string
-		if err = dec.Decode(&fs); err != nil {
-			return
-		}
-
-		/// PartialSubscription
-		psub := PartialSubscription{
-			Subset: ByteSubscriptions{},
-		}
-		err = dec.Decode(&psub)
-
-		// add to the sub
-		(*sub)[fs] = &psub
-	}
-
-	return
-}
-
-// LoadFiltersFromCSVFile takes a csv file name and generate ByteSubscriptions
-func LoadFiltersFromCSVFile(f string) ByteSubscriptions {
-	sub := ByteSubscriptions{}
-	fp, err := os.Open(f)
-	if err != nil {
-		panic(err)
-	}
-	defer fp.Close()
-
-	reader := csv.NewReader(fp)
-	reader.Comma = ','
-	reader.LazyQuotes = true
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-		if len(record) == 2 {
-			// Default case
-			// prefix as key, *filtering.PartialSubscription as value
-			sub[record[1]] = &PartialSubscription{
-				Offset:    0,
-				ReportURI: record[0],
-				Subset:    ByteSubscriptions{},
-			}
-		}
-	}
-	return sub
-}
-
-func (sub ByteSubscriptions) print(writer io.Writer, indent int) {
-	for _, fs := range sub.Keys() {
-		fmt.Fprintf(writer, "%s--%s %v %s\n", strings.Repeat(" ", indent), fs, sub[fs].Offset, sub[fs].ReportURI)
-		ss := sub[fs].Subset
+func (bsub ByteSubscriptions) print(writer io.Writer, indent int) {
+	for _, fs := range bsub.Keys() {
+		fmt.Fprintf(writer, "%s--%s %v %s\n", strings.Repeat(" ", indent), fs, bsub[fs].Offset, bsub[fs].ReportURI)
+		ss := bsub[fs].Subset
 		if len(ss) != 0 {
 			ss.print(writer, indent+2)
 		}

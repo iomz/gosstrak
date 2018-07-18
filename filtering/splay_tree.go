@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/tdt"
 )
 
@@ -31,28 +32,30 @@ type SplayTreeNode struct {
 }
 
 // AddSubscription adds a set of subscriptions if not exists yet
-func (spt *SplayTree) AddSubscription(sub ByteSubscriptions) {
-	for _, fs := range sub.Keys() {
-		spt.root.add(fs, sub[fs].ReportURI)
+func (st *SplayTree) AddSubscription(sub Subscriptions) {
+	bsub := sub.ToByteSubscriptions()
+	for _, fs := range bsub.Keys() {
+		st.root.add(fs, bsub[fs].ReportURI)
 	}
 }
 
 // DeleteSubscription deletes a set of subscriptions if already exist
-func (spt *SplayTree) DeleteSubscription(sub ByteSubscriptions) {
-	for _, fs := range sub.Keys() {
-		spt.root.delete(fs, sub[fs].ReportURI)
+func (st *SplayTree) DeleteSubscription(sub Subscriptions) {
+	bsub := sub.ToByteSubscriptions()
+	for _, fs := range bsub.Keys() {
+		st.root.delete(fs, bsub[fs].ReportURI)
 	}
 }
 
 // Dump returs a string representation of the PatriciaTrie
-func (spt *SplayTree) Dump() string {
+func (st *SplayTree) Dump() string {
 	writer := &bytes.Buffer{}
-	spt.root.print(writer, 0)
+	st.root.print(writer, 0)
 	return writer.String()
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *SplayTree
-func (spt *SplayTree) MarshalBinary() (_ []byte, err error) {
+func (st *SplayTree) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
@@ -60,22 +63,27 @@ func (spt *SplayTree) MarshalBinary() (_ []byte, err error) {
 	enc.Encode("Engine:filtering.SplayTree")
 
 	// Encode SplayTreeNode
-	enc.Encode(spt.root)
+	enc.Encode(st.root)
 
 	return buf.Bytes(), err
 }
 
-func (spt *SplayTree) Name() string {
+func (st *SplayTree) Name() string {
 	return "SplayTree"
 }
 
-// Search returns a slice of reportURI
-func (spt *SplayTree) Search(id []byte) []string {
-	return spt.root.splaySearch(spt, nil, id)
+// Search returns a pureIdentity of the llrp.ReadEvent if found any subscription without err
+func (st *SplayTree) Search(re llrp.ReadEvent) (pureIdentity string, reportURIs []string, err error) {
+	reportURIs = st.root.splaySearch(st, nil, re.ID)
+	if len(reportURIs) == 0 {
+		return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", re.ID)
+	}
+	pureIdentity, err = st.tdtCore.Translate(re.PC, re.ID)
+	return
 }
 
 // UnmarshalBinary overwrites the unmarshaller in gob decoding *PatriciaTrie
-func (spt *SplayTree) UnmarshalBinary(data []byte) (err error) {
+func (st *SplayTree) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
 
 	// Type of Engine
@@ -85,51 +93,52 @@ func (spt *SplayTree) UnmarshalBinary(data []byte) (err error) {
 	}
 
 	// Decode SplayTreeNode
-	err = dec.Decode(&spt.root)
+	err = dec.Decode(&st.root)
 
-	spt.tdtCore = tdt.NewCore()
+	// tdt.Core
+	st.tdtCore = tdt.NewCore()
 
 	return
 }
 
 // MarshalBinary overwrites the marshaller in gob encoding *SplayTreeNode
-func (sptn *SplayTreeNode) MarshalBinary() (_ []byte, err error) {
+func (stn *SplayTreeNode) MarshalBinary() (_ []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
 	// ReportURI
-	enc.Encode(sptn.reportURI)
+	enc.Encode(stn.reportURI)
 
 	// Filter
-	hasFilter := sptn.filterObject != nil
+	hasFilter := stn.filterObject != nil
 	enc.Encode(hasFilter)
 	if hasFilter {
-		err = enc.Encode(sptn.filterObject)
+		err = enc.Encode(stn.filterObject)
 	}
 
 	// matchNext
-	hasMatchNext := sptn.matchNext != nil
+	hasMatchNext := stn.matchNext != nil
 	enc.Encode(hasMatchNext)
 	if hasMatchNext {
-		err = enc.Encode(sptn.matchNext)
+		err = enc.Encode(stn.matchNext)
 	}
 
 	// mismatchNext
-	hasMismatchNext := sptn.mismatchNext != nil
+	hasMismatchNext := stn.mismatchNext != nil
 	enc.Encode(hasMismatchNext)
 	if hasMismatchNext {
-		err = enc.Encode(sptn.mismatchNext)
+		err = enc.Encode(stn.mismatchNext)
 	}
 
 	return buf.Bytes(), err
 }
 
 // UnmarshalBinary overwrites the unmarshaller in gob decoding *SplayTreeNode
-func (sptn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
+func (stn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
 	dec := gob.NewDecoder(bytes.NewReader(data))
 
 	// reportURI
-	if err = dec.Decode(&sptn.reportURI); err != nil {
+	if err = dec.Decode(&stn.reportURI); err != nil {
 		return
 	}
 
@@ -139,7 +148,7 @@ func (sptn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasFilterObject {
-		err = dec.Decode(&sptn.filterObject)
+		err = dec.Decode(&stn.filterObject)
 	}
 
 	// matchNext
@@ -148,9 +157,9 @@ func (sptn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasMatchNext {
-		err = dec.Decode(&sptn.matchNext)
+		err = dec.Decode(&stn.matchNext)
 	} else {
-		sptn.matchNext = nil
+		stn.matchNext = nil
 	}
 
 	// mismatchNext
@@ -159,9 +168,9 @@ func (sptn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
 		return
 	}
 	if hasMismatchNext {
-		err = dec.Decode(&sptn.mismatchNext)
+		err = dec.Decode(&stn.mismatchNext)
 	} else {
-		sptn.mismatchNext = nil
+		stn.mismatchNext = nil
 	}
 
 	return
@@ -170,36 +179,36 @@ func (sptn *SplayTreeNode) UnmarshalBinary(data []byte) (err error) {
 // Internal helper methods -----------------------------------------------------
 
 // add a set of subscriptions if not exists yet
-func (sptn *SplayTreeNode) add(fs string, reportURI string) {
-	if strings.HasPrefix(fs, sptn.filterObject.String) { // fs \in sptn.FilterObject.String
-		if fs == sptn.filterObject.String { // the identical filter
+func (stn *SplayTreeNode) add(fs string, reportURI string) {
+	if strings.HasPrefix(fs, stn.filterObject.String) { // fs \in stn.FilterObject.String
+		if fs == stn.filterObject.String { // the identical filter
 			// if the reportURI is different, update it
-			if sptn.reportURI != reportURI {
-				sptn.reportURI = reportURI
+			if stn.reportURI != reportURI {
+				stn.reportURI = reportURI
 			}
 		} else { // it's a subset (matching branch) of the current node, and there's no matchNext node
-			if sptn.matchNext == nil {
-				sptn.matchNext = &SplayTreeNode{}
-				sptn.matchNext.filterObject = NewFilter(fs[sptn.filterObject.Size:], sptn.filterObject.Offset+sptn.filterObject.Size)
-				sptn.matchNext.reportURI = reportURI
+			if stn.matchNext == nil {
+				stn.matchNext = &SplayTreeNode{}
+				stn.matchNext.filterObject = NewFilter(fs[stn.filterObject.Size:], stn.filterObject.Offset+stn.filterObject.Size)
+				stn.matchNext.reportURI = reportURI
 			} else { // if there's already matchNext node
-				sptn.matchNext.add(fs[sptn.filterObject.Size:], reportURI)
+				stn.matchNext.add(fs[stn.filterObject.Size:], reportURI)
 			}
 		}
 	} else { // doesn't match with the current node, traverse the mismatchNext node
-		if sptn.mismatchNext == nil { // there's no mismatchNext node
-			sptn.mismatchNext = &SplayTreeNode{}
-			sptn.mismatchNext.filterObject = NewFilter(fs, sptn.filterObject.Offset)
-			sptn.mismatchNext.reportURI = reportURI
+		if stn.mismatchNext == nil { // there's no mismatchNext node
+			stn.mismatchNext = &SplayTreeNode{}
+			stn.mismatchNext.filterObject = NewFilter(fs, stn.filterObject.Offset)
+			stn.mismatchNext.reportURI = reportURI
 		} else { // if there's already mismatchNext node
-			sptn.mismatchNext.add(fs, reportURI)
+			stn.mismatchNext.add(fs, reportURI)
 		}
 	}
 	return
 }
 
-func (sptn *SplayTreeNode) build(sub ByteSubscriptions) *SplayTreeNode {
-	current := sptn
+func (stn *SplayTreeNode) build(sub ByteSubscriptions) *SplayTreeNode {
+	current := stn
 	subscriptionSize := len(sub.Keys())
 	for i, fs := range sub.Keys() {
 		current.filterObject = NewFilter(fs, sub[fs].Offset)
@@ -218,70 +227,70 @@ func (sptn *SplayTreeNode) build(sub ByteSubscriptions) *SplayTreeNode {
 			current.mismatchNext = nil
 		}
 	}
-	return sptn
+	return stn
 }
 
 // delete a set of subscriptions if not exists yet
-func (sptn *SplayTreeNode) delete(fs string, reportURI string) {
-	if strings.HasPrefix(fs, sptn.filterObject.String) { // fs \in sptn.FilterObject.String
-		if fs == sptn.filterObject.String { // this node is to delete
-			if sptn.matchNext == nil && sptn.mismatchNext == nil { // something wrong
-			} else if sptn.matchNext != nil { // if there is subset, keep the node as an aggregation node
-				if sptn.matchNext.mismatchNext != nil {
-					sptn.reportURI = ""
+func (stn *SplayTreeNode) delete(fs string, reportURI string) {
+	if strings.HasPrefix(fs, stn.filterObject.String) { // fs \in stn.FilterObject.String
+		if fs == stn.filterObject.String { // this node is to delete
+			if stn.matchNext == nil && stn.mismatchNext == nil { // something wrong
+			} else if stn.matchNext != nil { // if there is subset, keep the node as an aggregation node
+				if stn.matchNext.mismatchNext != nil {
+					stn.reportURI = ""
 				} else { // if none other mismatch branch, concatenate the matchNext with to-be-deleted node
-					sptn.filterObject = NewFilter(fs+sptn.matchNext.filterObject.String, sptn.filterObject.Offset)
-					sptn.reportURI = sptn.matchNext.reportURI
-					sptn.matchNext = sptn.matchNext.matchNext
+					stn.filterObject = NewFilter(fs+stn.matchNext.filterObject.String, stn.filterObject.Offset)
+					stn.reportURI = stn.matchNext.reportURI
+					stn.matchNext = stn.matchNext.matchNext
 				}
-			} else if sptn.mismatchNext != nil { // replace this node with mismatchNext
-				sptn.filterObject = sptn.mismatchNext.filterObject
-				sptn.reportURI = sptn.mismatchNext.reportURI
-				sptn.matchNext = sptn.mismatchNext.matchNext
-				sptn.mismatchNext = sptn.mismatchNext.mismatchNext
+			} else if stn.mismatchNext != nil { // replace this node with mismatchNext
+				stn.filterObject = stn.mismatchNext.filterObject
+				stn.reportURI = stn.mismatchNext.reportURI
+				stn.matchNext = stn.mismatchNext.matchNext
+				stn.mismatchNext = stn.mismatchNext.mismatchNext
 			}
 		} else { // it's a subset (matching branch) of the current node, and there's no matchNext node
-			if sptn.matchNext != nil { // if there's a matchNext node
-				if fs[sptn.filterObject.Size:] == sptn.matchNext.filterObject.String &&
-					sptn.matchNext.matchNext == nil && sptn.matchNext.mismatchNext == nil { // the matchNext is to delete
-					sptn.matchNext = nil
+			if stn.matchNext != nil { // if there's a matchNext node
+				if fs[stn.filterObject.Size:] == stn.matchNext.filterObject.String &&
+					stn.matchNext.matchNext == nil && stn.matchNext.mismatchNext == nil { // the matchNext is to delete
+					stn.matchNext = nil
 				} else {
-					sptn.matchNext.delete(fs[sptn.filterObject.Size:], reportURI)
+					stn.matchNext.delete(fs[stn.filterObject.Size:], reportURI)
 				}
 			}
 		}
 	} else { // doesn't match with the current node, traverse the mismatchNext node
-		if sptn.mismatchNext != nil { // there's a mismatchNext node
-			if fs == sptn.mismatchNext.filterObject.String &&
-				sptn.mismatchNext.matchNext == nil && sptn.mismatchNext.mismatchNext == nil {
-				sptn.mismatchNext = nil
+		if stn.mismatchNext != nil { // there's a mismatchNext node
+			if fs == stn.mismatchNext.filterObject.String &&
+				stn.mismatchNext.matchNext == nil && stn.mismatchNext.mismatchNext == nil {
+				stn.mismatchNext = nil
 			} else {
-				sptn.mismatchNext.delete(fs, reportURI)
+				stn.mismatchNext.delete(fs, reportURI)
 			}
 		}
 	}
 	return
 }
 
-func (sptn *SplayTreeNode) equal(want *SplayTreeNode) (ok bool, got *SplayTreeNode, wanted *SplayTreeNode) {
-	if sptn.reportURI != want.reportURI ||
-		!reflect.DeepEqual(sptn.filterObject, want.filterObject) {
-		return false, sptn, want
+func (stn *SplayTreeNode) equal(want *SplayTreeNode) (ok bool, got *SplayTreeNode, wanted *SplayTreeNode) {
+	if stn.reportURI != want.reportURI ||
+		!reflect.DeepEqual(stn.filterObject, want.filterObject) {
+		return false, stn, want
 	}
 	if want.matchNext != nil {
-		if sptn.matchNext == nil {
+		if stn.matchNext == nil {
 			return false, nil, want.matchNext
 		}
-		res, cgot, cwanted := sptn.matchNext.equal(want.matchNext)
+		res, cgot, cwanted := stn.matchNext.equal(want.matchNext)
 		if !res {
 			return res, cgot, cwanted
 		}
 	}
 	if want.mismatchNext != nil {
-		if sptn.mismatchNext == nil {
+		if stn.mismatchNext == nil {
 			return false, nil, want.mismatchNext
 		}
-		res, cgot, cwanted := sptn.mismatchNext.equal(want.mismatchNext)
+		res, cgot, cwanted := stn.mismatchNext.equal(want.mismatchNext)
 		if !res {
 			return res, cgot, cwanted
 		}
@@ -289,57 +298,63 @@ func (sptn *SplayTreeNode) equal(want *SplayTreeNode) (ok bool, got *SplayTreeNo
 	return true, nil, nil
 }
 
-func (sptn *SplayTreeNode) print(writer io.Writer, indent int) {
+func (stn *SplayTreeNode) print(writer io.Writer, indent int) {
 	var n string
-	if len(sptn.reportURI) != 0 {
-		n = "-> " + sptn.reportURI
+	if len(stn.reportURI) != 0 {
+		n = "-> " + stn.reportURI
 	}
-	fmt.Fprintf(writer, "--%s %s\n", sptn.filterObject.ToString(), n)
-	if sptn.matchNext != nil {
+	fmt.Fprintf(writer, "--%s %s\n", stn.filterObject.ToString(), n)
+	if stn.matchNext != nil {
 		fmt.Fprintf(writer, "%sok", strings.Repeat(" ", indent+2))
-		sptn.matchNext.print(writer, indent+2)
+		stn.matchNext.print(writer, indent+2)
 	}
-	if sptn.mismatchNext != nil {
+	if stn.mismatchNext != nil {
 		fmt.Fprintf(writer, "%sng", strings.Repeat(" ", indent+2))
-		sptn.mismatchNext.print(writer, indent+2)
+		stn.mismatchNext.print(writer, indent+2)
 	}
 }
 
-func (sptn *SplayTreeNode) splaySearch(spt *SplayTree, parent *SplayTreeNode, id []byte) []string {
+func (stn *SplayTreeNode) splaySearch(st *SplayTree, parent *SplayTreeNode, id []byte) []string {
 	matches := []string{}
-	if sptn.filterObject.Match(id) {
-		matches = append(matches, sptn.reportURI)
-		if sptn.matchNext != nil {
+	if stn.filterObject.Match(id) {
+		matches = append(matches, stn.reportURI)
+		if stn.matchNext != nil {
 			// Do Search & Splay in the subsets
-			matches = append(matches, sptn.matchNext.splaySearch(spt, sptn, id)...)
+			matches = append(matches, stn.matchNext.splaySearch(st, stn, id)...)
 		}
 		// Do Splay
 		// 0. Check if this is the root node, do nothing if so
 		if parent != nil {
 			// 1. Remove this node by connecting parent to the next mismatchNext node
-			parent.mismatchNext = sptn.mismatchNext
+			parent.mismatchNext = stn.mismatchNext
 			// 2. Insert self to root
-			sptn.mismatchNext = spt.root
-			spt.root = sptn
+			stn.mismatchNext = st.root
+			st.root = stn
 		}
 		return matches
 	}
-	if sptn.mismatchNext != nil {
-		return sptn.mismatchNext.splaySearch(spt, sptn, id)
+	if stn.mismatchNext != nil {
+		return stn.mismatchNext.splaySearch(st, stn, id)
 	}
 	return matches
 }
 
 // NewSplayTree builds SplayTree from ByteSubscriptions
 // returns the pointer to the node node
-func NewSplayTree(sub ByteSubscriptions) Engine {
+func NewSplayTree(sub Subscriptions) Engine {
+	st := &SplayTree{}
+
+	// preprocess the subscriptions
+	bsub := sub.ToByteSubscriptions()
 	// make subsets to the child subscriptions of the corresponding parents
-	sub.linkSubset()
+	bsub.linkSubset()
 
-	spt := &SplayTree{}
-	spt.root = &SplayTreeNode{}
-	spt.root = spt.root.build(sub)
-	spt.tdtCore = tdt.NewCore()
+	// build SplayTree
+	st.root = &SplayTreeNode{}
+	st.root = st.root.build(bsub)
 
-	return spt
+	// initialize the tdt.Core
+	st.tdtCore = tdt.NewCore()
+
+	return st
 }

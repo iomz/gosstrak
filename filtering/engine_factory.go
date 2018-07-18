@@ -9,7 +9,8 @@ import (
 	"log"
 	"reflect"
 	"unsafe"
-	//"github.com/iomz/go-llrp"
+
+	"github.com/iomz/go-llrp"
 )
 
 // ManagementMessageType is to indicate the type of ManagementMessage
@@ -35,12 +36,12 @@ type ManagementMessage struct {
 
 // EngineFactory manages the FC's subscriptions and engine instances
 type EngineFactory struct {
-	mainChannel              chan ManagementMessage
-	generatorChannels        []chan ManagementMessage
-	currentByteSubscriptions ByteSubscriptions
-	productionSystem         map[string]*EngineGenerator
-	deploymentPriority       map[string]uint8
-	currentEngineName        string
+	mainChannel          chan ManagementMessage
+	generatorChannels    []chan ManagementMessage
+	currentSubscriptions Subscriptions
+	productionSystem     map[string]*EngineGenerator
+	deploymentPriority   map[string]uint8
+	currentEngineName    string
 }
 
 // IsActive returns false if no engine is available
@@ -52,23 +53,24 @@ func (ef *EngineFactory) IsActive() bool {
 }
 
 // Search is a wrapper for Search() with the current EngineGenerator
-func (ef *EngineFactory) Search(id []byte) []string {
+func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 	for name, eg := range ef.productionSystem {
 		if name != ef.currentEngineName {
-			_ = eg.Search(id)
+			//_, _, _ = eg.Search(re)
+			_ = eg
 		}
 	}
-	return ef.productionSystem[ef.currentEngineName].Search(id)
+	return ef.productionSystem[ef.currentEngineName].Search(re)
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
-func NewEngineFactory(sub ByteSubscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
+func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
 	ef := &EngineFactory{
 		mainChannel: mc,
 	}
 
 	// Load saved subscriptions?
-	ef.currentByteSubscriptions = sub
+	ef.currentSubscriptions = sub
 
 	// Load all the possible engines
 	ef.productionSystem = make(map[string]*EngineGenerator)
@@ -166,6 +168,6 @@ func (ef *EngineFactory) Run() {
 	log.Println("[EngineFactory] initializing engines")
 	for _, eg := range ef.productionSystem {
 		// pass the cloned subscriptions
-		eg.FSM.Event("init", ef.currentByteSubscriptions.Clone())
+		eg.FSM.Event("init", ef.currentSubscriptions)
 	}
 }

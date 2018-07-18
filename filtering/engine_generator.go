@@ -11,7 +11,7 @@ import (
 	"time"
 	//"reflect"
 
-	//"github.com/iomz/go-llrp"
+	"github.com/iomz/go-llrp"
 	"github.com/looplab/fsm"
 )
 
@@ -88,9 +88,9 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 	return eg
 }
 
-func (eg *EngineGenerator) Search(id []byte) []string {
+func (eg *EngineGenerator) Search(re llrp.ReadEvent) (string, []string, error) {
 	defer timeTrack(time.Now(), eg.timePerEventChannel)
-	return eg.Engine.Search(id)
+	return eg.Engine.Search(re)
 }
 
 func (eg *EngineGenerator) enterState(e *fsm.Event) {
@@ -100,7 +100,7 @@ func (eg *EngineGenerator) enterState(e *fsm.Event) {
 func (eg *EngineGenerator) enterGenerating(e *fsm.Event) {
 	go func() {
 		//log.Printf("[EngineGenerator] start generating %s engine", eg.Name)
-		sub := e.Args[0].(ByteSubscriptions)
+		sub := e.Args[0].(Subscriptions)
 		eg.Engine = AvailableEngines[eg.Name](sub)
 		eg.FSM.Event("deploy")
 	}()

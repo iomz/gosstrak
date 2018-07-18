@@ -8,46 +8,62 @@ package filtering
 import (
 	"bytes"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"reflect"
+
+	"github.com/iomz/go-llrp"
+	"github.com/iomz/gosstrak/tdt"
 )
 
 // List is a slice of pointers to ExactMatch
-type List []*ExactMatch
+type List struct {
+	filters ListFilters
+	tdtCore *tdt.Core
+}
+
+// List filters contains pointers to ExactMatch
+type ListFilters []*ExactMatch
 
 // ExactMatch is a raw filter directly taken from ByteSubscriptions
 type ExactMatch struct {
-	reportURI string
 	filter    *FilterObject
+	reportURI string
 }
 
 // AddSubscription adds a set of subscriptions if not exists yet
-func (list *List) AddSubscription(sub ByteSubscriptions) {
+func (list *List) AddSubscription(sub Subscriptions) {
+	bsub := sub.ToByteSubscriptions()
 	// store ExactMatch in sorted order from sub
-	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub[fs].ReportURI, NewFilter(fs, sub[fs].Offset)}
-		if list.IndexOf(em) < 0 {
-			*list = append(*list, em)
+	for _, fs := range bsub.Keys() {
+		em := &ExactMatch{
+			filter:    NewFilter(fs, bsub[fs].Offset),
+			reportURI: bsub[fs].ReportURI,
+		}
+		if list.filters.IndexOf(em) < 0 {
+			list.filters = append(list.filters, em)
 		}
 	}
 }
 
 // DeleteSubscription deletes a set of subscriptions if already exist
-func (list *List) DeleteSubscription(sub ByteSubscriptions) {
+func (list *List) DeleteSubscription(sub Subscriptions) {
+	bsub := sub.ToByteSubscriptions()
 	// store ExactMatch in sorted order from sub
-	for _, fs := range sub.Keys() {
-		em := &ExactMatch{sub[fs].ReportURI, NewFilter(fs, sub[fs].Offset)}
-		if i := list.IndexOf(em); i > -1 {
-			*list = append((*list)[:i], (*list)[i+1:]...)
+	for _, fs := range bsub.Keys() {
+		em := &ExactMatch{
+			filter:    NewFilter(fs, bsub[fs].Offset),
+			reportURI: bsub[fs].ReportURI,
+		}
+		if i := list.filters.IndexOf(em); i > -1 {
+			list.filters = append(list.filters[:i], list.filters[i+1:]...)
 		}
 	}
 }
 
 // IndexOf check the index of ExactMatch in the List
 // returns -1 if not exist
-func (list *List) IndexOf(em *ExactMatch) int {
-	for i, a := range *list {
+func (lf ListFilters) IndexOf(em *ExactMatch) int {
+	for i, a := range lf {
 		if reflect.DeepEqual(a, em) {
 			return i
 		}
@@ -58,7 +74,7 @@ func (list *List) IndexOf(em *ExactMatch) int {
 // Dump returs a string representation of the PatriciaTrie
 func (list *List) Dump() string {
 	writer := &bytes.Buffer{}
-	for _, em := range *list {
+	for _, em := range list.filters {
 		fmt.Fprintf(writer, "--%s %s\n", em.filter.ToString(), em.reportURI)
 	}
 	return writer.String()
@@ -73,8 +89,8 @@ func (list *List) MarshalBinary() (_ []byte, err error) {
 	enc.Encode("Engine:filtering.List")
 
 	// Size of List
-	enc.Encode(len(*list))
-	for _, em := range *list {
+	enc.Encode(len(list.filters))
+	for _, em := range list.filters {
 		// Notify
 		enc.Encode(em.reportURI)
 		// Filter
@@ -89,13 +105,17 @@ func (list *List) Name() string {
 	return "List"
 }
 
-// Search returns a slice of reportURI
-func (list *List) Search(id []byte) (matches []string) {
-	for _, em := range *list {
-		if em.filter.Match(id) {
-			matches = append(matches, em.reportURI)
+// Search returns a pureIdentity of the llrp.ReadEvent if found any subscription without err
+func (list *List) Search(re llrp.ReadEvent) (pureIdentity string, reportURIs []string, err error) {
+	for _, em := range list.filters {
+		if em.filter.Match(re.ID) {
+			reportURIs = append(reportURIs, em.reportURI)
 		}
 	}
+	if len(reportURIs) == 0 {
+		return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", re.ID)
+	}
+	pureIdentity, err = list.tdtCore.Translate(re.PC, re.ID)
 	return
 }
 
@@ -106,7 +126,7 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 	// Type of Engine
 	var typeOfEngine string
 	if err = dec.Decode(&typeOfEngine); err != nil || typeOfEngine != "Engine:filtering.List" {
-		return errors.New("Wrong Filtering Engine: " + typeOfEngine)
+		return fmt.Errorf("Wrong Filtering Engine: %s", typeOfEngine)
 	}
 
 	// Size of List
@@ -123,21 +143,32 @@ func (list *List) UnmarshalBinary(data []byte) (err error) {
 		}
 		// Filter
 		err = dec.Decode(&em.filter)
-		*list = append(*list, &em)
+		list.filters = append(list.filters, &em)
 	}
+
+	// tdt.Core
+	list.tdtCore = tdt.NewCore()
 
 	return
 }
 
 // NewList builds a simple list of filters from filter.ByteSubscriptions
 // returns the pointer to the slice of ExactMatch struct
-func NewList(sub ByteSubscriptions) Engine {
-	list := List{}
+func NewList(sub Subscriptions) Engine {
+	list := &List{}
+
+	// preprocess the subscriptions
+	bsub := sub.ToByteSubscriptions()
 
 	// store ExactMatch in sorted order from sub
-	for _, fs := range sub.Keys() {
-		list = append(list, &ExactMatch{sub[fs].ReportURI, NewFilter(fs, 0)})
+	for _, fs := range bsub.Keys() {
+		list.filters = append(list.filters, &ExactMatch{
+			filter:    NewFilter(fs, 0),
+			reportURI: bsub[fs].ReportURI,
+		})
 	}
 
-	return &list
+	// initialize the tdt.Core
+	list.tdtCore = tdt.NewCore()
+	return list
 }

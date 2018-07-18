@@ -49,10 +49,10 @@ var (
 		Short('v').
 		Default("false").
 		Bool()
-	filterFile = app.
-			Flag("filter-file", "A CSV file contains filter and notify.").
+	ecspecFile = app.
+			Flag("ecspecfile", "A CSV file contains reportURI and urn:epc:pat:<type>:<field1>.<field2>... .").
 			Short('f').
-			Default("filters.csv").
+			Default("ecspec.csv").
 			String()
 
 	// LLRP related values
@@ -127,7 +127,7 @@ func run() {
 
 	// load existing subscriptions from file
 	log.Println("loading subscriptions from file")
-	sub := filtering.LoadFiltersFromCSVFile(*filterFile)
+	sub := filtering.LoadSubscriptionsFromCSVFile(*ecspecFile)
 
 	// receive the engine instance status
 	log.Println("setting up a management channel")
@@ -209,25 +209,31 @@ func run() {
 				break
 			}
 
-			matches := map[string][]byte{}
+			reports := map[string][]string{}
+			matchCount := 0
 			for _, re := range res {
-				matched := engineFactory.Search(re.ID)
-				for _, m := range matched {
-					matches[m] = re.ID
+				pureIdentity, reportURIs, err := engineFactory.Search(*re)
+				if err != nil { // no much or something went wrong
+					continue
 				}
+				for _, dest := range reportURIs {
+					if _, ok := reports[dest]; !ok {
+						reports[dest] = []string{}
+					}
+					reports[dest] = append(reports[dest], pureIdentity)
+				}
+				matchCount++
 			}
 			if *enableStat {
 				sm.StatMessageChannel <- monitoring.StatMessage{
 					Type:  monitoring.Traffic,
-					Value: []interface{}{len(res), len(matches)},
+					Value: []interface{}{len(res), matchCount},
 				}
 			}
-			//notify matches
-			/*
-				for _, m := range matches {
-					log.Printf("match: %s <- %v,%v\n", m, re.PC, re.ID)
-				}
-			*/
+			// do report
+			for _, dest := range reports {
+				_ = dest
+			}
 		}
 		log.Fatalln("ReadEvent listener exited in gosstrak-fc")
 	}()

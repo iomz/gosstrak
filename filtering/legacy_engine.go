@@ -1,156 +1,172 @@
 package filtering
 
 import (
-	"encoding/csv"
+	"bytes"
+	"encoding/gob"
 	"fmt"
-	"io"
-	"log"
-	"math"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/tdt"
 )
 
+// LegacyEngine is a engine based-on text match
 type LegacyEngine struct {
-	mainChannel         chan ManagementMessage
-	subscriptions       map[string][]string
-	tdtCore             *tdt.Core
-	statInterval        int
-	nEvent              int
-	totalTime           int64
-	timePerEventChannel chan time.Duration
-	CurrentThroughput   float64
+	filters Subscriptions
+	tdtCore *tdt.Core
 }
 
-func (le *LegacyEngine) Search(re *llrp.ReadEvent) (matched []string, pureIdentity string, err error) {
-	defer timeTrack(time.Now(), le.timePerEventChannel)
+// AddSubscription adds a set of subscriptions if not exists yet
+func (le *LegacyEngine) AddSubscription(sub Subscriptions) {
+	for _, f := range sub.Keys() {
+		if reportURIs, ok := le.filters[f]; !ok {
+			le.filters[f] = sub[f]
+		} else {
+			for _, dest := range sub[f] {
+				if stringIndexInSlice(dest, reportURIs) < 0 {
+					le.filters[f] = append(le.filters[f], dest)
+				}
+			}
+		}
+	}
+}
+
+// DeleteSubscription deletes a set of subscriptions if already exist
+func (le *LegacyEngine) DeleteSubscription(sub Subscriptions) {
+	for _, f := range sub.Keys() {
+		if reportURIs, ok := le.filters[f]; !ok {
+			continue
+		} else {
+			for _, dest := range sub[f] {
+				if i := stringIndexInSlice(dest, reportURIs); i > -1 {
+					le.filters[f] = append(le.filters[f][:i], le.filters[f][i+1:]...)
+				}
+			}
+			if len(le.filters[f]) == 0 {
+				delete(le.filters, f)
+			}
+		}
+	}
+}
+
+// Dump returs a string representation of the PatriciaTrie
+func (le *LegacyEngine) Dump() string {
+	writer := &bytes.Buffer{}
+	for _, f := range le.filters.Keys() {
+		fmt.Fprintf(writer, "--%s %q\n", f, le.filters[f])
+	}
+	return writer.String()
+}
+
+// MarshalBinary overwrites the marshaller in gob encoding LegacyEngine
+func (le *LegacyEngine) MarshalBinary() (_ []byte, err error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+
+	// type of Engine
+	enc.Encode("Engine:filtering.LegacyEngine")
+
+	// size of LegacyEngine
+	enc.Encode(len(le.filters.Keys()))
+	for _, f := range le.filters.Keys() {
+		// filter
+		enc.Encode(f)
+		// size of reportURIs
+		enc.Encode(len(le.filters[f]))
+		for _, reportURI := range le.filters[f] {
+			enc.Encode(reportURI)
+		}
+	}
+
+	return buf.Bytes(), err
+}
+
+// Name returs the name of this engine type
+func (le *LegacyEngine) Name() string {
+	return "LegacyEngine"
+}
+
+// Search returns a pureIdentity of the llrp.ReadEvent if found any subscription without err
+func (le *LegacyEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportURIs []string, err error) {
 	// translate the readevent to a PureIdentity
 	pureIdentity, err = le.tdtCore.Translate(re.PC, re.ID)
 	if err != nil {
-		return matched, pureIdentity, err
+		return
 	}
 
-	for prefix, dests := range le.subscriptions {
+	for prefix, dests := range le.filters {
 		if strings.HasPrefix(pureIdentity, prefix) {
-			matched = append(matched, dests...)
+			reportURIs = append(reportURIs, dests...)
 		}
 	}
-	if len(matched) == 0 {
-		return matched, pureIdentity, fmt.Errorf("no matching subscription for %v", pureIdentity)
+	if len(reportURIs) == 0 {
+		return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", pureIdentity)
 	}
-	return matched, pureIdentity, nil
+	return
 }
 
-func NewLegacyEngine(filename string, statInterval int, mc chan ManagementMessage) *LegacyEngine {
-	// initialize LegacyEngine
-	le := LegacyEngine{
-		mainChannel:       mc,
-		statInterval:      statInterval,
-		nEvent:            0,
-		totalTime:         0,
-		CurrentThroughput: 0,
+// UnmarshalBinary overwrites the unmarshaller in gob decoding LegacyEngine
+func (le *LegacyEngine) UnmarshalBinary(data []byte) (err error) {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	// Type of Engine
+	var typeOfEngine string
+	if err = dec.Decode(&typeOfEngine); err != nil || typeOfEngine != "Engine:filtering.LegacyEngine" {
+		return fmt.Errorf("Wrong Filtering Engine: %s", typeOfEngine)
 	}
-	le.subscriptions = make(map[string][]string)
+
+	// Size of LegacyEngine
+	var legacyEngineSize int
+	if err = dec.Decode(&legacyEngineSize); err != nil {
+		return
+	}
+
+	for i := 0; i < legacyEngineSize; i++ {
+		var f string
+		// filter
+		if err = dec.Decode(&f); err != nil {
+			return
+		}
+		var reportURIsSize int
+		if err = dec.Decode(&reportURIsSize); err != nil {
+			return
+		}
+		var reportURIs []string
+		for j := 0; j < legacyEngineSize; j++ {
+			// reportURI
+			var dest string
+			err = dec.Decode(&dest)
+			reportURIs = append(reportURIs, dest)
+		}
+	}
+
+	// tdt.Core
+	le.tdtCore = tdt.NewCore()
+
+	return
+}
+
+func NewLegacyEngine(sub Subscriptions) Engine {
+	// initialize LegacyEngine
+	le := &LegacyEngine{}
+
+	// load up the subscriptions
+	le.filters = sub.Clone()
 
 	// initialize tdt.Core
 	le.tdtCore = tdt.NewCore()
 
-	// read the file and load them up
-	fp, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer fp.Close()
-
-	reader := csv.NewReader(fp)
-	reader.Comma = ','
-	reader.LazyQuotes = true
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-		if len(record) == 2 {
-			// convert the filter label to urn prefix
-			urnPrefix, err := convertLabelToURNPrefix(record[0])
-			if err != nil {
-				continue
-			}
-			if _, ok := le.subscriptions[urnPrefix]; !ok {
-				le.subscriptions[urnPrefix] = []string{record[0]}
-			} else {
-				le.subscriptions[urnPrefix] = append(le.subscriptions[urnPrefix], record[0])
-			}
-		}
-	}
-	log.Printf("%v filters loaded from %v", len(le.subscriptions), filename)
-
-	le.timePerEventChannel = make(chan time.Duration)
-	go func() {
-		intervalTicker := time.NewTicker(time.Duration(le.statInterval) * time.Second)
-
-		for {
-			select {
-			case t, ok := <-le.timePerEventChannel:
-				if !ok {
-					log.Fatalln("throughput monitor in LegacyEngine died")
-				}
-				//log.Printf("[EngineGenerator] %s: %v us/event", eg.Name, t.Nanoseconds())
-				le.totalTime += t.Nanoseconds() / 1000 // microseconds
-				le.nEvent++
-			case <-intervalTicker.C:
-				throughput := float64(le.totalTime) / float64(le.nEvent)
-				//log.Printf("%s total: %v, n: %v", eg.Name, eg.totalTime, eg.nEvent)
-				if throughput != 0 && !math.IsNaN(throughput) {
-					le.CurrentThroughput = throughput
-					le.mainChannel <- ManagementMessage{
-						Type:              EngineStatus,
-						CurrentThroughput: le.CurrentThroughput,
-					}
-				}
-				le.nEvent = 0
-				le.totalTime = 0
-			}
-		}
-	}()
-
-	return &le
+	return le
 }
 
-func convertLabelToURNPrefix(label string) (urnPrefix string, err error) {
-	elems := strings.Split(label, "_")
-	if len(elems) < 1 {
-		return urnPrefix, fmt.Errorf("%v cannot be parsed to an URN prefix", label)
-	}
-	switch elems[0] {
-	case "GIAI-96":
-		urnPrefix = "urn:epc:id:giai:"
-		elems = append(elems[:2], elems[3:]...)
-	case "GRAI-96":
-		urnPrefix = "urn:epc:id:grai:"
-		elems = append(elems[:2], elems[3:]...)
-	case "SGTIN-96":
-		urnPrefix = "urn:epc:id:sgtin:"
-		elems = append(elems[:2], elems[3:]...)
-	case "SSCC-96":
-		urnPrefix = "urn:epc:id:sscc:"
-		elems = append(elems[:2], elems[3:]...)
-	case "ISO17363":
-		urnPrefix = "urn:epc:id:iso:17363:"
-	case "ISO17365":
-		urnPrefix = "urn:epc:id:iso:17365:"
-	}
-	for i := 1; i < len(elems); i++ {
-		if i != 1 {
-			urnPrefix += "."
-		}
-		urnPrefix += elems[i]
-	}
+// Internal helper methods -----------------------------------------------------
 
-	return urnPrefix, nil
+// check if string is in a slice
+func stringIndexInSlice(a string, list []string) int {
+	for i, b := range list {
+		if b == a {
+			return i
+		}
+	}
+	return -1
 }

@@ -6,18 +6,20 @@
 package filtering
 
 import (
-	"bytes"
-	"encoding/gob"
-	"math/rand"
-	"os"
-	"testing"
-	"time"
-	//"unsafe"
-	//"github.com/iomz/go-llrp"
-	//"github.com/iomz/go-llrp/binutil"
-	//"github.com/iomz/golemu"
+//"bytes"
+//"encoding/gob"
+//"math/rand"
+//"os"
+//"testing"
+//"time"
+
+//"unsafe"
+//"github.com/iomz/go-llrp"
+//"github.com/iomz/go-llrp/binutil"
+//"github.com/iomz/golemu"
 )
 
+/*
 func benchmarkEngineGeneration(size int, constructor EngineConstructor, b *testing.B) {
 	// Load up the subs from the file
 	largeSubsCSV := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/large-subs.csv"
@@ -172,3 +174,4 @@ func BenchmarkEngineGenSplay9000(b *testing.B) {
 func BenchmarkEngineGenSplay10000(b *testing.B) {
 	benchmarkEngineGeneration(10000, AvailableEngines["SplayTree"], b)
 }
+*/
