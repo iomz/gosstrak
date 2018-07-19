@@ -24,6 +24,7 @@ type PatriciaTrie struct {
 	tdtCore *tdt.Core
 }
 
+// PatriciaTrieNode is a node for PatriciaTrie
 type PatriciaTrieNode struct {
 	reportURI    string
 	filterObject *FilterObject

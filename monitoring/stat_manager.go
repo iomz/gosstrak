@@ -7,17 +7,22 @@ import (
 	"github.com/influxdata/influxdb/client/v2"
 )
 
+// StatManager receives stat and publish them to InfluxDB
 type StatManager struct {
 	StatMessageChannel chan StatMessage
 }
 
+// StatMessageType is a type for StatMessage
 type StatMessageType int
 
 const (
+	// Traffic message
 	Traffic StatMessageType = iota
+	// EngineThroughput message
 	EngineThroughput
 )
 
+// StatMessage carries stat
 type StatMessage struct {
 	Type  StatMessageType
 	Value []interface{}

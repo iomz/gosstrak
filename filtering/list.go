@@ -21,7 +21,7 @@ type List struct {
 	tdtCore *tdt.Core
 }
 
-// List filters contains pointers to ExactMatch
+// ListFilters contains pointers to ExactMatch
 type ListFilters []*ExactMatch
 
 // ExactMatch is a raw filter directly taken from ByteSubscriptions

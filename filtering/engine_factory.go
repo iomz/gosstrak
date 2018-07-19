@@ -56,8 +56,7 @@ func (ef *EngineFactory) IsActive() bool {
 func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 	for name, eg := range ef.productionSystem {
 		if name != ef.currentEngineName {
-			//_, _, _ = eg.Search(re)
-			_ = eg
+			_, _, _ = eg.Search(re)
 		}
 	}
 	return ef.productionSystem[ef.currentEngineName].Search(re)

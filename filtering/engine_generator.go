@@ -88,6 +88,7 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 	return eg
 }
 
+// Search do search in the generated engine
 func (eg *EngineGenerator) Search(re llrp.ReadEvent) (string, []string, error) {
 	defer timeTrack(time.Now(), eg.timePerEventChannel)
 	return eg.Engine.Search(re)

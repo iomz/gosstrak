@@ -133,12 +133,12 @@ func TestSubscriptions_ToByteSubscriptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.sub.ToByteSubscriptions()
 			for pfs, psub := range tt.want {
-				if got_psub, ok := got[pfs]; !ok {
+				if gotPsub, ok := got[pfs]; !ok {
 					t.Errorf("Subscriptions.ToByteSubscriptions() =  want %v", pfs)
-				} else if got_psub.Offset != psub.Offset {
-					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", got_psub, psub)
-				} else if got_psub.ReportURI != psub.ReportURI {
-					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", got_psub, psub)
+				} else if gotPsub.Offset != psub.Offset {
+					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", gotPsub, psub)
+				} else if gotPsub.ReportURI != psub.ReportURI {
+					t.Errorf("Subscriptions.ToByteSubscriptions() = %q, want %q", gotPsub, psub)
 				}
 			}
 		})
@@ -171,10 +171,10 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := LoadSubscriptionsFromCSVFile(tt.args.f)
 			for reportURI, patterns := range got {
-				if wanted_patterns, ok := tt.want[reportURI]; !ok {
+				if wantedPatterns, ok := tt.want[reportURI]; !ok {
 					t.Errorf("LoadSubscriptionsFromCSVFile() = unknown key %v", reportURI)
-				} else if !reflect.DeepEqual(patterns, wanted_patterns) {
-					t.Errorf("LoadSubscriptionsFromCSVFile() = %q, want %q", patterns, wanted_patterns)
+				} else if !reflect.DeepEqual(patterns, wantedPatterns) {
+					t.Errorf("LoadSubscriptionsFromCSVFile() = %q, want %q", patterns, wantedPatterns)
 				}
 			}
 		})

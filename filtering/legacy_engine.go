@@ -94,9 +94,11 @@ func (le *LegacyEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportUR
 		return
 	}
 
-	for prefix, dests := range le.filters {
-		if strings.HasPrefix(pureIdentity, prefix) {
-			reportURIs = append(reportURIs, dests...)
+	for reportURI, patterns := range le.filters {
+		for _, prefix := range patterns {
+			if strings.HasPrefix(pureIdentity, prefix) {
+				reportURIs = append(reportURIs, reportURI)
+			}
 		}
 	}
 	if len(reportURIs) == 0 {
@@ -146,6 +148,7 @@ func (le *LegacyEngine) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
+// NewLegacyEngine builds a LegacyEngine
 func NewLegacyEngine(sub Subscriptions) Engine {
 	// initialize LegacyEngine
 	le := &LegacyEngine{}

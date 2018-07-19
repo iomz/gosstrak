@@ -57,6 +57,7 @@ func (sub Subscriptions) Keys() []string {
 	return ks
 }
 
+// ToByteSubscriptions preprocess the subscription and convert them in bytes
 func (sub Subscriptions) ToByteSubscriptions() ByteSubscriptions {
 	bsub := ByteSubscriptions{}
 	for reportURI, patterns := range sub {
@@ -89,9 +90,11 @@ func LoadSubscriptionsFromCSVFile(f string) Subscriptions {
 	}
 	defer fp.Close()
 
+	numFilters := 0
 	reader := csv.NewReader(fp)
 	reader.Comma = ','
-	reader.LazyQuotes = true
+	reader.LazyQuotes = false
+	reader.FieldsPerRecord = -1
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -99,20 +102,22 @@ func LoadSubscriptionsFromCSVFile(f string) Subscriptions {
 		} else if err != nil {
 			panic(err)
 		}
-		reportURI := strings.ToUpper(record[0])
+		reportURI := strings.ToLower(record[0])
 		if !strings.HasPrefix(reportURI, "http") {
 			continue
 		}
 		for i := 1; i < len(record); i++ {
-			pat := strings.ToLower(record[i])
-			if strings.HasPrefix(pat, "urn:epc:pat:") {
+			pat := record[i]
+			if strings.HasPrefix(strings.ToLower(pat), "urn:epc:pat:") {
 				if _, ok := sub[reportURI]; !ok {
 					sub[reportURI] = []string{}
 				}
 				sub[reportURI] = append(sub[reportURI], pat)
+				numFilters++
 			}
 		}
 	}
+	log.Printf("%v filtering patterns loaded from %s", numFilters, f)
 	return sub
 }
 

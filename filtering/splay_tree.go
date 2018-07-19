@@ -24,6 +24,7 @@ type SplayTree struct {
 	tdtCore *tdt.Core
 }
 
+// SplayTreeNode is a node for SplayTree
 type SplayTreeNode struct {
 	reportURI    string
 	filterObject *FilterObject
@@ -68,6 +69,7 @@ func (st *SplayTree) MarshalBinary() (_ []byte, err error) {
 	return buf.Bytes(), err
 }
 
+// Name returns the name of this engine
 func (st *SplayTree) Name() string {
 	return "SplayTree"
 }
