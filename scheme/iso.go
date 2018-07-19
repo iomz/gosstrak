@@ -32,7 +32,7 @@ func MakeISO17363(pf bool, oc string, ei string, csn string) ([]byte, int, strin
 	// OC
 	if oc == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier), "ISO17363_" + di, nil
+			return []byte{}, 0, string(dataIdentifier), "urn:epc:pat:iso17363:" + di, nil
 		}
 		oc = binutil.GenerateNLengthAlphabetString(3)
 	}
@@ -41,7 +41,7 @@ func MakeISO17363(pf bool, oc string, ei string, csn string) ([]byte, int, strin
 	// EI
 	if ei == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier) + string(ownerCode), "ISO17363_" + di + "_" + oc, nil
+			return []byte{}, 0, string(dataIdentifier) + string(ownerCode), "urn:epc:pat:iso17363:" + di + "." + oc, nil
 		}
 		ei = "U"
 	}
@@ -50,7 +50,7 @@ func MakeISO17363(pf bool, oc string, ei string, csn string) ([]byte, int, strin
 	// CSN
 	if csn == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier), "ISO17363_" + di + "_" + oc + "_" + ei, nil
+			return []byte{}, 0, string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier), "urn:epc:pat:iso17363:" + di + "." + oc + "." + ei, nil
 		}
 		csn = binutil.GenerateNLengthDigitString(6)
 	} else if 6 > len(csn) {
@@ -67,7 +67,7 @@ func MakeISO17363(pf bool, oc string, ei string, csn string) ([]byte, int, strin
 
 	// Exact match filter
 	if pf {
-		return []byte{}, 0, string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier) + string(containerSerialNumber), "ISO17363_" + di + "_" + oc + "_" + ei + "_" + csn, nil
+		return []byte{}, 0, string(dataIdentifier) + string(ownerCode) + string(equipmentIdentifier) + string(containerSerialNumber), "urn:epc:pat:iso17363:" + di + "." + oc + "." + ei + "." + csn, nil
 	}
 
 	bs := append(dataIdentifier, ownerCode...)
@@ -94,7 +94,7 @@ func MakeISO17365(pf bool, di string, iac string, cin string, sn string) ([]byte
 	// IAC
 	if iac == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier), "ISO17365_" + di, nil
+			return []byte{}, 0, string(dataIdentifier), "urn:epc:pat:iso17365:" + di, nil
 		}
 		return []byte{}, 0, "", "", errors.New("IAC not provided")
 	}
@@ -103,7 +103,7 @@ func MakeISO17365(pf bool, di string, iac string, cin string, sn string) ([]byte
 	// CIN
 	if cin == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode), "ISO17365_" + di + "_" + iac, nil
+			return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode), "urn:epc:pat:iso17365:" + di + "." + iac, nil
 		}
 		return []byte{}, 0, "", "", errors.New("CIN not provided")
 	}
@@ -112,7 +112,7 @@ func MakeISO17365(pf bool, di string, iac string, cin string, sn string) ([]byte
 	// SN
 	if sn == "" {
 		if pf {
-			return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode) + string(companyIdentification), "ISO17365_" + di + "_" + iac + "_" + cin, nil
+			return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode) + string(companyIdentification), "urn:epc:pat:iso17365:" + di + "." + iac + "." + cin, nil
 		}
 		sn = binutil.GenerateNLengthHexString(18)
 	}
@@ -120,7 +120,7 @@ func MakeISO17365(pf bool, di string, iac string, cin string, sn string) ([]byte
 
 	// Exact match filter
 	if pf {
-		return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode) + string(companyIdentification) + string(serialNumber), "ISO17365_" + di + "_" + iac + "_" + cin + "_" + sn, nil
+		return []byte{}, 0, string(dataIdentifier) + string(issuingAgencyCode) + string(companyIdentification) + string(serialNumber), "urn:epc:pat:iso17365:" + di + "." + iac + "." + cin + "." + sn, nil
 	}
 
 	bs := append(dataIdentifier, issuingAgencyCode...)
