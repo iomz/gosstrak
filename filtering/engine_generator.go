@@ -17,26 +17,28 @@ import (
 
 // EngineGenerator produce an engine according to the FSM
 type EngineGenerator struct {
-	managementChannel   chan ManagementMessage
+	FSM                 *fsm.FSM
 	Name                string
 	Engine              Engine
-	FSM                 *fsm.FSM
-	statInterval        int
-	nEvent              int
-	totalTime           int64
+	managementChannel   chan ManagementMessage
 	timePerEventChannel chan time.Duration
+	totalTime           int64
 	CurrentThroughput   float64
+	EventCount          int64
+	MatchedCount        int64
+	statInterval        int
 }
 
 // NewEngineGenerator returns the pointer to a new EngineGenerator instance
 func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc chan ManagementMessage) *EngineGenerator {
 	eg := &EngineGenerator{
-		managementChannel: mc,
 		Name:              name,
-		statInterval:      statInterval,
-		nEvent:            0,
+		managementChannel: mc,
 		totalTime:         0,
 		CurrentThroughput: 0,
+		EventCount:        0,
+		MatchedCount:      0,
+		statInterval:      statInterval,
 	}
 
 	eg.FSM = fsm.NewFSM(
@@ -68,18 +70,26 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 				}
 				//log.Printf("[EngineGenerator] %s: %v us/event", eg.Name, t.Nanoseconds())
 				eg.totalTime += t.Nanoseconds() / 1000 // microseconds
-				eg.nEvent++
+				eg.EventCount++
 			case <-intervalTicker.C:
-				throughput := float64(eg.totalTime) / float64(eg.nEvent)
-				//log.Printf("%s total: %v, n: %v", eg.Name, eg.totalTime, eg.nEvent)
+				//log.Printf("%v, %v, %v", eg.Name, eg.EventCount, eg.MatchedCount)
+				eg.managementChannel <- ManagementMessage{
+					Type:         TrafficStatus,
+					EngineName:   eg.Name,
+					EventCount:   eg.EventCount,
+					MatchedCount: eg.MatchedCount,
+				}
+				throughput := float64(eg.totalTime) / float64(eg.EventCount)
 				if throughput != 0 && !math.IsNaN(throughput) {
 					eg.CurrentThroughput = throughput
 					eg.managementChannel <- ManagementMessage{
-						Type: EngineStatus,
-						EngineGeneratorInstance: eg,
+						Type:              EngineStatus,
+						EngineName:        eg.Name,
+						CurrentThroughput: eg.CurrentThroughput,
 					}
 				}
-				eg.nEvent = 0
+				eg.EventCount = 0
+				eg.MatchedCount = 0
 				eg.totalTime = 0
 			}
 		}
@@ -91,7 +101,11 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 // Search do search in the generated engine
 func (eg *EngineGenerator) Search(re llrp.ReadEvent) (string, []string, error) {
 	defer timeTrack(time.Now(), eg.timePerEventChannel)
-	return eg.Engine.Search(re)
+	pureIdentity, reportURIs, err := eg.Engine.Search(re)
+	if len(reportURIs) != 0 {
+		eg.MatchedCount++
+	}
+	return pureIdentity, reportURIs, err
 }
 
 func (eg *EngineGenerator) enterState(e *fsm.Event) {

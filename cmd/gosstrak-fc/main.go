@@ -139,12 +139,20 @@ func run() {
 				break
 			}
 			switch msg.Type {
+			case filtering.TrafficStatus:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.Traffic,
+						Value: []interface{}{msg.EventCount, msg.MatchedCount},
+						Name:  msg.EngineName,
+					}
+				}
 			case filtering.EngineStatus:
 				if *enableStat {
 					sm.StatMessageChannel <- monitoring.StatMessage{
 						Type:  monitoring.EngineThroughput,
-						Value: []interface{}{msg.EngineGeneratorInstance.CurrentThroughput},
-						Name:  msg.EngineGeneratorInstance.Name,
+						Value: []interface{}{msg.CurrentThroughput},
+						Name:  msg.EngineName,
 					}
 				}
 			}
@@ -210,7 +218,6 @@ func run() {
 			}
 
 			reports := map[string][]string{}
-			matchCount := 0
 			for _, re := range res {
 				pureIdentity, reportURIs, err := engineFactory.Search(*re)
 				if err != nil { // no much or something went wrong
@@ -221,13 +228,6 @@ func run() {
 						reports[dest] = []string{}
 					}
 					reports[dest] = append(reports[dest], pureIdentity)
-				}
-				matchCount++
-			}
-			if *enableStat {
-				sm.StatMessageChannel <- monitoring.StatMessage{
-					Type:  monitoring.Traffic,
-					Value: []interface{}{len(res), matchCount},
 				}
 			}
 			// do report

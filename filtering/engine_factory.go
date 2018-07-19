@@ -13,27 +13,6 @@ import (
 	"github.com/iomz/go-llrp"
 )
 
-// ManagementMessageType is to indicate the type of ManagementMessage
-type ManagementMessageType int
-
-// ManagementMessage types
-const (
-	AddSubscription ManagementMessageType = iota
-	DeleteSubscription
-	OnEngineGenerated
-	DeployEngine
-	EngineStatus
-)
-
-// ManagementMessage holds management action for the EngineFactory
-type ManagementMessage struct {
-	Type                    ManagementMessageType
-	FilterString            string
-	ReportURI               string
-	EngineGeneratorInstance *EngineGenerator
-	CurrentThroughput       float64
-}
-
 // EngineFactory manages the FC's subscriptions and engine instances
 type EngineFactory struct {
 	mainChannel          chan ManagementMessage
@@ -83,6 +62,7 @@ func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMes
 
 	// Calculate the priority of deployment
 	ef.deploymentPriority = map[string]uint8{
+		"LegacyEngine": 0,
 		"List":         3,
 		"PatriciaTrie": 1,
 		"SplayTree":    2,
@@ -111,9 +91,13 @@ func (ef *EngineFactory) Run() {
 			//msg, _ := reflect.ValueOf(val).Interface().(ManagementMessage)
 			msg := ManagementMessage{
 				Type:                    val.FieldByName("Type").Interface().(ManagementMessageType),
-				FilterString:            val.FieldByName("FilterString").String(),
-				ReportURI:               val.FieldByName("FilterString").String(),
+				Pattern:                 val.FieldByName("Pattern").String(),
+				ReportURI:               val.FieldByName("ReportURI").String(),
 				EngineGeneratorInstance: (*EngineGenerator)(unsafe.Pointer(val.FieldByName("EngineGeneratorInstance").Pointer())),
+				CurrentThroughput:       val.FieldByName("CurrentThroughput").Float(),
+				EventCount:              val.FieldByName("EventCount").Int(),
+				MatchedCount:            val.FieldByName("MatchedCount").Int(),
+				EngineName:              val.FieldByName("EngineName").String(),
 			}
 			switch msg.Type {
 			case AddSubscription:
@@ -156,6 +140,8 @@ func (ef *EngineFactory) Run() {
 					continue
 				}
 				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)
+			case TrafficStatus:
+				ef.mainChannel <- msg // bypass the status message from generators to main
 			case EngineStatus:
 				ef.mainChannel <- msg // bypass the status message from generators to main
 			}

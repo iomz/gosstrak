@@ -1,3 +1,8 @@
+// Copyright (c) 2018 Iori Mizutani
+//
+// Use of this source code is governed by The MIT License
+// that can be found in the LICENSE file.
+
 package monitoring
 
 import (
@@ -10,23 +15,6 @@ import (
 // StatManager receives stat and publish them to InfluxDB
 type StatManager struct {
 	StatMessageChannel chan StatMessage
-}
-
-// StatMessageType is a type for StatMessage
-type StatMessageType int
-
-const (
-	// Traffic message
-	Traffic StatMessageType = iota
-	// EngineThroughput message
-	EngineThroughput
-)
-
-// StatMessage carries stat
-type StatMessage struct {
-	Type  StatMessageType
-	Value []interface{}
-	Name  string
 }
 
 // NewStatManager creates a new instance of StatManager
@@ -61,7 +49,7 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				break
 			}
 
-			tags := map[string]string{"mode": mode}
+			tags := make(map[string]string)
 			fields := make(map[string]interface{})
 			var measurement string
 
@@ -70,6 +58,7 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 			case Traffic:
 				fields["incoming_events"] = msg.Value[0]
 				fields["matched_events"] = msg.Value[1]
+				tags["engine"] = msg.Name
 				measurement = "traffic"
 			case EngineThroughput:
 				fields["us_per_event"] = msg.Value[0]
