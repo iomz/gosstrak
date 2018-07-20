@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/iomz/go-llrp"
@@ -95,13 +96,34 @@ func (le *LegacyEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportUR
 	}
 
 	for reportURI, patterns := range le.filters {
-		for _, prefix := range patterns {
-			if strings.HasPrefix(pureIdentity, prefix) {
+		for _, pattern := range patterns {
+			seq := strings.Split(pattern, ":")
+			if len(seq) != 5 {
+				continue
+			}
+			patternType := seq[3]
+			pattern := seq[4]
+			switch patternType {
+			case "giai-96":
+				pattern = patternType + ":" + pattern
+			case "grai-96":
+				pattern = patternType + ":" + pattern
+			case "sgtin-96":
+				pattern = patternType + ":" + pattern
+			case "sscc-96":
+				pattern = patternType + ":" + pattern
+			case "iso17363":
+				pattern = patternType + ":" + strings.Replace(pattern, ".", "", -1)
+			case "iso17365":
+				pattern = patternType + ":" + strings.Replace(pattern, ".", "", -1)
+			}
+			if strings.HasPrefix(strings.TrimPrefix(pureIdentity, "urn:epc:id:"), pattern) {
 				reportURIs = append(reportURIs, reportURI)
 			}
 		}
 	}
 	if len(reportURIs) == 0 {
+		//log.Printf("%v not found", pureIdentity)
 		return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", pureIdentity)
 	}
 	return

@@ -12,8 +12,8 @@ import (
 	//"io/ioutil"
 	//"log"
 	"math/big"
-	//"os"
 	"strconv"
+	"strings"
 	//"xml"
 )
 
@@ -86,19 +86,21 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 
 	// EPC Header
 	switch id[0] {
-	case 48: // SGTIN-96 00110000
+	case 48: /* ------------- SGTIN-96 00110000 ------------- */
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:sgtin:"
+		urn = "urn:epc:id:sgtin-96:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
-		for _, v := range SGTIN96PartitionTable {
+		var cpLength int
+		for k, v := range SGTIN96PartitionTable {
 			if v[PValue] == partition {
 				ptm = v
+				cpLength = k
 				break
 			}
 		}
@@ -118,12 +120,14 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 3
 			cp[4] = remainder<<6 | id[6]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 1) // 4 bits
 			remainder = id[6] & 3
 			ir[0] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -137,12 +141,14 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 31
 			cp[4] = remainder<<3 | id[6]>>5
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 1) // 7 bits
 			remainder = id[6] & 31
 			ir[0] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 34:
 			cp := make([]byte, 5)
 			cp[0] = id[1] & 3
@@ -151,13 +157,15 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			cp[3] = id[4]
 			cp[4] = id[5]
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 2) // 10 bits
-			ir[0] = id[6] >> 2
-			remainder := id[6] & 3
+			ir[0] = id[6] >> 6
+			remainder := id[6] & 63
 			ir[1] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 30:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -169,14 +177,16 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 15
 			cp[3] = remainder<<4 | id[5]>>4
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 2) // 14 bits
 			remainder = id[5] & 15
 			ir[0] = remainder<<2 | id[6]>>6
 			remainder = id[6] & 63
 			ir[1] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 27:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -188,7 +198,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 127
 			cp[3] = remainder<<1 | id[5]>>7
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 3) // 17 bits
 			remainder = id[5] & 127
 			ir[0] = remainder >> 6
@@ -197,7 +208,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			ir[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 24:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -207,7 +219,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 3
 			cp[2] = remainder<<6 | id[4]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 3) // 20 bits
 			remainder = id[4] & 3
 			ir[0] = remainder<<2 | id[5]>>6
@@ -216,7 +229,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			ir[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		case 20:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -226,7 +240,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 63
 			cp[2] = remainder<<2 | id[4]>>6
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			ir := make([]byte, 3) // 24 bits
 			remainder = id[4] & 63
 			ir[0] = remainder<<2 | id[5]>>6
@@ -235,7 +250,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			ir[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(ir)
-			urn += z.String() + "."
+			itemReference := z.String()
+			urn += strings.Repeat("0", ptm[IRDigits]-len(itemReference)) + itemReference + "."
 		}
 		// SERIAL
 		ser := make([]byte, 5)
@@ -246,19 +262,21 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		ser[4] = id[11]
 		z.SetBytes(ser)
 		urn += z.String()
-	case 49: // SSCC-96  00110001
+	case 49: /* ------------- SSCC-96  00110001 ------------- */
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:sscc:"
+		urn = "urn:epc:id:sscc-96:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
-		for _, v := range SSCC96PartitionTable {
+		var cpLength int
+		for k, v := range SSCC96PartitionTable {
 			if v[PValue] == partition {
 				ptm = v
+				cpLength = k
 				break
 			}
 		}
@@ -278,14 +296,16 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 3
 			cp[4] = remainder<<6 | id[6]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 3) // 18 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 3) // 18 bits
 			remainder = id[6] & 3
-			ir[0] = remainder
-			ir[1] = id[7]
-			ir[2] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[7]
+			ext[2] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -299,14 +319,16 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 31
 			cp[4] = remainder<<3 | id[6]>>5
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 3) // 21 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 3) // 21 bits
 			remainder = id[6] & 31
-			ir[0] = remainder
-			ir[1] = id[7]
-			ir[2] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[7]
+			ext[2] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 34:
 			cp := make([]byte, 5)
 			cp[0] = id[1] & 3
@@ -315,13 +337,15 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			cp[3] = id[4]
 			cp[4] = id[5]
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 3) // 24 bits
-			ir[0] = id[6]
-			ir[1] = id[7]
-			ir[2] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 3) // 24 bits
+			ext[0] = id[6]
+			ext[1] = id[7]
+			ext[2] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 30:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -333,15 +357,17 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 15
 			cp[3] = remainder<<4 | id[5]>>4
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 4) // 28 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 4) // 28 bits
 			remainder = id[5] & 15
-			ir[0] = remainder
-			ir[1] = id[6]
-			ir[2] = id[7]
-			ir[3] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[6]
+			ext[2] = id[7]
+			ext[3] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 27:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -353,15 +379,17 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 127
 			cp[3] = remainder<<1 | id[5]>>7
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 4) // 31 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 4) // 31 bits
 			remainder = id[5] & 127
-			ir[0] = remainder
-			ir[1] = id[6]
-			ir[2] = id[7]
-			ir[3] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[6]
+			ext[2] = id[7]
+			ext[3] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 24:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -371,16 +399,18 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 3
 			cp[2] = remainder<<6 | id[4]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 5) // 34 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 5) // 34 bits
 			remainder = id[4] & 3
-			ir[0] = remainder
-			ir[1] = id[5]
-			ir[2] = id[6]
-			ir[3] = id[7]
-			ir[4] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[5]
+			ext[2] = id[6]
+			ext[3] = id[7]
+			ext[4] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		case 20:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -390,30 +420,34 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 63
 			cp[2] = remainder<<2 | id[4]>>6
 			z.SetBytes(cp)
-			urn += z.String() + "."
-			ir := make([]byte, 5) // 38 bits
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
+			ext := make([]byte, 5) // 38 bits
 			remainder = id[4] & 63
-			ir[0] = remainder
-			ir[1] = id[5]
-			ir[2] = id[6]
-			ir[3] = id[7]
-			ir[4] = id[8]
-			z.SetBytes(ir)
-			urn += z.String()
+			ext[0] = remainder
+			ext[1] = id[5]
+			ext[2] = id[6]
+			ext[3] = id[7]
+			ext[4] = id[8]
+			z.SetBytes(ext)
+			extension := z.String()
+			urn += strings.Repeat("0", ptm[EDigits]-len(extension)) + extension
 		}
-	case 51: // GRAI-96  00110011
+	case 51: /* ------------- GRAI-96  00110011------------- */
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:grai:"
+		urn = "urn:epc:id:grai-96:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
-		for _, v := range GRAI96PartitionTable {
+		var cpLength int
+		for k, v := range GRAI96PartitionTable {
 			if v[PValue] == partition {
 				ptm = v
+				cpLength = k
 				break
 			}
 		}
@@ -433,12 +467,14 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 3
 			cp[4] = remainder<<6 | id[6]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 1) // 4 bits
 			remainder = id[6] & 3
 			at[0] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -452,12 +488,14 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 31
 			cp[4] = remainder<<3 | id[6]>>5
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 1) // 7 bits
 			remainder = id[6] & 31
 			at[0] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 34:
 			cp := make([]byte, 5)
 			cp[0] = id[1] & 3
@@ -466,13 +504,15 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			cp[3] = id[4]
 			cp[4] = id[5]
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 2) // 10 bits
-			at[0] = id[6] >> 2
-			remainder := id[6] & 3
+			at[0] = id[6] >> 6
+			remainder := id[6] & 63
 			at[1] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 30:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -484,14 +524,16 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 15
 			cp[3] = remainder<<4 | id[5]>>4
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 2) // 14 bits
 			remainder = id[5] & 15
 			at[0] = remainder<<2 | id[6]>>6
 			remainder = id[6] & 63
 			at[1] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 27:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -503,7 +545,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 127
 			cp[3] = remainder<<1 | id[5]>>7
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 3) // 17 bits
 			remainder = id[5] & 127
 			at[0] = remainder >> 6
@@ -512,7 +555,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			at[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 24:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -522,7 +566,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 3
 			cp[2] = remainder<<6 | id[4]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 3) // 20 bits
 			remainder = id[4] & 3
 			at[0] = remainder<<2 | id[5]>>6
@@ -531,7 +576,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			at[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		case 20:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -541,7 +587,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 63
 			cp[2] = remainder<<2 | id[4]>>6
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			at := make([]byte, 3) // 24 bits
 			remainder = id[4] & 63
 			at[0] = remainder<<2 | id[5]>>6
@@ -550,7 +597,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[6] & 63
 			at[2] = remainder<<2 | id[7]>>6
 			z.SetBytes(at)
-			urn += z.String() + "."
+			assetType := z.String()
+			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
 		}
 		// SERIAL
 		ser := make([]byte, 5)
@@ -561,19 +609,21 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		ser[4] = id[11]
 		z.SetBytes(ser)
 		urn += z.String()
-	case 52: // GIAI-96  00110100
+	case 52: /* ------------- GIAI-96  00110100 ------------- */
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:giai:"
+		urn = "urn:epc:id:giai-96:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
-		for _, v := range GIAI96PartitionTable {
+		var cpLength int
+		for k, v := range GIAI96PartitionTable {
 			if v[PValue] == partition {
 				ptm = v
+				cpLength = k
 				break
 			}
 		}
@@ -593,7 +643,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 3
 			cp[4] = remainder<<6 | id[6]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 6) // 42 bits
 			remainder = id[6] & 3
 			iar[0] = remainder
@@ -603,7 +654,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -617,7 +669,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[5] & 31
 			cp[4] = remainder<<3 | id[6]>>5
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 6) // 45 bits
 			remainder = id[6] & 31
 			iar[0] = remainder
@@ -627,7 +680,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 34:
 			cp := make([]byte, 5)
 			cp[0] = id[1] & 3
@@ -636,7 +690,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			cp[3] = id[4]
 			cp[4] = id[5]
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 6) // 48 bits
 			iar[0] = id[6]
 			iar[1] = id[7]
@@ -645,7 +700,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 30:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -657,7 +713,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 15
 			cp[3] = remainder<<4 | id[5]>>4
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 7) // 52 bits
 			remainder = id[5] & 15
 			iar[0] = remainder
@@ -668,7 +725,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[5] = id[10]
 			iar[6] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 27:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -680,7 +738,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[4] & 127
 			cp[3] = remainder<<1 | id[5]>>7
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 7) // 55 bits
 			remainder = id[5] & 127
 			iar[0] = remainder
@@ -691,7 +750,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[5] = id[10]
 			iar[6] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 24:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -701,7 +761,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 3
 			cp[2] = remainder<<6 | id[4]>>2
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 8) // 58 bits
 			remainder = id[4] & 3
 			iar[0] = remainder
@@ -713,7 +774,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[6] = id[10]
 			iar[7] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		case 20:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -723,7 +785,8 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			remainder = id[3] & 63
 			cp[2] = remainder<<2 | id[4]>>6
 			z.SetBytes(cp)
-			urn += z.String() + "."
+			companyPrefix := z.String()
+			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
 			iar := make([]byte, 8) // 62 bits
 			remainder = id[4] & 63
 			iar[0] = remainder
@@ -735,14 +798,15 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[6] = id[10]
 			iar[7] = id[11]
 			z.SetBytes(iar)
-			urn += z.String()
+			indivisualAssetReference := z.String()
+			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
 		}
 	}
 	return urn, nil
 }
 
 func (c *Core) buildUII(id []byte, afi byte) (string, error) {
-	urn := "urn:epc:id:iso:"
+	urn := "urn:epc:id:iso"
 	switch afi {
 	case 161:
 		urn += "17367:"

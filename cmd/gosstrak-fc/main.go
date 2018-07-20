@@ -239,14 +239,13 @@ func run() {
 	}()
 
 	// establish a connection to the llrp client
-	log.Println("starting a connection to an interrogator")
+	log.Println("waiting for the interrogator to becom online...")
 	conn, err := net.Dial("tcp", *llrpAddr)
 	for err != nil {
-		log.Print(err)
-		log.Println("wait 5 seconds for the interrogator to becom online...")
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 		conn, err = net.Dial("tcp", *llrpAddr)
 	}
+	log.Printf("establised an LLRP connection to the interrogator %v", conn.RemoteAddr())
 
 	// prepare LLRP header storage
 	header := make([]byte, 2)
@@ -278,17 +277,18 @@ func run() {
 		}
 
 		h := binary.BigEndian.Uint16(header)
+		mid := binary.BigEndian.Uint32(messageID)
 		switch h {
 		case llrp.ReaderEventNotificationHeader:
-			log.Println(">>> READER_EVENT_NOTIFICATION")
+			log.Printf("[LLRP] %v >>> READER_EVENT_NOTIFICATION[%v]", conn.RemoteAddr(), mid)
 			conn.Write(llrp.SetReaderConfig(currentMessageID))
 		case llrp.KeepaliveHeader:
-			log.Println(">>> KEEP_ALIVE")
+			log.Printf("[LLRP] %v >>> KEEP_ALIVE[%v]", conn.RemoteAddr(), mid)
 			conn.Write(llrp.KeepaliveAck())
 		case llrp.SetReaderConfigResponseHeader:
-			log.Println(">>> SET_READER_CONFIG_RESPONSE")
+			log.Printf("[LLRP] %v >>> SET_READER_CONFIG_RESPONSE[%v]", conn.RemoteAddr(), mid)
 		case llrp.ROAccessReportHeader:
-			log.Println(">>> RO_ACCESS_REPORT")
+			log.Printf("[LLRP] %v >>> RO_ACCESS_REPORT[%v]", conn.RemoteAddr(), mid)
 			rq <- llrp.UnmarshalROAccessReportBody(messageValue)
 		default:
 			log.Fatalf("Unknown LLRP Message Header: %v\n", h)

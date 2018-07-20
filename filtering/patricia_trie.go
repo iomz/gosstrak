@@ -477,7 +477,7 @@ func NewPatriciaTrie(sub Subscriptions) Engine {
 	bsub := sub.ToByteSubscriptions()
 
 	// build PatriciaTrie
-	p1 := lcp(sub.Keys())
+	p1 := lcp(bsub.Keys())
 	if len(p1) == 0 {
 		// do something if there's no common prefix
 	}
