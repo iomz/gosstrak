@@ -322,7 +322,7 @@ func (stn *SplayTreeNode) splaySearch(st *SplayTree, parent *SplayTreeNode, id [
 		matches = append(matches, stn.reportURI)
 		if stn.matchNext != nil {
 			// Do Search & Splay in the subsets
-			matches = append(matches, stn.matchNext.splaySearch(st, stn, id)...)
+			matches = append(matches, stn.matchNext.splaySearch(st, nil, id)...)
 		}
 		// Do Splay
 		// 0. Check if this is the root node, do nothing if so
