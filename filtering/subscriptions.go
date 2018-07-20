@@ -227,6 +227,77 @@ func (bsub ByteSubscriptions) linkSubset() {
 	return
 }
 
+// makePatriciaSubset finds subsets and nest them under the parents
+func (bsub ByteSubscriptions) makePatriciaSubset() {
+	// store the currentOffset of this ByteSubscriptions
+	var currentOffset int
+
+	// loop until there's no lcp in this ByteSubscriptions
+	for {
+		commonPrefix, subsetSize := findPartialLCP(bsub.Keys())
+		if subsetSize < 1 {
+			break
+		}
+		log.Printf("commonPrefix: %v", commonPrefix)
+		// sbusb is a double pointer to the map
+		// but a pointer to ByteSubscriptions
+		// initialize an empty instance and a pointer
+		sbsub := &ByteSubscriptions{}
+		// just a pointer, set later in the loop
+		var superset *PartialSubscription
+		// iterate the bsub with this commonPrefix
+		for i, fs := range bsub.Keys() {
+			if i == 0 {
+				// set currentOffset
+				// All Offset is the same in a ByteSubscriptions
+				// FIXME: Offset should be a member of ByteSubscriptions
+				//        and not of PartialSubscription
+				currentOffset = bsub[fs].Offset
+			}
+			if fs == commonPrefix {
+				// if the commonPrefix itself is a subscription
+				// make this a superset of subscirptions with current commonPrefix
+				superset = &PartialSubscription{
+					Offset:    currentOffset,
+					ReportURI: bsub[fs].ReportURI,
+					Subset:    bsub[fs].Subset,
+				}
+				// delete the superset
+				delete(bsub, fs)
+			} else if strings.HasPrefix(fs, commonPrefix) {
+				// if this is PartialSubscription is a subset of this commonPrefix
+				// check if this is not a superset?
+				(*sbsub)[fs[len(commonPrefix):]] = &PartialSubscription{
+					Offset:    currentOffset + len(commonPrefix),
+					ReportURI: bsub[fs].ReportURI,
+					Subset:    bsub[fs].Subset,
+				}
+				// delete the subset
+				delete(bsub, fs)
+			}
+		}
+		if superset == nil {
+			// if there's no superset yet, create an empty PartialSubscription
+			superset = &PartialSubscription{
+				Offset: currentOffset,
+			}
+		}
+		// group the subset and insert it to the superset
+		superset.Subset = *sbsub
+		// insert the superset to the current bsub
+		bsub[commonPrefix] = superset
+	}
+	// finish finding lcp in this depth
+	// now dive to the next depth and link recursively
+	for _, fs := range bsub.Keys() {
+		if len(bsub[fs].Subset) != 0 {
+			bsub[fs].Subset.linkSubset()
+		}
+	}
+	return
+}
+
+// print used for Dump()
 func (bsub ByteSubscriptions) print(writer io.Writer, indent int) {
 	for _, fs := range bsub.Keys() {
 		fmt.Fprintf(writer, "%s--%s %v %s\n", strings.Repeat(" ", indent), fs, bsub[fs].Offset, bsub[fs].ReportURI)

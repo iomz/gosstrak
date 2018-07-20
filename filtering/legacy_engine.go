@@ -103,15 +103,24 @@ func (le *LegacyEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportUR
 			}
 			patternType := seq[3]
 			pattern := seq[4]
+
 			switch patternType {
 			case "giai-96":
-				pattern = patternType + ":" + pattern
+				fields := strings.Split(seq[4], ".")
+				// remove filter value in tag uri to match with the received PureIdentity
+				pattern = "giai:" + strings.Join(fields[1:], ".")
 			case "grai-96":
-				pattern = patternType + ":" + pattern
+				fields := strings.Split(seq[4], ".")
+				// remove filter value in tag uri to match with the received PureIdentity
+				pattern = "grai:" + strings.Join(fields[1:], ".")
 			case "sgtin-96":
-				pattern = patternType + ":" + pattern
+				fields := strings.Split(seq[4], ".")
+				// remove filter value in tag uri to match with the received PureIdentity
+				pattern = "sgtin:" + strings.Join(fields[1:], ".")
 			case "sscc-96":
-				pattern = patternType + ":" + pattern
+				fields := strings.Split(seq[4], ".")
+				// remove filter value in tag uri to match with the received PureIdentity
+				pattern = "sscc:" + strings.Join(fields[1:], ".")
 			case "iso17363":
 				pattern = patternType + ":" + strings.Replace(pattern, ".", "", -1)
 			case "iso17365":

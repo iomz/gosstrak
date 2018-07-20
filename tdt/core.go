@@ -12,7 +12,7 @@ import (
 	//"io/ioutil"
 	//"log"
 	"math/big"
-	"strconv"
+	//"strconv"
 	"strings"
 	//"xml"
 )
@@ -92,7 +92,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		}
 		urn = "urn:epc:id:sgtin:"
 		// FILTER
-		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		//urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
@@ -268,7 +268,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		}
 		urn = "urn:epc:id:sscc:"
 		// FILTER
-		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		//urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
@@ -439,7 +439,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		}
 		urn = "urn:epc:id:grai:"
 		// FILTER
-		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		//urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
@@ -617,7 +617,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		}
 		urn = "urn:epc:id:giai:"
 		// FILTER
-		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
+		//urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
 		partition := int((id[1] & 28) >> 2) // 28: 00011100
 		ptm := map[PartitionTableKey]int{}
