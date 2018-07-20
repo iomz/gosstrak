@@ -90,7 +90,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:sgtin-96:"
+		urn = "urn:epc:id:sgtin:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
@@ -266,7 +266,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:sscc-96:"
+		urn = "urn:epc:id:sscc:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
@@ -437,7 +437,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:grai-96:"
+		urn = "urn:epc:id:grai:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
@@ -469,12 +469,14 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			z.SetBytes(cp)
 			companyPrefix := z.String()
 			urn += strings.Repeat("0", cpLength-len(companyPrefix)) + companyPrefix + "."
-			at := make([]byte, 1) // 4 bits
-			remainder = id[6] & 3
-			at[0] = remainder<<2 | id[7]>>6
-			z.SetBytes(at)
-			assetType := z.String()
-			urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
+			/*
+				at := make([]byte, 1) // 4 bits = 0 digit
+				remainder = id[6] & 3
+				at[0] = remainder<<2 | id[7]>>6
+				z.SetBytes(at)
+				assetType := z.String()
+				urn += strings.Repeat("0", ptm[ATDigits]-len(assetType)) + assetType + "."
+			*/
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -613,7 +615,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 		if len(id) != 12 {
 			return "", errors.New("Invalid ID")
 		}
-		urn = "urn:epc:id:giai-96:"
+		urn = "urn:epc:id:giai:"
 		// FILTER
 		urn += strconv.Itoa(int((id[1]&224)>>5)) + "." // 224: 11100000
 		// PARTITION
