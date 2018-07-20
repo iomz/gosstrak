@@ -126,13 +126,10 @@ func GetFilter(fv string) (filter []rune) {
 }
 
 // GetIndivisualAssetReference returns iar as rune slice
+// IARDigits is the "max" length
 func GetIndivisualAssetReference(iar string, pr map[PartitionTableKey]int) (indivisualAssetReference []rune) {
 	if iar != "" {
 		indivisualAssetReference = binutil.ParseDecimalStringToBinRuneSlice(iar)
-		if pr[IARBits] > len(indivisualAssetReference) {
-			leftPadding := binutil.GenerateNLengthZeroPaddingRuneSlice(pr[IARBits] - len(indivisualAssetReference))
-			indivisualAssetReference = append(leftPadding, indivisualAssetReference...)
-		}
 	} else {
 		indivisualAssetReference, _ = binutil.GenerateNLengthRandomBinRuneSlice(pr[IARBits], uint(math.Pow(float64(10), float64(pr[IARDigits]))))
 	}
@@ -178,7 +175,7 @@ func MakeGIAI96(pf bool, fv string, cp string, iar string) ([]byte, string, stri
 	// CP
 	if cp == "" {
 		if pf {
-			return []byte{}, "00110100" + string(filter), "GIAI-96_" + fv, nil
+			return []byte{}, "00110100" + string(filter), "urn:epc:pat:giai-96:" + fv, nil
 		}
 		return []byte{}, "", "", errors.New("companyPrefix is empty")
 	}
@@ -188,14 +185,14 @@ func MakeGIAI96(pf bool, fv string, cp string, iar string) ([]byte, string, stri
 	// IAR
 	if iar == "" {
 		if pf {
-			return []byte{}, "00110100" + string(filter) + string(partition) + string(companyPrefix), "GIAI-96_" + fv + "_" + strconv.Itoa(GIAI96PartitionTable[len(cp)][PValue]) + "_" + cp, nil
+			return []byte{}, "00110100" + string(filter) + string(partition) + string(companyPrefix), "urn:epc:pat:giai-96:" + fv + "." + cp, nil
 		}
 	}
 	indivisualAssetReference := GetIndivisualAssetReference(iar, GIAI96PartitionTable[len(cp)])
 
 	// Exact match
 	if pf {
-		return []byte{}, "00110100" + string(filter) + string(partition) + string(companyPrefix) + string(indivisualAssetReference), "GIAI-96_" + fv + "_" + strconv.Itoa(GIAI96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + iar, nil
+		return []byte{}, "00110100" + string(filter) + string(partition) + string(companyPrefix) + string(indivisualAssetReference), "urn:epc:pat:giai-96:" + fv + "." + cp + "." + iar, nil
 	}
 
 	bs := append(filter, partition...)
@@ -236,7 +233,7 @@ func MakeGRAI96(pf bool, fv string, cp string, at string, ser string) ([]byte, s
 	//CP
 	if cp == "" {
 		if pf {
-			return []byte{}, "00110011" + string(filter), "GRAI-96_" + fv, nil
+			return []byte{}, "00110011" + string(filter), "urn:epc:pat:grai-96:" + fv, nil
 		}
 		return []byte{}, "", "", errors.New("companyPrefix is empty")
 	}
@@ -246,7 +243,7 @@ func MakeGRAI96(pf bool, fv string, cp string, at string, ser string) ([]byte, s
 	//AT
 	if at == "" {
 		if pf {
-			return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix), "GRAI-96_" + fv + "_" + strconv.Itoa(GRAI96PartitionTable[len(cp)][PValue]) + "_" + cp, nil
+			return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix), "urn:epc:pat:grai-96:" + fv + "." + cp, nil
 		}
 	}
 	assetType := GetAssetType(at, GRAI96PartitionTable[len(cp)])
@@ -254,14 +251,14 @@ func MakeGRAI96(pf bool, fv string, cp string, at string, ser string) ([]byte, s
 	// SER
 	if ser == "" {
 		if pf {
-			return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix) + string(assetType), "GRAI-96_" + fv + "_" + strconv.Itoa(GRAI96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + at, nil
+			return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix) + string(assetType), "urn:epc:pat:grai-96:" + fv + "." + cp + "." + at, nil
 		}
 	}
 	serial := GetSerial(ser, 38)
 
 	// Exact match
 	if pf {
-		return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix) + string(assetType) + string(serial), "GRAI-96_" + fv + "_" + strconv.Itoa(GRAI96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + at + "_" + ser, nil
+		return []byte{}, "00110011" + string(filter) + string(partition) + string(companyPrefix) + string(assetType) + string(serial), "urn:epc:pat:grai-96:" + fv + "." + cp + "." + at + "." + ser, nil
 	}
 
 	bs := append(filter, partition...)
@@ -302,7 +299,7 @@ func MakeSGTIN96(pf bool, fv string, cp string, ir string, ser string) ([]byte, 
 	// CP
 	if cp == "" {
 		if pf {
-			return []byte{}, "00110000" + string(filter), "SGTIN-96_" + fv, nil
+			return []byte{}, "00110000" + string(filter), "urn:epc:pat:sgtin-96:" + fv, nil
 		}
 		return []byte{}, "", "", errors.New("companyPrefix is empty")
 	}
@@ -312,7 +309,7 @@ func MakeSGTIN96(pf bool, fv string, cp string, ir string, ser string) ([]byte, 
 	// IR
 	if ir == "" {
 		if pf {
-			return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix), "SGTIN-96_" + fv + "_" + strconv.Itoa(SGTIN96PartitionTable[len(cp)][PValue]) + "_" + cp, nil
+			return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix), "urn:epc:pat:sgtin-96:" + fv + "." + cp, nil
 		}
 	}
 	itemReference := GetItemReference(ir, SGTIN96PartitionTable[len(cp)])
@@ -320,14 +317,14 @@ func MakeSGTIN96(pf bool, fv string, cp string, ir string, ser string) ([]byte, 
 	// SER
 	if ser == "" {
 		if pf {
-			return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix) + string(itemReference), "SGTIN-96_" + fv + "_" + strconv.Itoa(SGTIN96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + ir, nil
+			return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix) + string(itemReference), "urn:epc:pat:sgtin-96:" + fv + "." + cp + "." + ir, nil
 		}
 	}
 	serial := GetSerial(ser, 38)
 
 	// Exact match
 	if pf {
-		return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix) + string(itemReference) + string(serial), "SGTIN-96_" + fv + "_" + strconv.Itoa(SGTIN96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + ir + "_" + ser, nil
+		return []byte{}, "00110000" + string(filter) + string(partition) + string(companyPrefix) + string(itemReference) + string(serial), "urn:epc:pat:sgtin-96:" + fv + "." + cp + "." + ir + "." + ser, nil
 	}
 
 	bs := append(filter, partition...)
@@ -368,7 +365,7 @@ func MakeSSCC96(pf bool, fv string, cp string, ext string) ([]byte, string, stri
 	// CP
 	if cp == "" {
 		if pf {
-			return []byte{}, "00110001" + string(filter), "SSCC-96_" + fv, nil
+			return []byte{}, "00110001" + string(filter), "urn:epc:pat:sscc-96:" + fv, nil
 		}
 		return []byte{}, "", "", errors.New("companyPrefix is empty")
 	}
@@ -378,14 +375,14 @@ func MakeSSCC96(pf bool, fv string, cp string, ext string) ([]byte, string, stri
 	// EXT
 	if ext == "" {
 		if pf {
-			return []byte{}, "00110001" + string(filter) + string(partition) + string(companyPrefix), "SSCC-96_" + fv + "_" + strconv.Itoa(SSCC96PartitionTable[len(cp)][PValue]) + "_" + cp, nil
+			return []byte{}, "00110001" + string(filter) + string(partition) + string(companyPrefix), "urn:epc:pat:sscc-96:" + fv + "." + cp, nil
 		}
 	}
 	extension := GetExtension(ext, SSCC96PartitionTable[len(cp)])
 
 	// Exact match (ignore rsvd
 	if pf {
-		return []byte{}, "00110001" + string(filter) + string(partition) + string(companyPrefix) + string(extension), "SSCC-96_" + fv + "_" + strconv.Itoa(SSCC96PartitionTable[len(cp)][PValue]) + "_" + cp + "_" + ext, nil
+		return []byte{}, "00110001" + string(filter) + string(partition) + string(companyPrefix) + string(extension), "urn:epc:pat:sscc-96:" + fv + "." + cp + "." + ext, nil
 	}
 
 	// 24 '0's
