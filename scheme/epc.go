@@ -126,13 +126,10 @@ func GetFilter(fv string) (filter []rune) {
 }
 
 // GetIndivisualAssetReference returns iar as rune slice
+// IARDigits is the "max" length
 func GetIndivisualAssetReference(iar string, pr map[PartitionTableKey]int) (indivisualAssetReference []rune) {
 	if iar != "" {
 		indivisualAssetReference = binutil.ParseDecimalStringToBinRuneSlice(iar)
-		if pr[IARBits] > len(indivisualAssetReference) {
-			leftPadding := binutil.GenerateNLengthZeroPaddingRuneSlice(pr[IARBits] - len(indivisualAssetReference))
-			indivisualAssetReference = append(leftPadding, indivisualAssetReference...)
-		}
 	} else {
 		indivisualAssetReference, _ = binutil.GenerateNLengthRandomBinRuneSlice(pr[IARBits], uint(math.Pow(float64(10), float64(pr[IARDigits]))))
 	}
