@@ -123,7 +123,7 @@ func (le *LegacyEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportUR
 		}
 	}
 	if len(reportURIs) == 0 {
-		//log.Printf("%v not found", pureIdentity)
+		log.Printf("%v not found", pureIdentity)
 		return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", pureIdentity)
 	}
 	return

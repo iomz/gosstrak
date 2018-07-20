@@ -654,8 +654,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 37:
 			cp := make([]byte, 5)
 			remainder := id[1] & 3
@@ -680,8 +679,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 34:
 			cp := make([]byte, 5)
 			cp[0] = id[1] & 3
@@ -700,8 +698,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[4] = id[10]
 			iar[5] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 30:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -725,8 +722,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[5] = id[10]
 			iar[6] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 27:
 			cp := make([]byte, 4)
 			remainder := id[1] & 3
@@ -750,8 +746,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[5] = id[10]
 			iar[6] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 24:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -774,8 +769,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[6] = id[10]
 			iar[7] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		case 20:
 			cp := make([]byte, 3)
 			remainder := id[1] & 3
@@ -798,8 +792,7 @@ func (c *Core) buildEPC(id []byte) (string, error) {
 			iar[6] = id[10]
 			iar[7] = id[11]
 			z.SetBytes(iar)
-			indivisualAssetReference := z.String()
-			urn += strings.Repeat("0", ptm[IARDigits]-len(indivisualAssetReference)) + indivisualAssetReference
+			urn += z.String()
 		}
 	}
 	return urn, nil
