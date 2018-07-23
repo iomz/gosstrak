@@ -41,6 +41,10 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 		statInterval:      statInterval,
 	}
 
+	/*
+		start -> q0 -> (init) -> q1 -> (deploy) -> q2 -> (update) -> q3 -> (rebuild) -> q4
+		q4 -> (deploy) -> ready
+	*/
 	eg.FSM = fsm.NewFSM(
 		"unavailable",
 		fsm.Events{
