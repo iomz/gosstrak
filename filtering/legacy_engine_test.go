@@ -258,7 +258,8 @@ func Test_stringIndexInSlice(t *testing.T) {
 }
 
 func benchmarkLegacyFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
-	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs.csv", nSubs))
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	b.Skipf("%v subscriptions", len(sub))
 	largeTagsGOB := os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-tags.gob", nSubs)
 	var largeTags llrp.Tags
 	binutil.Load(largeTagsGOB, &largeTags)
