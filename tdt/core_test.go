@@ -279,28 +279,27 @@ func benchmarkTranslateNTags(nTags int, b *testing.B) {
 	binutil.Load(largeTagsGOB, &largeTags)
 	tdtCore := NewCore()
 
+	var limitedTags []*TestTag
+	perms := rand.Perm(len(largeTags))
+	for count, i := range perms {
+		if count < nTags {
+			t := largeTags[i]
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, t.PCBits)
+			if err != nil {
+				b.Fatal(err)
+			}
+			limitedTags = append(limitedTags, &TestTag{pc: buf.Bytes(), uii: t.EPC})
+		} else {
+			break
+		}
+		if count == len(largeTags) {
+			b.Skip("given tag size is larger than the testdata available")
+		}
+	}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		var limitedTags []*TestTag
-		perms := rand.Perm(len(largeTags))
-		for count, i := range perms {
-			if count < nTags {
-				t := largeTags[i]
-				buf := new(bytes.Buffer)
-				err := binary.Write(buf, binary.BigEndian, t.PCBits)
-				if err != nil {
-					b.Fatal(err)
-				}
-				limitedTags = append(limitedTags, &TestTag{pc: buf.Bytes(), uii: t.EPC})
-			} else {
-				break
-			}
-			if count == len(largeTags) {
-				b.Skip("given tag size is larger than the testdata available")
-			}
-		}
-		b.StartTimer()
 		for _, tag := range limitedTags {
 			pureIdentity, err := tdtCore.Translate(tag.pc, tag.uii)
 			if err != nil {
