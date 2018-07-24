@@ -6,7 +6,14 @@
 package tdt
 
 import (
+	"bytes"
+	"encoding/binary"
+	"math/rand"
+	"os"
 	"testing"
+
+	"github.com/iomz/go-llrp"
+	"github.com/iomz/go-llrp/binutil"
 )
 
 func Test_parse6BitEncodedByteSliceToString(t *testing.T) {
@@ -260,3 +267,57 @@ func Test_core_Translate(t *testing.T) {
 		})
 	}
 }
+
+func benchmarkTranslateNTags(nTags int, b *testing.B) {
+	largeTagsGOB := os.Getenv("GOPATH") + "/src/github.com/iomz/go-llrp/test/data/million-tags.gob"
+	type TestTag struct {
+		pc  []byte
+		uii []byte
+	}
+	// load up the tags from the file
+	var largeTags llrp.Tags
+	binutil.Load(largeTagsGOB, &largeTags)
+	tdtCore := NewCore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		var limitedTags []*TestTag
+		perms := rand.Perm(len(largeTags))
+		for count, i := range perms {
+			if count < nTags {
+				t := largeTags[i]
+				buf := new(bytes.Buffer)
+				err := binary.Write(buf, binary.BigEndian, t.PCBits)
+				if err != nil {
+					b.Fatal(err)
+				}
+				limitedTags = append(limitedTags, &TestTag{pc: buf.Bytes(), uii: t.EPC})
+			} else {
+				break
+			}
+			if count == len(largeTags) {
+				b.Skip("given tag size is larger than the testdata available")
+			}
+		}
+		b.StartTimer()
+		for _, tag := range limitedTags {
+			pureIdentity, err := tdtCore.Translate(tag.pc, tag.uii)
+			if err != nil {
+				b.Fatal(err)
+			}
+			_ = pureIdentity
+		}
+	}
+}
+
+func BenchmarkTranslate100Tags(b *testing.B)  { benchmarkTranslateNTags(100, b) }
+func BenchmarkTranslate200Tags(b *testing.B)  { benchmarkTranslateNTags(200, b) }
+func BenchmarkTranslate300Tags(b *testing.B)  { benchmarkTranslateNTags(300, b) }
+func BenchmarkTranslate400Tags(b *testing.B)  { benchmarkTranslateNTags(400, b) }
+func BenchmarkTranslate500Tags(b *testing.B)  { benchmarkTranslateNTags(500, b) }
+func BenchmarkTranslate600Tags(b *testing.B)  { benchmarkTranslateNTags(600, b) }
+func BenchmarkTranslate700Tags(b *testing.B)  { benchmarkTranslateNTags(700, b) }
+func BenchmarkTranslate800Tags(b *testing.B)  { benchmarkTranslateNTags(800, b) }
+func BenchmarkTranslate900Tags(b *testing.B)  { benchmarkTranslateNTags(900, b) }
+func BenchmarkTranslate1000Tags(b *testing.B) { benchmarkTranslateNTags(1000, b) }
