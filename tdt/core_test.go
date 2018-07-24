@@ -270,16 +270,12 @@ func Test_core_Translate(t *testing.T) {
 
 func benchmarkTranslateNTags(nTags int, b *testing.B) {
 	largeTagsGOB := os.Getenv("GOPATH") + "/src/github.com/iomz/go-llrp/test/data/million-tags.gob"
-	type TestTag struct {
-		pc  []byte
-		uii []byte
-	}
 	// load up the tags from the file
 	var largeTags llrp.Tags
 	binutil.Load(largeTagsGOB, &largeTags)
 	tdtCore := NewCore()
 
-	var limitedTags []*TestTag
+	var limitedTags []*llrp.ReadEvent
 	perms := rand.Perm(len(largeTags))
 	for count, i := range perms {
 		if count < nTags {
@@ -289,7 +285,7 @@ func benchmarkTranslateNTags(nTags int, b *testing.B) {
 			if err != nil {
 				b.Fatal(err)
 			}
-			limitedTags = append(limitedTags, &TestTag{pc: buf.Bytes(), uii: t.EPC})
+			limitedTags = append(limitedTags, &llrp.ReadEvent{PC: buf.Bytes(), ID: t.EPC})
 		} else {
 			break
 		}
@@ -301,7 +297,7 @@ func benchmarkTranslateNTags(nTags int, b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, tag := range limitedTags {
-			pureIdentity, err := tdtCore.Translate(tag.pc, tag.uii)
+			pureIdentity, err := tdtCore.Translate(tag.PC, tag.ID)
 			if err != nil {
 				b.Fatal(err)
 			}

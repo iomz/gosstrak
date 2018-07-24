@@ -21,6 +21,22 @@ For quick start, use the docker-compose file and initialize the InfluxDB.
 
 Then, run `gosstrak-fc` with `--enableStat` flag.
 
+TDT Benchmark
+--
+
+```bash
+BenchmarkTranslate100Tags-32               10000            283151 ns/op           34096 B/op       1321 allocs/op
+BenchmarkTranslate200Tags-32                5000            548079 ns/op           68752 B/op       2662 allocs/op
+BenchmarkTranslate300Tags-32                3000            832507 ns/op          102801 B/op       3978 allocs/op
+BenchmarkTranslate400Tags-32                2000           1151762 ns/op          137600 B/op       5341 allocs/op
+BenchmarkTranslate500Tags-32                2000           1435293 ns/op          171312 B/op       6589 allocs/op
+BenchmarkTranslate600Tags-32                2000           1769288 ns/op          204112 B/op       7906 allocs/op
+BenchmarkTranslate700Tags-32                2000           2039621 ns/op          240305 B/op       9276 allocs/op
+BenchmarkTranslate800Tags-32                1000           2256183 ns/op          274352 B/op      10614 allocs/op
+BenchmarkTranslate900Tags-32                1000           2599413 ns/op          307761 B/op      11898 allocs/op
+BenchmarkTranslate1000Tags-32               1000           2938569 ns/op          342385 B/op      13247 allocs/op
+```
+
 Author
 --
 
