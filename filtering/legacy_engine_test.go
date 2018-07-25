@@ -339,6 +339,7 @@ func benchmarkLegacyFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 	}
 }
 
+// Impact from n_{E}
 func BenchmarkLegacyFilter100Tags100subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 100, b) }
 func BenchmarkLegacyFilter200Tags100subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(200, 100, b) }
 func BenchmarkLegacyFilter300Tags100subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(300, 100, b) }
@@ -349,3 +350,14 @@ func BenchmarkLegacyFilter700Tags100subs(b *testing.B)  { benchmarkLegacyFilterN
 func BenchmarkLegacyFilter800Tags100subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(800, 100, b) }
 func BenchmarkLegacyFilter900Tags100subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(900, 100, b) }
 func BenchmarkLegacyFilter1000Tags100subs(b *testing.B) { benchmarkLegacyFilterNTagsNSubs(1000, 100, b) }
+
+// Impact from n_{S}
+func BenchmarkLegacyFilter100Tags200subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 200, b) }
+func BenchmarkLegacyFilter100Tags300subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 300, b) }
+func BenchmarkLegacyFilter100Tags400subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 400, b) }
+func BenchmarkLegacyFilter100Tags500subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 500, b) }
+func BenchmarkLegacyFilter100Tags600subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 600, b) }
+func BenchmarkLegacyFilter100Tags700subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 700, b) }
+func BenchmarkLegacyFilter100Tags800subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 800, b) }
+func BenchmarkLegacyFilter100Tags900subs(b *testing.B)  { benchmarkLegacyFilterNTagsNSubs(100, 900, b) }
+func BenchmarkLegacyFilter100Tags1000subs(b *testing.B) { benchmarkLegacyFilterNTagsNSubs(100, 1000, b) }
