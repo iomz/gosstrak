@@ -7,6 +7,7 @@ package filtering
 
 import (
 	//"bytes"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -180,3 +181,21 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 		})
 	}
 }
+
+func benchmarkLoadNSubs(nSubs int, b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+		_ = sub
+	}
+}
+
+func BenchmarkLoad100Subs(b *testing.B)  { benchmarkLoadNSubs(100, b) }
+func BenchmarkLoad200Subs(b *testing.B)  { benchmarkLoadNSubs(200, b) }
+func BenchmarkLoad300Subs(b *testing.B)  { benchmarkLoadNSubs(300, b) }
+func BenchmarkLoad400Subs(b *testing.B)  { benchmarkLoadNSubs(400, b) }
+func BenchmarkLoad500Subs(b *testing.B)  { benchmarkLoadNSubs(500, b) }
+func BenchmarkLoad600Subs(b *testing.B)  { benchmarkLoadNSubs(600, b) }
+func BenchmarkLoad700Subs(b *testing.B)  { benchmarkLoadNSubs(700, b) }
+func BenchmarkLoad800Subs(b *testing.B)  { benchmarkLoadNSubs(800, b) }
+func BenchmarkLoad900Subs(b *testing.B)  { benchmarkLoadNSubs(900, b) }
+func BenchmarkLoad1000Subs(b *testing.B) { benchmarkLoadNSubs(1000, b) }
