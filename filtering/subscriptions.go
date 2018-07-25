@@ -117,7 +117,7 @@ func LoadSubscriptionsFromCSVFile(f string) Subscriptions {
 			}
 		}
 	}
-	log.Printf("%v filtering patterns loaded from %s", numFilters, f)
+	//log.Printf("%v filtering patterns loaded from %s", numFilters, f)
 	return sub
 }
 
