@@ -6,172 +6,122 @@
 package filtering
 
 import (
-//"bytes"
-//"encoding/gob"
-//"math/rand"
-//"os"
-//"testing"
-//"time"
-
-//"unsafe"
-//"github.com/iomz/go-llrp"
-//"github.com/iomz/go-llrp/binutil"
-//"github.com/iomz/golemu"
+	"bytes"
+	"encoding/gob"
+	"os"
+	"testing"
 )
 
-/*
-func benchmarkEngineGeneration(size int, constructor EngineConstructor, b *testing.B) {
-	// Load up the subs from the file
-	largeSubsCSV := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/large-subs.csv"
-	largeSubs := LoadFiltersFromCSVFile(largeSubsCSV)
-
-	// cap the ByteSubscriptions with the given size
-	limitedSubs := ByteSubscriptions{}
-	keys := largeSubs.Keys()
-	rand.Seed(time.Now().UTC().UnixNano())
-	perms := rand.Perm(len(keys))
-	for n, i := range perms {
-		if n < size {
-			limitedSubs[keys[i]] = largeSubs[keys[i]]
-		} else {
-			break
-		}
-		if n+1 == len(keys) {
-			b.Fatal("given subscription size is larger than the testdata available")
-		}
-	}
-
-	b.ResetTimer()
-	engine := constructor(limitedSubs)
+func benchmarkEngineGenerationFromNSubs(nSubs int, constructor EngineConstructor, b *testing.B) {
 	b.StopTimer()
-
-	// measure the size of the generated engine
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(engine)
-	if err != nil {
-		b.Fatal(err)
+	for i := 0; i < b.N; i++ {
+		sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+		b.StartTimer()
+		engine := constructor(sub)
+		b.StopTimer()
+		// measure the size of the generated engine
+		var buf bytes.Buffer
+		enc := gob.NewEncoder(&buf)
+		err := enc.Encode(engine)
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Logf("the resulting engine size: %v bytes", buf.Len())
 	}
-	b.Logf("the resulting engine size: %v bytes", buf.Len())
 }
 
+// List engine generation 100-1000
+func BenchmarkEngineGenList100(b *testing.B) {
+	benchmarkEngineGenerationFromNSubs(100, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList200(b *testing.B) {
+	benchmarkEngineGeneration(200, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList300(b *testing.B) {
+	benchmarkEngineGeneration(300, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList400(b *testing.B) {
+	benchmarkEngineGeneration(400, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList500(b *testing.B) {
+	benchmarkEngineGeneration(500, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList600(b *testing.B) {
+	benchmarkEngineGeneration(600, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList700(b *testing.B) {
+	benchmarkEngineGeneration(700, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList800(b *testing.B) {
+	benchmarkEngineGeneration(800, AvailableEngines["List"], b)
+}
+func BenchmarkEngineGenList900(b *testing.B) {
+	benchmarkEngineGeneration(900, AvailableEngines["List"], b)
+}
 func BenchmarkEngineGenList1000(b *testing.B) {
 	benchmarkEngineGeneration(1000, AvailableEngines["List"], b)
 }
 
-func BenchmarkEngineGenList2000(b *testing.B) {
-	benchmarkEngineGeneration(2000, AvailableEngines["List"], b)
+// Patricia engine generation 100-1000
+func BenchmarkEngineGenPatricia100(b *testing.B) {
+	benchmarkEngineGeneration(100, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList3000(b *testing.B) {
-	benchmarkEngineGeneration(3000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia200(b *testing.B) {
+	benchmarkEngineGeneration(200, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList4000(b *testing.B) {
-	benchmarkEngineGeneration(4000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia300(b *testing.B) {
+	benchmarkEngineGeneration(300, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList5000(b *testing.B) {
-	benchmarkEngineGeneration(5000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia400(b *testing.B) {
+	benchmarkEngineGeneration(400, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList6000(b *testing.B) {
-	benchmarkEngineGeneration(6000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia500(b *testing.B) {
+	benchmarkEngineGeneration(500, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList7000(b *testing.B) {
-	benchmarkEngineGeneration(7000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia600(b *testing.B) {
+	benchmarkEngineGeneration(600, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList8000(b *testing.B) {
-	benchmarkEngineGeneration(8000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia700(b *testing.B) {
+	benchmarkEngineGeneration(700, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList9000(b *testing.B) {
-	benchmarkEngineGeneration(9000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia800(b *testing.B) {
+	benchmarkEngineGeneration(800, AvailableEngines["PatriciaTrie"], b)
 }
-
-func BenchmarkEngineGenList10000(b *testing.B) {
-	benchmarkEngineGeneration(10000, AvailableEngines["List"], b)
+func BenchmarkEngineGenPatricia900(b *testing.B) {
+	benchmarkEngineGeneration(900, AvailableEngines["PatriciaTrie"], b)
 }
-
 func BenchmarkEngineGenPatricia1000(b *testing.B) {
 	benchmarkEngineGeneration(1000, AvailableEngines["PatriciaTrie"], b)
 }
 
-func BenchmarkEngineGenPatricia2000(b *testing.B) {
-	benchmarkEngineGeneration(2000, AvailableEngines["PatriciaTrie"], b)
+// Splay engine generation 100-1000
+func BenchmarkEngineGenSplay100(b *testing.B) {
+	benchmarkEngineGeneration(100, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia3000(b *testing.B) {
-	benchmarkEngineGeneration(3000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay200(b *testing.B) {
+	benchmarkEngineGeneration(200, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia4000(b *testing.B) {
-	benchmarkEngineGeneration(4000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay300(b *testing.B) {
+	benchmarkEngineGeneration(300, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia5000(b *testing.B) {
-	benchmarkEngineGeneration(5000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay400(b *testing.B) {
+	benchmarkEngineGeneration(400, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia6000(b *testing.B) {
-	benchmarkEngineGeneration(6000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay500(b *testing.B) {
+	benchmarkEngineGeneration(500, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia7000(b *testing.B) {
-	benchmarkEngineGeneration(7000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay600(b *testing.B) {
+	benchmarkEngineGeneration(600, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia8000(b *testing.B) {
-	benchmarkEngineGeneration(8000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay700(b *testing.B) {
+	benchmarkEngineGeneration(700, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia9000(b *testing.B) {
-	benchmarkEngineGeneration(9000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay800(b *testing.B) {
+	benchmarkEngineGeneration(800, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenPatricia10000(b *testing.B) {
-	benchmarkEngineGeneration(10000, AvailableEngines["PatriciaTrie"], b)
+func BenchmarkEngineGenSplay900(b *testing.B) {
+	benchmarkEngineGeneration(900, AvailableEngines["SplayTree"], b)
 }
-
 func BenchmarkEngineGenSplay1000(b *testing.B) {
 	benchmarkEngineGeneration(1000, AvailableEngines["SplayTree"], b)
 }
-
-func BenchmarkEngineGenSplay2000(b *testing.B) {
-	benchmarkEngineGeneration(2000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay3000(b *testing.B) {
-	benchmarkEngineGeneration(3000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay4000(b *testing.B) {
-	benchmarkEngineGeneration(4000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay5000(b *testing.B) {
-	benchmarkEngineGeneration(5000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay6000(b *testing.B) {
-	benchmarkEngineGeneration(6000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay7000(b *testing.B) {
-	benchmarkEngineGeneration(7000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay8000(b *testing.B) {
-	benchmarkEngineGeneration(8000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay9000(b *testing.B) {
-	benchmarkEngineGeneration(9000, AvailableEngines["SplayTree"], b)
-}
-
-func BenchmarkEngineGenSplay10000(b *testing.B) {
-	benchmarkEngineGeneration(10000, AvailableEngines["SplayTree"], b)
-}
-*/
