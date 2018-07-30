@@ -8,6 +8,7 @@ package filtering
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -35,93 +36,93 @@ func BenchmarkEngineGenList100(b *testing.B) {
 	benchmarkEngineGenerationFromNSubs(100, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList200(b *testing.B) {
-	benchmarkEngineGeneration(200, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(200, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList300(b *testing.B) {
-	benchmarkEngineGeneration(300, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(300, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList400(b *testing.B) {
-	benchmarkEngineGeneration(400, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(400, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList500(b *testing.B) {
-	benchmarkEngineGeneration(500, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(500, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList600(b *testing.B) {
-	benchmarkEngineGeneration(600, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(600, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList700(b *testing.B) {
-	benchmarkEngineGeneration(700, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(700, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList800(b *testing.B) {
-	benchmarkEngineGeneration(800, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(800, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList900(b *testing.B) {
-	benchmarkEngineGeneration(900, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(900, AvailableEngines["List"], b)
 }
 func BenchmarkEngineGenList1000(b *testing.B) {
-	benchmarkEngineGeneration(1000, AvailableEngines["List"], b)
+	benchmarkEngineGenerationFromNSubs(1000, AvailableEngines["List"], b)
 }
 
 // Patricia engine generation 100-1000
 func BenchmarkEngineGenPatricia100(b *testing.B) {
-	benchmarkEngineGeneration(100, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(100, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia200(b *testing.B) {
-	benchmarkEngineGeneration(200, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(200, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia300(b *testing.B) {
-	benchmarkEngineGeneration(300, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(300, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia400(b *testing.B) {
-	benchmarkEngineGeneration(400, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(400, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia500(b *testing.B) {
-	benchmarkEngineGeneration(500, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(500, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia600(b *testing.B) {
-	benchmarkEngineGeneration(600, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(600, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia700(b *testing.B) {
-	benchmarkEngineGeneration(700, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(700, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia800(b *testing.B) {
-	benchmarkEngineGeneration(800, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(800, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia900(b *testing.B) {
-	benchmarkEngineGeneration(900, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(900, AvailableEngines["PatriciaTrie"], b)
 }
 func BenchmarkEngineGenPatricia1000(b *testing.B) {
-	benchmarkEngineGeneration(1000, AvailableEngines["PatriciaTrie"], b)
+	benchmarkEngineGenerationFromNSubs(1000, AvailableEngines["PatriciaTrie"], b)
 }
 
 // Splay engine generation 100-1000
 func BenchmarkEngineGenSplay100(b *testing.B) {
-	benchmarkEngineGeneration(100, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(100, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay200(b *testing.B) {
-	benchmarkEngineGeneration(200, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(200, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay300(b *testing.B) {
-	benchmarkEngineGeneration(300, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(300, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay400(b *testing.B) {
-	benchmarkEngineGeneration(400, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(400, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay500(b *testing.B) {
-	benchmarkEngineGeneration(500, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(500, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay600(b *testing.B) {
-	benchmarkEngineGeneration(600, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(600, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay700(b *testing.B) {
-	benchmarkEngineGeneration(700, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(700, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay800(b *testing.B) {
-	benchmarkEngineGeneration(800, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(800, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay900(b *testing.B) {
-	benchmarkEngineGeneration(900, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(900, AvailableEngines["SplayTree"], b)
 }
 func BenchmarkEngineGenSplay1000(b *testing.B) {
-	benchmarkEngineGeneration(1000, AvailableEngines["SplayTree"], b)
+	benchmarkEngineGenerationFromNSubs(1000, AvailableEngines["SplayTree"], b)
 }
