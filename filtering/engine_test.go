@@ -15,20 +15,21 @@ import (
 
 func benchmarkEngineGenerationFromNSubs(nSubs int, constructor EngineConstructor, b *testing.B) {
 	b.StopTimer()
+	var engine Engine
 	for i := 0; i < b.N; i++ {
 		sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
 		b.StartTimer()
-		engine := constructor(sub)
+		engine = constructor(sub)
 		b.StopTimer()
-		// measure the size of the generated engine
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		err := enc.Encode(engine)
-		if err != nil {
-			b.Fatal(err)
-		}
-		b.Logf("the resulting engine size: %v bytes", buf.Len())
 	}
+	// measure the size of the generated engine
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(engine)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Logf("the resulting engine size: %v bytes", buf.Len())
 }
 
 // List engine generation 100-1000

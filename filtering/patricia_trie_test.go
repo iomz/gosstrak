@@ -5,14 +5,19 @@
 
 package filtering
 
-/*
-
 import (
 	"bytes"
-	"reflect"
+	"encoding/binary"
+	"fmt"
+	"math/rand"
+	"os"
 	"testing"
+
+	"github.com/iomz/go-llrp"
+	"github.com/iomz/go-llrp/binutil"
 )
 
+/*
 func TestPatriciaTrie_Dump(t *testing.T) {
 	type fields struct {
 		reportURI    string
@@ -1716,3 +1721,107 @@ func TestPatriciaTrie_Name(t *testing.T) {
 	}
 }
 */
+
+func benchmarkPatriciaFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	patriciaEngine := NewPatriciaTrie(sub)
+
+	// prepare the workload
+	largeTagsGOB := os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-tags.gob", nSubs)
+	var largeTags llrp.Tags
+	binutil.Load(largeTagsGOB, &largeTags)
+
+	var res []*llrp.ReadEvent
+	perms := rand.Perm(len(largeTags))
+	for count, i := range perms {
+		if count < nTags {
+			t := largeTags[i]
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, t.PCBits)
+			if err != nil {
+				b.Fatal(err)
+			}
+			res = append(res, &llrp.ReadEvent{PC: buf.Bytes(), ID: t.EPC})
+		} else {
+			break
+		}
+		if count == len(largeTags) {
+			b.Skip("given tag size is larger than the testdata available")
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, re := range res {
+			pureIdentity, reportURIs, err := patriciaEngine.Search(*re)
+			if err != nil {
+				b.Error(err)
+			}
+			if len(reportURIs) == 0 {
+				b.Errorf("no match found for %v", pureIdentity)
+			}
+		}
+	}
+}
+
+// Impact from n_{E}
+func BenchmarkPatriciaFilter100Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 100, b)
+}
+func BenchmarkPatriciaFilter200Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(200, 100, b)
+}
+func BenchmarkPatriciaFilter300Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(300, 100, b)
+}
+func BenchmarkPatriciaFilter400Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(400, 100, b)
+}
+func BenchmarkPatriciaFilter500Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(500, 100, b)
+}
+func BenchmarkPatriciaFilter600Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(600, 100, b)
+}
+func BenchmarkPatriciaFilter700Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(700, 100, b)
+}
+func BenchmarkPatriciaFilter800Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(800, 100, b)
+}
+func BenchmarkPatriciaFilter900Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(900, 100, b)
+}
+func BenchmarkPatriciaFilter1000Tags100Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(1000, 100, b)
+}
+
+// Impact from n_{S}
+func BenchmarkPatriciaFilter100Tags200Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 200, b)
+}
+func BenchmarkPatriciaFilter100Tags300Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 300, b)
+}
+func BenchmarkPatriciaFilter100Tags400Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 400, b)
+}
+func BenchmarkPatriciaFilter100Tags500Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 500, b)
+}
+func BenchmarkPatriciaFilter100Tags600Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 600, b)
+}
+func BenchmarkPatriciaFilter100Tags700Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 700, b)
+}
+func BenchmarkPatriciaFilter100Tags800Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 800, b)
+}
+func BenchmarkPatriciaFilter100Tags900Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 900, b)
+}
+func BenchmarkPatriciaFilter100Tags1000Subs(b *testing.B) {
+	benchmarkPatriciaFilterNTagsNSubs(100, 1000, b)
+}

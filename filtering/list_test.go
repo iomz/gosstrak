@@ -6,9 +6,16 @@
 package filtering
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math/rand"
+	"os"
 	"reflect"
 	"testing"
-	//"github.com/iomz/gosstrak/tdt"
+
+	"github.com/iomz/go-llrp"
+	"github.com/iomz/go-llrp/binutil"
 )
 
 func TestList_MarshalBinary(t *testing.T) {
@@ -149,3 +156,69 @@ func TestList_Name(t *testing.T) {
 		})
 	}
 }
+
+func benchmarkListFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	listEngine := NewList(sub)
+
+	// prepare the workload
+	largeTagsGOB := os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-tags.gob", nSubs)
+	var largeTags llrp.Tags
+	binutil.Load(largeTagsGOB, &largeTags)
+
+	var res []*llrp.ReadEvent
+	perms := rand.Perm(len(largeTags))
+	for count, i := range perms {
+		if count < nTags {
+			t := largeTags[i]
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, t.PCBits)
+			if err != nil {
+				b.Fatal(err)
+			}
+			res = append(res, &llrp.ReadEvent{PC: buf.Bytes(), ID: t.EPC})
+		} else {
+			break
+		}
+		if count == len(largeTags) {
+			b.Skip("given tag size is larger than the testdata available")
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, re := range res {
+			pureIdentity, reportURIs, err := listEngine.Search(*re)
+			if err != nil {
+				b.Error(err)
+			}
+			if len(reportURIs) == 0 {
+				b.Errorf("no match found for %v", pureIdentity)
+			}
+		}
+	}
+}
+
+// Impact from n_{E}
+func BenchmarkListFilter100Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 100, b) }
+func BenchmarkListFilter200Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(200, 100, b) }
+func BenchmarkListFilter300Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(300, 100, b) }
+func BenchmarkListFilter400Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(400, 100, b) }
+func BenchmarkListFilter500Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(500, 100, b) }
+func BenchmarkListFilter600Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(600, 100, b) }
+func BenchmarkListFilter700Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(700, 100, b) }
+func BenchmarkListFilter800Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(800, 100, b) }
+func BenchmarkListFilter900Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(900, 100, b) }
+func BenchmarkListFilter1000Tags100Subs(b *testing.B) { benchmarkListFilterNTagsNSubs(1000, 100, b) }
+
+// Impact from n_{S}
+func BenchmarkListFilter100Tags200Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 200, b) }
+func BenchmarkListFilter100Tags300Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 300, b) }
+func BenchmarkListFilter100Tags400Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 400, b) }
+func BenchmarkListFilter100Tags500Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 500, b) }
+func BenchmarkListFilter100Tags600Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 600, b) }
+func BenchmarkListFilter100Tags700Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 700, b) }
+func BenchmarkListFilter100Tags800Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 800, b) }
+func BenchmarkListFilter100Tags900Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 900, b) }
+func BenchmarkListFilter100Tags1000Subs(b *testing.B) { benchmarkListFilterNTagsNSubs(100, 1000, b) }

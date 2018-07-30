@@ -5,13 +5,19 @@
 
 package filtering
 
-/*
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math/rand"
+	"os"
 	"testing"
 
-	"github.com/iomz/gosstrak/tdt"
+	"github.com/iomz/go-llrp"
+	"github.com/iomz/go-llrp/binutil"
 )
 
+/*
 func TestNewSplayTree(t *testing.T) {
 	type args struct {
 		sub ByteSubscriptions
@@ -99,3 +105,69 @@ func TestSplayTree_Name(t *testing.T) {
 	}
 }
 */
+
+func benchmarkSplayFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	splayEngine := NewSplayTree(sub)
+
+	// prepare the workload
+	largeTagsGOB := os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-tags.gob", nSubs)
+	var largeTags llrp.Tags
+	binutil.Load(largeTagsGOB, &largeTags)
+
+	var res []*llrp.ReadEvent
+	perms := rand.Perm(len(largeTags))
+	for count, i := range perms {
+		if count < nTags {
+			t := largeTags[i]
+			buf := new(bytes.Buffer)
+			err := binary.Write(buf, binary.BigEndian, t.PCBits)
+			if err != nil {
+				b.Fatal(err)
+			}
+			res = append(res, &llrp.ReadEvent{PC: buf.Bytes(), ID: t.EPC})
+		} else {
+			break
+		}
+		if count == len(largeTags) {
+			b.Skip("given tag size is larger than the testdata available")
+		}
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, re := range res {
+			pureIdentity, reportURIs, err := splayEngine.Search(*re)
+			if err != nil {
+				b.Error(err)
+			}
+			if len(reportURIs) == 0 {
+				b.Errorf("no match found for %v", pureIdentity)
+			}
+		}
+	}
+}
+
+// Impact from n_{E}
+func BenchmarkSplayFilter100Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 100, b) }
+func BenchmarkSplayFilter200Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(200, 100, b) }
+func BenchmarkSplayFilter300Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(300, 100, b) }
+func BenchmarkSplayFilter400Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(400, 100, b) }
+func BenchmarkSplayFilter500Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(500, 100, b) }
+func BenchmarkSplayFilter600Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(600, 100, b) }
+func BenchmarkSplayFilter700Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(700, 100, b) }
+func BenchmarkSplayFilter800Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(800, 100, b) }
+func BenchmarkSplayFilter900Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(900, 100, b) }
+func BenchmarkSplayFilter1000Tags100Subs(b *testing.B) { benchmarkSplayFilterNTagsNSubs(1000, 100, b) }
+
+// Impact from n_{S}
+func BenchmarkSplayFilter100Tags200Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 200, b) }
+func BenchmarkSplayFilter100Tags300Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 300, b) }
+func BenchmarkSplayFilter100Tags400Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 400, b) }
+func BenchmarkSplayFilter100Tags500Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 500, b) }
+func BenchmarkSplayFilter100Tags600Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 600, b) }
+func BenchmarkSplayFilter100Tags700Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 700, b) }
+func BenchmarkSplayFilter100Tags800Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 800, b) }
+func BenchmarkSplayFilter100Tags900Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 900, b) }
+func BenchmarkSplayFilter100Tags1000Subs(b *testing.B) { benchmarkSplayFilterNTagsNSubs(100, 1000, b) }
