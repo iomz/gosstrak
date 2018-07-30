@@ -96,13 +96,13 @@ func TestFilterLists_IndexOf(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		lf   FilterLists
+		lf   ListFilters
 		args args
 		want int
 	}{
 		{
 			"Contains true",
-			FilterLists{
+			ListFilters{
 				&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 				&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				&ExactMatch{NewFilter("001100110000", 0), "http://localhost:8888/3-3-0"},
@@ -115,7 +115,7 @@ func TestFilterLists_IndexOf(t *testing.T) {
 		},
 		{
 			"Contains false",
-			FilterLists{
+			ListFilters{
 				&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 				&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				&ExactMatch{NewFilter("001100110000", 0), "http://localhost:8888/3-3-0"},
