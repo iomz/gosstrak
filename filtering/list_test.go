@@ -29,7 +29,7 @@ func TestList_MarshalBinary(t *testing.T) {
 		{
 			"simple marshal",
 			&List{
-				ListFilters{
+				FilterLists{
 					&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 					&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				},
@@ -68,7 +68,7 @@ func TestList_UnmarshalBinary(t *testing.T) {
 		{
 			"simple unmarshal",
 			&List{
-				ListFilters{
+				FilterLists{
 					&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 					&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				},
@@ -90,19 +90,19 @@ func TestList_UnmarshalBinary(t *testing.T) {
 	}
 }
 
-func TestListFilters_IndexOf(t *testing.T) {
+func TestFilterLists_IndexOf(t *testing.T) {
 	type args struct {
 		em *ExactMatch
 	}
 	tests := []struct {
 		name string
-		lf   ListFilters
+		lf   FilterLists
 		args args
 		want int
 	}{
 		{
 			"Contains true",
-			ListFilters{
+			FilterLists{
 				&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 				&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				&ExactMatch{NewFilter("001100110000", 0), "http://localhost:8888/3-3-0"},
@@ -115,7 +115,7 @@ func TestListFilters_IndexOf(t *testing.T) {
 		},
 		{
 			"Contains false",
-			ListFilters{
+			FilterLists{
 				&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
 				&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
 				&ExactMatch{NewFilter("001100110000", 0), "http://localhost:8888/3-3-0"},
@@ -130,7 +130,7 @@ func TestListFilters_IndexOf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.lf.IndexOf(tt.args.em); got != tt.want {
-				t.Errorf("ListFilters.IndexOf() = %v, want %v", got, tt.want)
+				t.Errorf("FilterLists.IndexOf() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -157,7 +157,7 @@ func TestList_Name(t *testing.T) {
 	}
 }
 
-func benchmarkListFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+func benchmarkFilterListNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 	// build the engine
 	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
 	listEngine := NewList(sub)
@@ -201,24 +201,24 @@ func benchmarkListFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 }
 
 // Impact from n_{E}
-func BenchmarkListFilter100Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 100, b) }
-func BenchmarkListFilter200Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(200, 100, b) }
-func BenchmarkListFilter300Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(300, 100, b) }
-func BenchmarkListFilter400Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(400, 100, b) }
-func BenchmarkListFilter500Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(500, 100, b) }
-func BenchmarkListFilter600Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(600, 100, b) }
-func BenchmarkListFilter700Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(700, 100, b) }
-func BenchmarkListFilter800Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(800, 100, b) }
-func BenchmarkListFilter900Tags100Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(900, 100, b) }
-func BenchmarkListFilter1000Tags100Subs(b *testing.B) { benchmarkListFilterNTagsNSubs(1000, 100, b) }
+func BenchmarkFilterList100Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 100, b) }
+func BenchmarkFilterList200Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(200, 100, b) }
+func BenchmarkFilterList300Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(300, 100, b) }
+func BenchmarkFilterList400Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(400, 100, b) }
+func BenchmarkFilterList500Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(500, 100, b) }
+func BenchmarkFilterList600Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(600, 100, b) }
+func BenchmarkFilterList700Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(700, 100, b) }
+func BenchmarkFilterList800Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(800, 100, b) }
+func BenchmarkFilterList900Tags100Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(900, 100, b) }
+func BenchmarkFilterList1000Tags100Subs(b *testing.B) { benchmarkFilterListNTagsNSubs(1000, 100, b) }
 
 // Impact from n_{S}
-func BenchmarkListFilter100Tags200Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 200, b) }
-func BenchmarkListFilter100Tags300Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 300, b) }
-func BenchmarkListFilter100Tags400Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 400, b) }
-func BenchmarkListFilter100Tags500Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 500, b) }
-func BenchmarkListFilter100Tags600Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 600, b) }
-func BenchmarkListFilter100Tags700Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 700, b) }
-func BenchmarkListFilter100Tags800Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 800, b) }
-func BenchmarkListFilter100Tags900Subs(b *testing.B)  { benchmarkListFilterNTagsNSubs(100, 900, b) }
-func BenchmarkListFilter100Tags1000Subs(b *testing.B) { benchmarkListFilterNTagsNSubs(100, 1000, b) }
+func BenchmarkFilterList100Tags200Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 200, b) }
+func BenchmarkFilterList100Tags300Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 300, b) }
+func BenchmarkFilterList100Tags400Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 400, b) }
+func BenchmarkFilterList100Tags500Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 500, b) }
+func BenchmarkFilterList100Tags600Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 600, b) }
+func BenchmarkFilterList100Tags700Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 700, b) }
+func BenchmarkFilterList100Tags800Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 800, b) }
+func BenchmarkFilterList100Tags900Subs(b *testing.B)  { benchmarkFilterListNTagsNSubs(100, 900, b) }
+func BenchmarkFilterList100Tags1000Subs(b *testing.B) { benchmarkFilterListNTagsNSubs(100, 1000, b) }

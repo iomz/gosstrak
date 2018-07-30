@@ -106,7 +106,7 @@ func TestSplayTree_Name(t *testing.T) {
 }
 */
 
-func benchmarkSplayFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+func benchmarkFilterSplayNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 	// build the engine
 	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
 	splayEngine := NewSplayTree(sub)
@@ -150,24 +150,24 @@ func benchmarkSplayFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 }
 
 // Impact from n_{E}
-func BenchmarkSplayFilter100Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 100, b) }
-func BenchmarkSplayFilter200Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(200, 100, b) }
-func BenchmarkSplayFilter300Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(300, 100, b) }
-func BenchmarkSplayFilter400Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(400, 100, b) }
-func BenchmarkSplayFilter500Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(500, 100, b) }
-func BenchmarkSplayFilter600Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(600, 100, b) }
-func BenchmarkSplayFilter700Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(700, 100, b) }
-func BenchmarkSplayFilter800Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(800, 100, b) }
-func BenchmarkSplayFilter900Tags100Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(900, 100, b) }
-func BenchmarkSplayFilter1000Tags100Subs(b *testing.B) { benchmarkSplayFilterNTagsNSubs(1000, 100, b) }
+func BenchmarkFilterSplay100Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 100, b) }
+func BenchmarkFilterSplay200Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(200, 100, b) }
+func BenchmarkFilterSplay300Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(300, 100, b) }
+func BenchmarkFilterSplay400Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(400, 100, b) }
+func BenchmarkFilterSplay500Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(500, 100, b) }
+func BenchmarkFilterSplay600Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(600, 100, b) }
+func BenchmarkFilterSplay700Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(700, 100, b) }
+func BenchmarkFilterSplay800Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(800, 100, b) }
+func BenchmarkFilterSplay900Tags100Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(900, 100, b) }
+func BenchmarkFilterSplay1000Tags100Subs(b *testing.B) { benchmarkFilterSplayNTagsNSubs(1000, 100, b) }
 
 // Impact from n_{S}
-func BenchmarkSplayFilter100Tags200Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 200, b) }
-func BenchmarkSplayFilter100Tags300Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 300, b) }
-func BenchmarkSplayFilter100Tags400Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 400, b) }
-func BenchmarkSplayFilter100Tags500Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 500, b) }
-func BenchmarkSplayFilter100Tags600Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 600, b) }
-func BenchmarkSplayFilter100Tags700Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 700, b) }
-func BenchmarkSplayFilter100Tags800Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 800, b) }
-func BenchmarkSplayFilter100Tags900Subs(b *testing.B)  { benchmarkSplayFilterNTagsNSubs(100, 900, b) }
-func BenchmarkSplayFilter100Tags1000Subs(b *testing.B) { benchmarkSplayFilterNTagsNSubs(100, 1000, b) }
+func BenchmarkFilterSplay100Tags200Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 200, b) }
+func BenchmarkFilterSplay100Tags300Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 300, b) }
+func BenchmarkFilterSplay100Tags400Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 400, b) }
+func BenchmarkFilterSplay100Tags500Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 500, b) }
+func BenchmarkFilterSplay100Tags600Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 600, b) }
+func BenchmarkFilterSplay100Tags700Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 700, b) }
+func BenchmarkFilterSplay100Tags800Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 800, b) }
+func BenchmarkFilterSplay100Tags900Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 900, b) }
+func BenchmarkFilterSplay100Tags1000Subs(b *testing.B) { benchmarkFilterSplayNTagsNSubs(100, 1000, b) }

@@ -1722,7 +1722,7 @@ func TestPatriciaTrie_Name(t *testing.T) {
 }
 */
 
-func benchmarkPatriciaFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
+func benchmarkFilterPatriciaNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 	// build the engine
 	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
 	patriciaEngine := NewPatriciaTrie(sub)
@@ -1766,62 +1766,62 @@ func benchmarkPatriciaFilterNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 }
 
 // Impact from n_{E}
-func BenchmarkPatriciaFilter100Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 100, b)
+func BenchmarkFilterPatricia100Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 100, b)
 }
-func BenchmarkPatriciaFilter200Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(200, 100, b)
+func BenchmarkFilterPatricia200Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(200, 100, b)
 }
-func BenchmarkPatriciaFilter300Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(300, 100, b)
+func BenchmarkFilterPatricia300Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(300, 100, b)
 }
-func BenchmarkPatriciaFilter400Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(400, 100, b)
+func BenchmarkFilterPatricia400Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(400, 100, b)
 }
-func BenchmarkPatriciaFilter500Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(500, 100, b)
+func BenchmarkFilterPatricia500Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(500, 100, b)
 }
-func BenchmarkPatriciaFilter600Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(600, 100, b)
+func BenchmarkFilterPatricia600Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(600, 100, b)
 }
-func BenchmarkPatriciaFilter700Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(700, 100, b)
+func BenchmarkFilterPatricia700Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(700, 100, b)
 }
-func BenchmarkPatriciaFilter800Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(800, 100, b)
+func BenchmarkFilterPatricia800Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(800, 100, b)
 }
-func BenchmarkPatriciaFilter900Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(900, 100, b)
+func BenchmarkFilterPatricia900Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(900, 100, b)
 }
-func BenchmarkPatriciaFilter1000Tags100Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(1000, 100, b)
+func BenchmarkFilterPatricia1000Tags100Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(1000, 100, b)
 }
 
 // Impact from n_{S}
-func BenchmarkPatriciaFilter100Tags200Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 200, b)
+func BenchmarkFilterPatricia100Tags200Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 200, b)
 }
-func BenchmarkPatriciaFilter100Tags300Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 300, b)
+func BenchmarkFilterPatricia100Tags300Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 300, b)
 }
-func BenchmarkPatriciaFilter100Tags400Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 400, b)
+func BenchmarkFilterPatricia100Tags400Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 400, b)
 }
-func BenchmarkPatriciaFilter100Tags500Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 500, b)
+func BenchmarkFilterPatricia100Tags500Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 500, b)
 }
-func BenchmarkPatriciaFilter100Tags600Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 600, b)
+func BenchmarkFilterPatricia100Tags600Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 600, b)
 }
-func BenchmarkPatriciaFilter100Tags700Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 700, b)
+func BenchmarkFilterPatricia100Tags700Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 700, b)
 }
-func BenchmarkPatriciaFilter100Tags800Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 800, b)
+func BenchmarkFilterPatricia100Tags800Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 800, b)
 }
-func BenchmarkPatriciaFilter100Tags900Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 900, b)
+func BenchmarkFilterPatricia100Tags900Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 900, b)
 }
-func BenchmarkPatriciaFilter100Tags1000Subs(b *testing.B) {
-	benchmarkPatriciaFilterNTagsNSubs(100, 1000, b)
+func BenchmarkFilterPatricia100Tags1000Subs(b *testing.B) {
+	benchmarkFilterPatriciaNTagsNSubs(100, 1000, b)
 }
