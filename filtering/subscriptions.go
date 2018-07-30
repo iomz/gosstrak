@@ -57,6 +57,65 @@ func (sub Subscriptions) Keys() []string {
 	return ks
 }
 
+// MarshalBinary overwrites the marshaller in gob encoding *Subscription
+func (sub Subscriptions) MarshalBinary() (_ []byte, err error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+
+	// size of subscriptions
+	enc.Encode(len(sub))
+
+	for _, fs := range sub.Keys() {
+		// filter string
+		enc.Encode(fs)
+
+		// size of dests
+		enc.Encode(len(sub[fs]))
+		for _, dest := range sub[fs] {
+			// dest
+			enc.Encode(dest)
+		}
+	}
+
+	//buf.Encode
+	return buf.Bytes(), err
+}
+
+// UnmarshalBinary overwrites the unmarshaller in gob decoding *Subscription
+func (sub Subscriptions) UnmarshalBinary(data []byte) (err error) {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+
+	// size of subscriptions
+	var subSize int
+	if err = dec.Decode(&subSize); err != nil {
+		return
+	}
+
+	for i := 0; i < subSize; i++ {
+		var fs string
+		if err = dec.Decode(&fs); err != nil {
+			return
+		}
+
+		// size of dests
+		var destSize int
+		if err = dec.Decode(&destSize); err != nil {
+			return
+		}
+		var dests []string
+		for j := 0; j < destSize; j++ {
+			var dest string
+			if err = dec.Decode(&dest); err != nil {
+				return
+			}
+			dests = append(dests, dest)
+		}
+		sub[fs] = dests
+	}
+
+	return
+}
+
 // ToByteSubscriptions preprocess the subscription and convert them in bytes
 func (sub Subscriptions) ToByteSubscriptions() ByteSubscriptions {
 	bsub := ByteSubscriptions{}

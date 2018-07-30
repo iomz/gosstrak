@@ -6,7 +6,8 @@
 package filtering
 
 import (
-	//"bytes"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"os"
 	"reflect"
@@ -183,19 +184,29 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 }
 
 func benchmarkLoadNSubs(nSubs int, b *testing.B) {
+	var sub Subscriptions
 	for i := 0; i < b.N; i++ {
-		sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
-		_ = sub
+		sub = LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
 	}
+	b.StopTimer()
+
+	// measure the size of the generated engine
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(sub)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Logf("the resulting engine size: %v bytes", buf.Len())
 }
 
-func BenchmarkLoad100Subs(b *testing.B)  { benchmarkLoadNSubs(100, b) }
-func BenchmarkLoad200Subs(b *testing.B)  { benchmarkLoadNSubs(200, b) }
-func BenchmarkLoad300Subs(b *testing.B)  { benchmarkLoadNSubs(300, b) }
-func BenchmarkLoad400Subs(b *testing.B)  { benchmarkLoadNSubs(400, b) }
-func BenchmarkLoad500Subs(b *testing.B)  { benchmarkLoadNSubs(500, b) }
-func BenchmarkLoad600Subs(b *testing.B)  { benchmarkLoadNSubs(600, b) }
-func BenchmarkLoad700Subs(b *testing.B)  { benchmarkLoadNSubs(700, b) }
-func BenchmarkLoad800Subs(b *testing.B)  { benchmarkLoadNSubs(800, b) }
-func BenchmarkLoad900Subs(b *testing.B)  { benchmarkLoadNSubs(900, b) }
-func BenchmarkLoad1000Subs(b *testing.B) { benchmarkLoadNSubs(1000, b) }
+func BenchmarkEngineGenLegacy100Subs(b *testing.B)  { benchmarkLoadNSubs(100, b) }
+func BenchmarkEngineGenLegacy200Subs(b *testing.B)  { benchmarkLoadNSubs(200, b) }
+func BenchmarkEngineGenLegacy300Subs(b *testing.B)  { benchmarkLoadNSubs(300, b) }
+func BenchmarkEngineGenLegacy400Subs(b *testing.B)  { benchmarkLoadNSubs(400, b) }
+func BenchmarkEngineGenLegacy500Subs(b *testing.B)  { benchmarkLoadNSubs(500, b) }
+func BenchmarkEngineGenLegacy600Subs(b *testing.B)  { benchmarkLoadNSubs(600, b) }
+func BenchmarkEngineGenLegacy700Subs(b *testing.B)  { benchmarkLoadNSubs(700, b) }
+func BenchmarkEngineGenLegacy800Subs(b *testing.B)  { benchmarkLoadNSubs(800, b) }
+func BenchmarkEngineGenLegacy900Subs(b *testing.B)  { benchmarkLoadNSubs(900, b) }
+func BenchmarkEngineGenLegacy1000Subs(b *testing.B) { benchmarkLoadNSubs(1000, b) }
