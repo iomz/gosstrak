@@ -31,7 +31,7 @@ type UIIParam struct {
 }
 
 var (
-	NumRepeat = 89
+	NumRepeat = 1000
 	NumSerial = 10
 	DIR       = os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/benchset%v", NumRepeat*10/100*100)
 )
@@ -269,6 +269,13 @@ func main() {
 			Scheme:        "giai-96",
 			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
 			IARMaxDigits:  25 - cpLen,
+		}
+		cpLen = binutil.GenerateRandomInt(6, 11)
+		q <- UIIParam{
+			Type:          "epc",
+			Scheme:        "grai-96",
+			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
+			AssetType:     binutil.GenerateNLengthDigitString(12 - cpLen),
 		}
 		cpLen = binutil.GenerateRandomInt(6, 11)
 		q <- UIIParam{
