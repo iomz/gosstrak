@@ -83,7 +83,7 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 					EventCount:   eg.EventCount,
 					MatchedCount: eg.MatchedCount,
 				}
-				throughput := float64(eg.totalTime) / float64(eg.EventCount)
+				throughput := float64(eg.EventCount) / float64(eg.totalTime)
 				if throughput != 0 && !math.IsNaN(throughput) {
 					eg.CurrentThroughput = throughput
 					eg.managementChannel <- ManagementMessage{

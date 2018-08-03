@@ -61,9 +61,12 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				tags["engine"] = msg.Name
 				measurement = "traffic"
 			case EngineThroughput:
-				fields["us_per_event"] = msg.Value[0]
+				fields["event_per_us"] = msg.Value[0]
 				tags["engine"] = msg.Name
 				measurement = "throughput"
+			case SelectedEngine:
+				fields["engine"] = msg.Name
+				measurement = "selected_engine"
 			}
 			pt, err := client.NewPoint(measurement, tags, fields, time.Now())
 			if err != nil {

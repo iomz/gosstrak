@@ -8,6 +8,8 @@ package filtering
 import (
 	"log"
 	"reflect"
+	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/iomz/go-llrp"
@@ -20,7 +22,9 @@ type EngineFactory struct {
 	currentSubscriptions Subscriptions
 	productionSystem     map[string]*EngineGenerator
 	deploymentPriority   map[string]uint8
+	enginePerformance    sync.Map
 	currentEngineName    string
+	statInterval         int
 }
 
 // IsActive returns false if no engine is available
@@ -44,7 +48,8 @@ func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 // NewEngineFactory returns the pointer to a new EngineFactory instance
 func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
 	ef := &EngineFactory{
-		mainChannel: mc,
+		mainChannel:  mc,
+		statInterval: statInterval,
 	}
 
 	// Load saved subscriptions?
@@ -52,12 +57,14 @@ func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMes
 
 	// Load all the possible engines
 	ef.productionSystem = make(map[string]*EngineGenerator)
+	ef.enginePerformance = sync.Map{}
 	ef.generatorChannels = []chan ManagementMessage{}
 	for name, constructor := range AvailableEngines {
 		ch := make(chan ManagementMessage)
 		ef.generatorChannels = append(ef.generatorChannels, ch)
 		eg := NewEngineGenerator(name, constructor, statInterval, ch)
 		ef.productionSystem[name] = eg
+		ef.enginePerformance.Store(name, float64(0))
 	}
 
 	// Calculate the priority of deployment
@@ -82,7 +89,35 @@ func (ef *EngineFactory) Run() {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
 	go func() {
+		log.Println("[EngineFactory] setting up selective adoption handler")
+		intervalTicker := time.NewTicker(time.Duration(ef.statInterval) * time.Second)
+		for {
+			select {
+			case <-intervalTicker.C:
+				var ename string
+				perf := float64(0)
+				ef.enginePerformance.Range(func(k, v interface{}) bool {
+					if reflect.ValueOf(v).Float() > perf {
+						ename = reflect.ValueOf(k).String()
+						perf = reflect.ValueOf(v).Float()
+					}
+					return true
+				})
+				if ef.currentEngineName != ename && len(ename) != 0 {
+					log.Printf("[EngineFactory] %s replaces the currentEngine %s", ename, ef.currentEngineName)
+					ef.currentEngineName = ename
+				}
+				ef.mainChannel <- ManagementMessage{
+					Type:       SelectedEngine,
+					EngineName: ename,
+				}
+			}
+		}
+	}()
+
+	go func() {
 		log.Println("[EngineFactory] setting up managementChannel listener")
+
 		for {
 			_, val, ok := reflect.Select(cases)
 			if !ok {
@@ -143,6 +178,7 @@ func (ef *EngineFactory) Run() {
 			case TrafficStatus:
 				ef.mainChannel <- msg // bypass the status message from generators to main
 			case EngineStatus:
+				ef.enginePerformance.Store(msg.EngineName, msg.CurrentThroughput)
 				ef.mainChannel <- msg // bypass the status message from generators to main
 			}
 		}

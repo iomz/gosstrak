@@ -16,6 +16,7 @@ const (
 	DeployEngine
 	TrafficStatus
 	EngineStatus
+	SelectedEngine
 )
 
 // ManagementMessage holds management action for the EngineFactory

@@ -13,6 +13,8 @@ const (
 	Traffic StatMessageType = iota
 	// EngineThroughput message
 	EngineThroughput
+	// SelectedEngine message
+	SelectedEngine
 )
 
 // StatMessage carries stat

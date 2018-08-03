@@ -155,6 +155,13 @@ func run() {
 						Name:  msg.EngineName,
 					}
 				}
+			case filtering.SelectedEngine:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type: monitoring.SelectedEngine,
+						Name: msg.EngineName,
+					}
+				}
 			}
 		}
 		log.Fatalln("management channel closed, dying...")
