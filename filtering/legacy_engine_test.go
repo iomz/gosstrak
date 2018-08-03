@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
@@ -361,3 +362,64 @@ func BenchmarkFilterLegacy100Tags700Subs(b *testing.B)  { benchmarkFilterLegacyN
 func BenchmarkFilterLegacy100Tags800Subs(b *testing.B)  { benchmarkFilterLegacyNTagsNSubs(100, 800, b) }
 func BenchmarkFilterLegacy100Tags900Subs(b *testing.B)  { benchmarkFilterLegacyNTagsNSubs(100, 900, b) }
 func BenchmarkFilterLegacy100Tags1000Subs(b *testing.B) { benchmarkFilterLegacyNTagsNSubs(100, 1000, b) }
+
+func benchmarkAddLegacyNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	extsub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec.csv")
+	legacyEngine := NewLegacyEngine(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := extsub.Keys()[rand.Intn(len(extsub))]
+		subToAdd := Subscriptions{fs: extsub[fs]}
+		b.StartTimer()
+		legacyEngine.AddSubscription(subToAdd)
+		b.StopTimer()
+		legacyEngine.DeleteSubscription(subToAdd)
+	}
+}
+
+// Adding cost for legacy
+func BenchmarkAddLegacy100Subs(b *testing.B)  { benchmarkAddLegacyNSubs(100, b) }
+func BenchmarkAddLegacy200Subs(b *testing.B)  { benchmarkAddLegacyNSubs(200, b) }
+func BenchmarkAddLegacy300Subs(b *testing.B)  { benchmarkAddLegacyNSubs(300, b) }
+func BenchmarkAddLegacy400Subs(b *testing.B)  { benchmarkAddLegacyNSubs(400, b) }
+func BenchmarkAddLegacy500Subs(b *testing.B)  { benchmarkAddLegacyNSubs(500, b) }
+func BenchmarkAddLegacy600Subs(b *testing.B)  { benchmarkAddLegacyNSubs(600, b) }
+func BenchmarkAddLegacy700Subs(b *testing.B)  { benchmarkAddLegacyNSubs(700, b) }
+func BenchmarkAddLegacy800Subs(b *testing.B)  { benchmarkAddLegacyNSubs(800, b) }
+func BenchmarkAddLegacy900Subs(b *testing.B)  { benchmarkAddLegacyNSubs(900, b) }
+func BenchmarkAddLegacy1000Subs(b *testing.B) { benchmarkAddLegacyNSubs(1000, b) }
+
+func benchmarkDeleteLegacyNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	legacyEngine := NewLegacyEngine(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := sub.Keys()[rand.Intn(len(sub))]
+		subToDelete := Subscriptions{fs: sub[fs]}
+		b.StartTimer()
+		legacyEngine.DeleteSubscription(subToDelete)
+		b.StopTimer()
+		legacyEngine.AddSubscription(subToDelete)
+	}
+}
+
+// Deleteing cost for legacy
+func BenchmarkDeleteLegacy100Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(100, b) }
+func BenchmarkDeleteLegacy200Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(200, b) }
+func BenchmarkDeleteLegacy300Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(300, b) }
+func BenchmarkDeleteLegacy400Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(400, b) }
+func BenchmarkDeleteLegacy500Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(500, b) }
+func BenchmarkDeleteLegacy600Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(600, b) }
+func BenchmarkDeleteLegacy700Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(700, b) }
+func BenchmarkDeleteLegacy800Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(800, b) }
+func BenchmarkDeleteLegacy900Subs(b *testing.B)  { benchmarkDeleteLegacyNSubs(900, b) }
+func BenchmarkDeleteLegacy1000Subs(b *testing.B) { benchmarkDeleteLegacyNSubs(1000, b) }
