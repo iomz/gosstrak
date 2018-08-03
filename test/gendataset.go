@@ -32,7 +32,7 @@ type UIIParam struct {
 
 var (
 	NumRepeat = 1000
-	NumSerial = 10
+	NumSerial = 1000
 	DIR       = os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/benchset%v", NumRepeat*10/100*100)
 )
 
@@ -145,9 +145,9 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "grai-96":
-			schemeDir := path.Join(DIR, param.Scheme)
+			schemeDir := path.Join(DIR, param.Scheme, param.CompanyPrefix)
 			os.MkdirAll(schemeDir, 0755)
-			fileName := path.Join(schemeDir, param.CompanyPrefix)
+			fileName := path.Join(schemeDir, param.AssetType)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
 				log.Fatal(err)
 			}
