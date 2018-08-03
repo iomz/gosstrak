@@ -204,7 +204,7 @@ func (ptn *PatriciaTrieNode) add(fs string, reportURI string) {
 		ptn.reportURI = ""
 		currentOffset := ptn.filterObject.Offset
 		ptn.filterObject = NewFilter(newCommonPrefix, currentOffset)
-		if len(ncpLength) == len(fs) {
+		if ncpLength >= len(fs) {
 			return
 		}
 		switch fs[ncpLength] {
