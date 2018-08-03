@@ -55,7 +55,11 @@ func (list *List) DeleteSubscription(sub Subscriptions) {
 			reportURI: bsub[fs].ReportURI,
 		}
 		if i := list.filters.IndexOf(em); i > -1 {
-			list.filters = append(list.filters[:i], list.filters[i+1:]...)
+			if i+1 == len(list.filters) {
+				list.filters = list.filters[:i]
+			} else {
+				list.filters = append(list.filters[:i], list.filters[i+1:]...)
+			}
 		}
 	}
 }

@@ -39,7 +39,11 @@ func (le *LegacyEngine) DeleteSubscription(sub Subscriptions) {
 		} else {
 			for _, dest := range sub[f] {
 				if i := stringIndexInSlice(dest, reportURIs); i > -1 {
-					le.filters[f] = append(le.filters[f][:i], le.filters[f][i+1:]...)
+					if i+1 == len(le.filters) {
+						le.filters[f] = le.filters[f][:i]
+					} else {
+						le.filters[f] = append(le.filters[f][:i], le.filters[f][i+1:]...)
+					}
 				}
 			}
 			if len(le.filters[f]) == 0 {
