@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
@@ -1825,3 +1826,64 @@ func BenchmarkFilterPatricia100Tags900Subs(b *testing.B) {
 func BenchmarkFilterPatricia100Tags1000Subs(b *testing.B) {
 	benchmarkFilterPatriciaNTagsNSubs(100, 1000, b)
 }
+
+func benchmarkAddPatriciaNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	extsub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec.csv")
+	patriciaEngine := NewPatriciaTrie(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := extsub.Keys()[rand.Intn(len(extsub))]
+		subToAdd := Subscriptions{fs: extsub[fs]}
+		b.StartTimer()
+		patriciaEngine.AddSubscription(subToAdd)
+		b.StopTimer()
+		patriciaEngine.DeleteSubscription(subToAdd)
+	}
+}
+
+// Adding cost for patricia
+func BenchmarkAddPatricia100Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(100, b) }
+func BenchmarkAddPatricia200Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(200, b) }
+func BenchmarkAddPatricia300Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(300, b) }
+func BenchmarkAddPatricia400Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(400, b) }
+func BenchmarkAddPatricia500Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(500, b) }
+func BenchmarkAddPatricia600Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(600, b) }
+func BenchmarkAddPatricia700Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(700, b) }
+func BenchmarkAddPatricia800Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(800, b) }
+func BenchmarkAddPatricia900Subs(b *testing.B)  { benchmarkAddPatriciaNSubs(900, b) }
+func BenchmarkAddPatricia1000Subs(b *testing.B) { benchmarkAddPatriciaNSubs(1000, b) }
+
+func benchmarkDeletePatriciaNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	patriciaEngine := NewPatriciaTrie(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := sub.Keys()[rand.Intn(len(sub))]
+		subToDelete := Subscriptions{fs: sub[fs]}
+		b.StartTimer()
+		patriciaEngine.DeleteSubscription(subToDelete)
+		b.StopTimer()
+		patriciaEngine.AddSubscription(subToDelete)
+	}
+}
+
+// Deleteing cost for patricia
+func BenchmarkDeletePatricia100Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(100, b) }
+func BenchmarkDeletePatricia200Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(200, b) }
+func BenchmarkDeletePatricia300Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(300, b) }
+func BenchmarkDeletePatricia400Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(400, b) }
+func BenchmarkDeletePatricia500Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(500, b) }
+func BenchmarkDeletePatricia600Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(600, b) }
+func BenchmarkDeletePatricia700Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(700, b) }
+func BenchmarkDeletePatricia800Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(800, b) }
+func BenchmarkDeletePatricia900Subs(b *testing.B)  { benchmarkDeletePatriciaNSubs(900, b) }
+func BenchmarkDeletePatricia1000Subs(b *testing.B) { benchmarkDeletePatriciaNSubs(1000, b) }

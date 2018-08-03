@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
@@ -171,3 +172,64 @@ func BenchmarkFilterSplay100Tags700Subs(b *testing.B)  { benchmarkFilterSplayNTa
 func BenchmarkFilterSplay100Tags800Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 800, b) }
 func BenchmarkFilterSplay100Tags900Subs(b *testing.B)  { benchmarkFilterSplayNTagsNSubs(100, 900, b) }
 func BenchmarkFilterSplay100Tags1000Subs(b *testing.B) { benchmarkFilterSplayNTagsNSubs(100, 1000, b) }
+
+func benchmarkAddSplayNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	extsub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec.csv")
+	splayEngine := NewSplayTree(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := extsub.Keys()[rand.Intn(len(extsub))]
+		subToAdd := Subscriptions{fs: extsub[fs]}
+		b.StartTimer()
+		splayEngine.AddSubscription(subToAdd)
+		b.StopTimer()
+		splayEngine.DeleteSubscription(subToAdd)
+	}
+}
+
+// Adding cost for splay
+func BenchmarkAddSplay100Subs(b *testing.B)  { benchmarkAddSplayNSubs(100, b) }
+func BenchmarkAddSplay200Subs(b *testing.B)  { benchmarkAddSplayNSubs(200, b) }
+func BenchmarkAddSplay300Subs(b *testing.B)  { benchmarkAddSplayNSubs(300, b) }
+func BenchmarkAddSplay400Subs(b *testing.B)  { benchmarkAddSplayNSubs(400, b) }
+func BenchmarkAddSplay500Subs(b *testing.B)  { benchmarkAddSplayNSubs(500, b) }
+func BenchmarkAddSplay600Subs(b *testing.B)  { benchmarkAddSplayNSubs(600, b) }
+func BenchmarkAddSplay700Subs(b *testing.B)  { benchmarkAddSplayNSubs(700, b) }
+func BenchmarkAddSplay800Subs(b *testing.B)  { benchmarkAddSplayNSubs(800, b) }
+func BenchmarkAddSplay900Subs(b *testing.B)  { benchmarkAddSplayNSubs(900, b) }
+func BenchmarkAddSplay1000Subs(b *testing.B) { benchmarkAddSplayNSubs(1000, b) }
+
+func benchmarkDeleteSplayNSubs(nSubs int, b *testing.B) {
+	// build the engine
+	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	splayEngine := NewSplayTree(sub)
+	rand.Seed(time.Now().UTC().UnixNano())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Make 1 sub
+		fs := sub.Keys()[rand.Intn(len(sub))]
+		subToDelete := Subscriptions{fs: sub[fs]}
+		b.StartTimer()
+		splayEngine.DeleteSubscription(subToDelete)
+		b.StopTimer()
+		splayEngine.AddSubscription(subToDelete)
+	}
+}
+
+// Deleteing cost for splay
+func BenchmarkDeleteSplay100Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(100, b) }
+func BenchmarkDeleteSplay200Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(200, b) }
+func BenchmarkDeleteSplay300Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(300, b) }
+func BenchmarkDeleteSplay400Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(400, b) }
+func BenchmarkDeleteSplay500Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(500, b) }
+func BenchmarkDeleteSplay600Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(600, b) }
+func BenchmarkDeleteSplay700Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(700, b) }
+func BenchmarkDeleteSplay800Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(800, b) }
+func BenchmarkDeleteSplay900Subs(b *testing.B)  { benchmarkDeleteSplayNSubs(900, b) }
+func BenchmarkDeleteSplay1000Subs(b *testing.B) { benchmarkDeleteSplayNSubs(1000, b) }
