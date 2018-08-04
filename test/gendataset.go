@@ -14,6 +14,7 @@ import (
 
 	"github.com/iomz/go-llrp/binutil"
 	"github.com/iomz/gosstrak/scheme"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type UIIParam struct {
@@ -28,16 +29,23 @@ type UIIParam struct {
 	CompanyIdentification string
 	ExtDigits             int
 	IARMaxDigits          int
+	NoFilter              bool
 }
 
 var (
-	NumRepeat = 1000
-	NumSerial = 1000
-	DIR       = os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/benchset%v", NumRepeat*10/100*100)
+	// kingpin app
+	app       = kingpin.New("gendataset", "A tool to generate dataset for simulation.")
+	matchPct  = app.Flag("match", "match pct").Default("100").Int()
+	nSub      = app.Flag("nsub", "nSub.").Default("1000").Int()
+	NumSerial = 100
 )
 
+func getTargetDir() string {
+	return os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/simulation/dataset%v-%vpct", *nSub, *matchPct)
+}
+
 func filterWriter(fs chan string) {
-	f, err := os.OpenFile(path.Join(DIR, "filters.csv"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	f, err := os.OpenFile(path.Join(getTargetDir(), "filters.csv"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +84,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 		// do stuff
 		switch param.Scheme {
 		case "sgtin-96":
-			schemeDir := path.Join(DIR, param.Scheme, param.CompanyPrefix)
+			schemeDir := path.Join(getTargetDir(), param.Scheme, param.CompanyPrefix)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.ItemReference)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -87,10 +95,12 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				panic(err)
 			}
 
-			bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
-			bs, opt = scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, param.ItemReference, "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+				bs, opt = scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, param.ItemReference, "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for ser := 0; ser < NumSerial; ser++ {
@@ -100,7 +110,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "sscc-96":
-			schemeDir := path.Join(DIR, param.Scheme)
+			schemeDir := path.Join(getTargetDir(), param.Scheme)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.CompanyPrefix)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -111,8 +121,10 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				panic(err)
 			}
 
-			bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for ext := 0; ext < NumSerial; ext++ {
@@ -122,7 +134,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "giai-96":
-			schemeDir := path.Join(DIR, param.Scheme)
+			schemeDir := path.Join(getTargetDir(), param.Scheme)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.CompanyPrefix)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -133,8 +145,10 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				panic(err)
 			}
 
-			bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for iar := 0; iar < NumSerial; iar++ {
@@ -145,7 +159,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "grai-96":
-			schemeDir := path.Join(DIR, param.Scheme, param.CompanyPrefix)
+			schemeDir := path.Join(getTargetDir(), param.Scheme, param.CompanyPrefix)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.AssetType)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -156,10 +170,12 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				log.Fatal(err)
 			}
 
-			bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
-			bs, opt = scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", param.AssetType)
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+				bs, opt = scheme.MakeEPC(true, param.Scheme, "3", param.CompanyPrefix, "", "", "", "", param.AssetType)
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for ser := 0; ser < NumSerial; ser++ {
@@ -169,7 +185,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "17363":
-			schemeDir := path.Join(DIR, param.Type+param.Scheme)
+			schemeDir := path.Join(getTargetDir(), param.Type+param.Scheme)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.OwnerCode)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -180,8 +196,10 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				panic(err)
 			}
 
-			bs, opt := scheme.MakeISO(true, param.Scheme, param.OwnerCode, "", "", "", "", "", "")
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeISO(true, param.Scheme, param.OwnerCode, "", "", "", "", "", "")
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for ser := 0; ser < NumSerial; ser++ {
@@ -191,7 +209,7 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 			w.Flush()
 			f.Close()
 		case "17365":
-			schemeDir := path.Join(DIR, param.Type+param.Scheme)
+			schemeDir := path.Join(getTargetDir(), param.Type+param.Scheme)
 			os.MkdirAll(schemeDir, 0755)
 			fileName := path.Join(schemeDir, param.CompanyIdentification)
 			if _, err := os.Stat(fileName); !os.IsNotExist(err) {
@@ -202,10 +220,12 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 				panic(err)
 			}
 
-			bs, opt := scheme.MakeISO(true, param.Scheme, "", "", "", param.DataIdentifier, param.IssuingAgencyCode, "", "")
-			fq <- scheme.PrintID(bs, opt)
-			bs, opt = scheme.MakeISO(true, param.Scheme, "", "", "", param.DataIdentifier, param.IssuingAgencyCode, param.CompanyIdentification, "")
-			fq <- scheme.PrintID(bs, opt)
+			if !param.NoFilter {
+				bs, opt := scheme.MakeISO(true, param.Scheme, "", "", "", param.DataIdentifier, param.IssuingAgencyCode, "", "")
+				fq <- scheme.PrintID(bs, opt)
+				bs, opt = scheme.MakeISO(true, param.Scheme, "", "", "", param.DataIdentifier, param.IssuingAgencyCode, param.CompanyIdentification, "")
+				fq <- scheme.PrintID(bs, opt)
+			}
 
 			w := bufio.NewWriter(f)
 			for ser := 0; ser < NumSerial; ser++ {
@@ -220,9 +240,12 @@ func generateUIISet(wg *sync.WaitGroup, q chan UIIParam, fq chan string) {
 }
 
 func main() {
+	parse := kingpin.MustParse(app.Parse(os.Args[1:]))
+	_ = parse
+
 	// create the target dir
-	os.MkdirAll(DIR, 0755)
-	log.Printf("Create target directory: %s", DIR)
+	os.MkdirAll(getTargetDir(), 0755)
+	log.Printf("Create target directory: %s", getTargetDir())
 
 	// prepare the workers
 	var wg sync.WaitGroup
@@ -239,56 +262,59 @@ func main() {
 		go generateUIISet(&wg, q, fq)
 	}
 
-	var cpLen int
-	for i := 0; i < NumRepeat; i++ {
+	matchRepeat := int(float64(*matchPct) / 100 * float64(*nSub) / 20)
+	mismatchRepeat := int(float64(100-*matchPct) / 100 * float64(*nSub) / 20)
+	for i := 0; i < matchRepeat; i++ {
+		var cpLen int
 		log.Printf("Iteration: %v\n", i)
 		cpLen = binutil.GenerateRandomInt(6, 12)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "sgtin-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			ItemReference: binutil.GenerateNLengthDigitString(13 - cpLen),
-		}
-		cpLen = binutil.GenerateRandomInt(6, 12)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "sscc-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			ExtDigits:     17 - cpLen,
-		}
-		cpLen = binutil.GenerateRandomInt(6, 12)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "sscc-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			ExtDigits:     17 - cpLen,
-		}
-		cpLen = binutil.GenerateRandomInt(6, 12)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "giai-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			IARMaxDigits:  25 - cpLen,
-		}
+		cp := binutil.GenerateNLengthDigitString(cpLen)
+		for j := 0; j < 10; j++ { // SGTIN x10 itemReference
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "sgtin-96",
+				CompanyPrefix: cp,
+				ItemReference: binutil.GenerateNLengthDigitString(13 - cpLen),
+				NoFilter:      false,
+			}
+		} // 11 filters
+		for j := 0; j < 2; j++ {
+			cpLen = binutil.GenerateRandomInt(6, 12)
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "sscc-96",
+				CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
+				ExtDigits:     17 - cpLen,
+				NoFilter:      false,
+			}
+		} // 2 filters
+		for j := 0; j < 2; j++ {
+			cpLen = binutil.GenerateRandomInt(6, 12)
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "giai-96",
+				CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
+				IARMaxDigits:  25 - cpLen,
+				NoFilter:      false,
+			}
+		} // 2 filters
 		cpLen = binutil.GenerateRandomInt(6, 11)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "grai-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			AssetType:     binutil.GenerateNLengthDigitString(12 - cpLen),
-		}
-		cpLen = binutil.GenerateRandomInt(6, 11)
-		q <- UIIParam{
-			Type:          "epc",
-			Scheme:        "grai-96",
-			CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
-			AssetType:     binutil.GenerateNLengthDigitString(12 - cpLen),
-		}
+		cp = binutil.GenerateNLengthDigitString(cpLen)
+		for j := 0; j < 2; j++ { // GRAI x2 assetType
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "grai-96",
+				CompanyPrefix: cp,
+				AssetType:     binutil.GenerateNLengthDigitString(12 - cpLen),
+				NoFilter:      false,
+			}
+		} // 3 filters
 		q <- UIIParam{
 			Type:      "iso",
 			Scheme:    "17363",
 			OwnerCode: binutil.GenerateNLengthAlphabetString(3),
-		}
+			NoFilter:  false,
+		} // 1 filter
 		ciLen := binutil.GenerateRandomInt(3, 7)
 		q <- UIIParam{
 			Type:                  "iso",
@@ -296,8 +322,71 @@ func main() {
 			DataIdentifier:        "25S",
 			IssuingAgencyCode:     "U",
 			CompanyIdentification: binutil.GenerateNLengthAlphanumericString(ciLen),
-		}
+			NoFilter:              false,
+		} // 1 filter
 	}
+	for i := 0; i < mismatchRepeat; i++ {
+		var cpLen int
+		log.Printf("Iteration: %v\n", i)
+		cpLen = binutil.GenerateRandomInt(6, 12)
+		cp := binutil.GenerateNLengthDigitString(cpLen)
+		for j := 0; j < 10; j++ { // SGTIN x10 itemReference
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "sgtin-96",
+				CompanyPrefix: cp,
+				ItemReference: binutil.GenerateNLengthDigitString(13 - cpLen),
+				NoFilter:      true,
+			}
+		} // 11 filters
+		for j := 0; j < 2; j++ {
+			cpLen = binutil.GenerateRandomInt(6, 12)
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "sscc-96",
+				CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
+				ExtDigits:     17 - cpLen,
+				NoFilter:      true,
+			}
+		} // 2 filters
+		for j := 0; j < 2; j++ {
+			cpLen = binutil.GenerateRandomInt(6, 12)
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "giai-96",
+				CompanyPrefix: binutil.GenerateNLengthDigitString(cpLen),
+				IARMaxDigits:  25 - cpLen,
+				NoFilter:      true,
+			}
+		} // 2 filters
+		cpLen = binutil.GenerateRandomInt(6, 11)
+		cp = binutil.GenerateNLengthDigitString(cpLen)
+		for j := 0; j < 2; j++ { // GRAI x2 assetType
+			q <- UIIParam{
+				Type:          "epc",
+				Scheme:        "grai-96",
+				CompanyPrefix: cp,
+				AssetType:     binutil.GenerateNLengthDigitString(12 - cpLen),
+				NoFilter:      true,
+			}
+		} // 3 filters
+		q <- UIIParam{
+			Type:      "iso",
+			Scheme:    "17363",
+			OwnerCode: binutil.GenerateNLengthAlphabetString(3),
+			NoFilter:  true,
+		} // 1 filter
+		ciLen := binutil.GenerateRandomInt(3, 7)
+		q <- UIIParam{
+			Type:                  "iso",
+			Scheme:                "17365",
+			DataIdentifier:        "25S",
+			IssuingAgencyCode:     "U",
+			CompanyIdentification: binutil.GenerateNLengthAlphanumericString(ciLen),
+			NoFilter:              true,
+		} // 1 filter
+	}
+
 	close(q)
 
 	wg.Wait()

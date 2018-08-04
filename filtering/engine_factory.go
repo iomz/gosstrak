@@ -70,8 +70,8 @@ func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMes
 	// Calculate the priority of deployment
 	ef.deploymentPriority = map[string]uint8{
 		"LegacyEngine": 0,
-		"List":         3,
-		"PatriciaTrie": 1,
+		"List":         1,
+		"PatriciaTrie": 3,
 		"SplayTree":    2,
 	}
 
