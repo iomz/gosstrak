@@ -120,17 +120,20 @@ func (ef *EngineFactory) Run() {
 					EngineName:        ef.currentEngineName,
 					CurrentThroughput: reflect.ValueOf(v).Float(),
 				}
-				endFlag := false
+				endFlag := true
 				for _, eg := range ef.productionSystem {
 					if !eg.FSM.Is("ready") {
-						endFlag = true
+						endFlag = false
 					}
 				}
 				if endFlag {
-					go func() {
-						time.Sleep(5 * time.Second)
-						log.Fatal("finishing this simulation")
-					}()
+					/*
+						go func() {
+							time.Sleep(5 * time.Second)
+							log.Fatal("finishing this simulation")
+						}()
+					*/
+					log.Println("\n\n\n\n\nall the engines ready\n\n\n\n\n")
 				}
 			}
 		}
