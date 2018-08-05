@@ -104,12 +104,12 @@ func (ef *EngineFactory) Run() {
 					return true
 				})
 				if ef.currentEngineName != ename && len(ename) != 0 {
-					log.Printf("[EngineFactory] %s replaces the currentEngine %s", ename, ef.currentEngineName)
+					log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
 					ef.currentEngineName = ename
 				}
 				ef.mainChannel <- ManagementMessage{
 					Type:       SelectedEngine,
-					EngineName: ename,
+					EngineName: ef.currentEngineName,
 				}
 			}
 		}
