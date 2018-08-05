@@ -139,27 +139,37 @@ func run() {
 				break
 			}
 			switch msg.Type {
-			case filtering.TrafficStatus:
-				if *enableStat {
-					sm.StatMessageChannel <- monitoring.StatMessage{
-						Type:  monitoring.Traffic,
-						Value: []interface{}{msg.EventCount, msg.MatchedCount},
-						Name:  msg.EngineName,
+			/*
+				case filtering.TrafficStatus:
+					if *enableStat {
+						sm.StatMessageChannel <- monitoring.StatMessage{
+							Type:  monitoring.Traffic,
+							Value: []interface{}{msg.EventCount, msg.MatchedCount},
+							Name:  msg.EngineName,
+						}
 					}
-				}
-			case filtering.EngineStatus:
+				case filtering.EngineStatus:
+					if *enableStat {
+						sm.StatMessageChannel <- monitoring.StatMessage{
+							Type:  monitoring.EngineThroughput,
+							Value: []interface{}{msg.CurrentThroughput},
+							Name:  msg.EngineName,
+						}
+					}
+				case filtering.SelectedEngine:
+					if *enableStat {
+						sm.StatMessageChannel <- monitoring.StatMessage{
+							Type: monitoring.SelectedEngine,
+							Name: msg.EngineName,
+						}
+					}
+			*/
+			case filtering.SimulationStat:
 				if *enableStat {
 					sm.StatMessageChannel <- monitoring.StatMessage{
-						Type:  monitoring.EngineThroughput,
+						Type:  monitoring.SimulationStat,
 						Value: []interface{}{msg.CurrentThroughput},
 						Name:  msg.EngineName,
-					}
-				}
-			case filtering.SelectedEngine:
-				if *enableStat {
-					sm.StatMessageChannel <- monitoring.StatMessage{
-						Type: monitoring.SelectedEngine,
-						Name: msg.EngineName,
 					}
 				}
 			}

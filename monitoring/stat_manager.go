@@ -89,6 +89,10 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				}
 				fields["selected"] = engineType
 				measurement = "engine"
+			case SimulationStat:
+				fields["event_per_us"] = msg.Value[0]
+				fields["engine"] = msg.Name
+				measurement = "simulation"
 			}
 			pt, err := client.NewPoint(measurement, tags, fields, time.Now())
 			if err != nil {

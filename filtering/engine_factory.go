@@ -111,6 +111,27 @@ func (ef *EngineFactory) Run() {
 					Type:       SelectedEngine,
 					EngineName: ef.currentEngineName,
 				}
+				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
+				if !ok {
+					continue
+				}
+				ef.mainChannel <- ManagementMessage{
+					Type:              SimulationStat,
+					EngineName:        ef.currentEngineName,
+					CurrentThroughput: reflect.ValueOf(v).Float(),
+				}
+				endFlag := false
+				for _, eg := range ef.productionSystem {
+					if !eg.FSM.Is("ready") {
+						endFlag = true
+					}
+				}
+				if endFlag {
+					go func() {
+						time.Sleep(5 * time.Second)
+						log.Fatal("finishing this simulation")
+					}()
+				}
 			}
 		}
 	}()

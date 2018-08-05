@@ -17,6 +17,7 @@ const (
 	TrafficStatus
 	EngineStatus
 	SelectedEngine
+	SimulationStat
 )
 
 // ManagementMessage holds management action for the EngineFactory
