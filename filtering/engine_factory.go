@@ -167,11 +167,19 @@ func (ef *EngineFactory) Run() {
 				if len(ef.currentEngineName) == 0 {
 					log.Printf("[EngineFactory] set %s as an initial engine", msg.EngineGeneratorInstance.Name)
 					ef.currentEngineName = msg.EngineGeneratorInstance.Name
+					ef.mainChannel <- ManagementMessage{
+						Type:       SelectedEngine,
+						EngineName: ef.currentEngineName,
+					}
 					continue
 				}
 				if ef.deploymentPriority[ef.currentEngineName] < ef.deploymentPriority[msg.EngineGeneratorInstance.Name] {
 					log.Printf("[EngineFactory] %s replaces the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)
 					ef.currentEngineName = msg.EngineGeneratorInstance.Name
+					ef.mainChannel <- ManagementMessage{
+						Type:       SelectedEngine,
+						EngineName: ef.currentEngineName,
+					}
 					continue
 				}
 				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)

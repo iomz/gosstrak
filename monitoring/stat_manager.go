@@ -56,8 +56,19 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 			// create a point
 			switch msg.Type {
 			case Traffic:
-				fields["incoming_events"] = msg.Value[0]
-				fields["matched_events"] = msg.Value[1]
+				ingress, ok := msg.Value[0].(int)
+				if !ok {
+					continue
+				}
+				fields["incoming_events"] = ingress
+				matches, ok := msg.Value[1].(int)
+				if !ok {
+					continue
+				}
+				fields["matched_events"] = matches
+				if ingress != 0 {
+					fields["matching_probability"] = float64(matches) / float64(ingress) * 100.0
+				}
 				tags["engine"] = msg.Name
 				measurement = "traffic"
 			case EngineThroughput:
