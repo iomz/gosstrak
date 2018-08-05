@@ -56,12 +56,12 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 			// create a point
 			switch msg.Type {
 			case Traffic:
-				ingress, ok := msg.Value[0].(int)
+				ingress, ok := msg.Value[0].(int64)
 				if !ok {
 					continue
 				}
 				fields["incoming_events"] = ingress
-				matches, ok := msg.Value[1].(int)
+				matches, ok := msg.Value[1].(int64)
 				if !ok {
 					continue
 				}
