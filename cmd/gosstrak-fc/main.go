@@ -57,7 +57,7 @@ var (
 	ignoreOtherEngine = app.
 				Flag("ignoreOtherEngine", "Ignore other engines when performing search").
 				Short('g').
-				Default("true").
+				Default("false").
 				Bool()
 
 	// LLRP related values

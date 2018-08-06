@@ -47,8 +47,8 @@ func (ne *NoEngine) Name() string {
 }
 
 // Search does nothing
-func (ne *NoEngine) Search(re llrp.ReadEvent) (pureIdentity string, reportURIs []string, err error) {
-	return pureIdentity, reportURIs, fmt.Errorf("no match found for %v", re.ID)
+func (ne *NoEngine) Search(re llrp.ReadEvent) (string, []string, error) {
+	return "", []string{}, fmt.Errorf("no match found for %v", re.ID)
 }
 
 // UnmarshalBinary does nothing

@@ -6,7 +6,6 @@
 package filtering
 
 import (
-	"errors"
 	"log"
 	"reflect"
 	"sync"
@@ -39,12 +38,9 @@ func (ef *EngineFactory) IsActive() bool {
 
 // Search is a wrapper for Search() with the current EngineGenerator
 func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
-	if !ef.IsActive() {
-		return "", []string{}, errors.New("EngineFactory is not active")
-	}
 	if !ef.ignoreOtherEngine {
 		for name, eg := range ef.productionSystem {
-			if name != ef.currentEngineName && eg.FSM.Is("ready") && name != "NoEngine" {
+			if name != ef.currentEngineName && eg.FSM.Is("ready") {
 				_, _, _ = eg.Search(re)
 			}
 		}
