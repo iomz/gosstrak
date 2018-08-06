@@ -32,10 +32,10 @@ type Engines map[string]EngineConstructor
 
 // AvailableEngines is a map of EngineConstructor with the engine's names as keys
 var AvailableEngines = Engines{
-	"List":         NewList,
+	//"List":         NewList,
 	"PatriciaTrie": NewPatriciaTrie,
-	"SplayTree":    NewSplayTree,
-	"LegacyEngine": NewLegacyEngine,
+	//"SplayTree":    NewSplayTree,
+	//"LegacyEngine": NewLegacyEngine,
 	//"NoEngine": NewNoEngine, // comment out like this to disable an engine
 }
 

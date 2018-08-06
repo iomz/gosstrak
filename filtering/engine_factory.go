@@ -6,6 +6,7 @@
 package filtering
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"sync"
@@ -41,6 +42,9 @@ func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 		if name != ef.currentEngineName && eg.FSM.Is("ready") {
 			_, _, _ = eg.Search(re)
 		}
+	}
+	if !ef.productionSystem[ef.currentEngineName].FSM.Is("ready") {
+		return "", []string{}, fmt.Errorf("%v is not ready", ef.currentEngineName)
 	}
 	return ef.productionSystem[ef.currentEngineName].Search(re)
 }
@@ -88,32 +92,34 @@ func (ef *EngineFactory) Run() {
 	for i, ch := range append(ef.generatorChannels, ef.mainChannel) {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
-	go func() {
+	go func() { // simulation stat ticker
 		log.Println("[EngineFactory] setting up selective adoption handler")
 		intervalTicker := time.NewTicker(time.Duration(ef.statInterval) * time.Second)
 		for {
 			select {
 			case <-intervalTicker.C:
-				var ename string
-				perf := float64(0)
-				ef.enginePerformance.Range(func(k, v interface{}) bool {
-					if reflect.ValueOf(v).Float() > perf {
-						ename = reflect.ValueOf(k).String()
-						perf = reflect.ValueOf(v).Float()
+				/*
+					var ename string
+					perf := float64(0)
+					ef.enginePerformance.Range(func(k, v interface{}) bool {
+						if reflect.ValueOf(v).Float() > perf {
+							ename = reflect.ValueOf(k).String()
+							perf = reflect.ValueOf(v).Float()
+						}
+						return true
+					})
+					if ef.currentEngineName != ename && len(ename) != 0 {
+						log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
+						ef.currentEngineName = ename
 					}
-					return true
-				})
-				if ef.currentEngineName != ename && len(ename) != 0 {
-					log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
-					ef.currentEngineName = ename
-				}
-				ef.mainChannel <- ManagementMessage{
-					Type:       SelectedEngine,
-					EngineName: ef.currentEngineName,
-				}
+					ef.mainChannel <- ManagementMessage{
+						Type:       SelectedEngine,
+						EngineName: ef.currentEngineName,
+					}
+				*/
 				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
 				if !ok {
-					continue
+					v = reflect.ValueOf(float64(0)).Interface()
 				}
 				ef.mainChannel <- ManagementMessage{
 					Type:              SimulationStat,
@@ -127,13 +133,7 @@ func (ef *EngineFactory) Run() {
 					}
 				}
 				if endFlag {
-					/*
-						go func() {
-							time.Sleep(5 * time.Second)
-							log.Fatal("finishing this simulation")
-						}()
-					*/
-					log.Println("\n\n\n\n\nall the engines ready\n\n\n\n\n")
+					log.Print("\n\n\n\n\nall the engines ready\n\n\n\n\n")
 				}
 			}
 		}
