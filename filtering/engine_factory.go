@@ -6,7 +6,6 @@
 package filtering
 
 import (
-	"fmt"
 	"log"
 	"reflect"
 	"sync"
@@ -43,9 +42,6 @@ func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 			_, _, _ = eg.Search(re)
 		}
 	}
-	if !ef.IsActive() || !ef.productionSystem[ef.currentEngineName].FSM.Is("ready") {
-		return "", []string{}, fmt.Errorf("%v is not ready", ef.currentEngineName)
-	}
 	return ef.productionSystem[ef.currentEngineName].Search(re)
 }
 
@@ -73,10 +69,11 @@ func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMes
 
 	// Calculate the priority of deployment
 	ef.deploymentPriority = map[string]uint8{
-		"LegacyEngine": 0,
-		"List":         1,
-		"PatriciaTrie": 3,
-		"SplayTree":    2,
+		"NoEngine":     0,
+		"LegacyEngine": 1,
+		"List":         2,
+		"PatriciaTrie": 4,
+		"SplayTree":    3,
 	}
 
 	log.Printf("[EngineFactory] deploymentPriority: %v", ef.deploymentPriority)
@@ -98,24 +95,24 @@ func (ef *EngineFactory) Run() {
 		for {
 			select {
 			case <-intervalTicker.C:
-				/*
-					var ename string
-					perf := float64(0)
-					ef.enginePerformance.Range(func(k, v interface{}) bool {
-						if reflect.ValueOf(v).Float() > perf {
-							ename = reflect.ValueOf(k).String()
-							perf = reflect.ValueOf(v).Float()
-						}
-						return true
-					})
-					if ef.currentEngineName != ename && len(ename) != 0 {
-						log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
-						ef.currentEngineName = ename
+				/* // selective adoption
+				var ename string
+				perf := float64(0)
+				ef.enginePerformance.Range(func(k, v interface{}) bool {
+					if reflect.ValueOf(v).Float() > perf {
+						ename = reflect.ValueOf(k).String()
+						perf = reflect.ValueOf(v).Float()
 					}
-					ef.mainChannel <- ManagementMessage{
-						Type:       SelectedEngine,
-						EngineName: ef.currentEngineName,
-					}
+					return true
+				})
+				if ef.currentEngineName != ename && len(ename) != 0 {
+					log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
+					ef.currentEngineName = ename
+				}
+				ef.mainChannel <- ManagementMessage{
+					Type:       SelectedEngine,
+					EngineName: ef.currentEngineName,
+				}
 				*/
 				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
 				if !ok {
@@ -160,31 +157,31 @@ func (ef *EngineFactory) Run() {
 			}
 			switch msg.Type {
 			case AddSubscription:
-				/*
-					if _, ok := ef.currentByteSubscriptions[msg.FilterString]; !ok {
-						ef.currentByteSubscriptions[msg.FilterString] = &PartialSubscription{
-							Offset:    0,
-							ReportURI: msg.ReportURI,
-						}
-						for _, eg := range ef.productionSystem {
-							err := eg.FSM.Event("update", &msg)
-							if err != nil {
-								log.Println(err)
-							}
+				/* FIXME
+				if _, ok := ef.currentByteSubscriptions[msg.FilterString]; !ok {
+					ef.currentByteSubscriptions[msg.FilterString] = &PartialSubscription{
+						Offset:    0,
+						ReportURI: msg.ReportURI,
+					}
+					for _, eg := range ef.productionSystem {
+						err := eg.FSM.Event("update", &msg)
+						if err != nil {
+							log.Println(err)
 						}
 					}
+				}
 				*/
 			case DeleteSubscription:
-				/*
-					if _, ok := ef.currentByteSubscriptions[msg.FilterString]; ok {
-						delete(ef.currentByteSubscriptions, msg.FilterString)
-						for _, eg := range ef.productionSystem {
-							err := eg.FSM.Event("update", &msg)
-							if err != nil {
-								log.Println(err)
-							}
+				/* FIXME
+				if _, ok := ef.currentByteSubscriptions[msg.FilterString]; ok {
+					delete(ef.currentByteSubscriptions, msg.FilterString)
+					for _, eg := range ef.productionSystem {
+						err := eg.FSM.Event("update", &msg)
+						if err != nil {
+							log.Println(err)
 						}
 					}
+				}
 				*/
 			case OnEngineGenerated:
 				log.Printf("[EngineFactory] received OnEngineGenerated from %s", msg.EngineGeneratorInstance.Engine.Name())

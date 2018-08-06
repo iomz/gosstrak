@@ -182,11 +182,9 @@ func run() {
 	engineFactory := filtering.NewEngineFactory(sub, *statInterval, mc)
 	go engineFactory.Run()
 	// wait until the first engine becomes available
-	/*
-		for !engineFactory.IsActive() {
-			time.Sleep(time.Second)
-		}
-	*/
+	for !engineFactory.IsActive() {
+		time.Sleep(time.Second)
+	}
 
 	// receive management access
 	log.Println("setting up an management interface")

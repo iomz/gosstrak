@@ -83,13 +83,21 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 					EventCount:   eg.EventCount,
 					MatchedCount: eg.MatchedCount,
 				}
-				throughput := float64(eg.EventCount) / float64(eg.totalTime)
-				if throughput != 0 && !math.IsNaN(throughput) {
-					eg.CurrentThroughput = throughput
+				if eg.Name == "NoEngine" {
 					eg.managementChannel <- ManagementMessage{
 						Type:              EngineStatus,
 						EngineName:        eg.Name,
-						CurrentThroughput: eg.CurrentThroughput,
+						CurrentThroughput: float64(0),
+					}
+				} else {
+					throughput := float64(eg.EventCount) / float64(eg.totalTime)
+					if throughput != 0 && !math.IsNaN(throughput) {
+						eg.CurrentThroughput = throughput
+						eg.managementChannel <- ManagementMessage{
+							Type:              EngineStatus,
+							EngineName:        eg.Name,
+							CurrentThroughput: eg.CurrentThroughput,
+						}
 					}
 				}
 				eg.EventCount = 0
@@ -129,22 +137,22 @@ func (eg *EngineGenerator) enterRebuilding(e *fsm.Event) {
 	msg := e.Args[0].(*ManagementMessage)
 	switch msg.Type {
 	case AddSubscription:
-		/*
-			eg.Engine.AddSubscription(ByteSubscriptions{
-				msg.FilterString: &Info{
-					Offset:          0,
-					ReportURI: msg.ReportURI,
-				},
-			})
+		/* FIXME
+		eg.Engine.AddSubscription(ByteSubscriptions{
+			msg.FilterString: &Info{
+				Offset:          0,
+				ReportURI: msg.ReportURI,
+			},
+		})
 		*/
 	case DeleteSubscription:
-		/*
-			eg.Engine.DeleteSubscription(ByteSubscriptions{
-				msg.FilterString: &Info{
-					Offset:          0,
-					ReportURI: msg.ReportURI,
-				},
-			})
+		/* FIXME
+		eg.Engine.DeleteSubscription(ByteSubscriptions{
+			msg.FilterString: &Info{
+				Offset:          0,
+				ReportURI: msg.ReportURI,
+			},
+		})
 		*/
 	}
 	eg.FSM.Event("deploy")
