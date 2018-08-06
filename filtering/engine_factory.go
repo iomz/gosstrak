@@ -117,28 +117,19 @@ func (ef *EngineFactory) Run() {
 					log.Printf("[EngineFactory] %s replaces the currentEngine %s due to performance", ename, ef.currentEngineName)
 					ef.currentEngineName = ename
 				}
+				*/
 				ef.mainChannel <- ManagementMessage{
 					Type:       SelectedEngine,
 					EngineName: ef.currentEngineName,
 				}
-				*/
 				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
 				if !ok {
-					continue
+					log.Fatal("[EngineFactory] coudn't read enginePerformance")
 				}
 				ef.mainChannel <- ManagementMessage{
 					Type:              SimulationStat,
 					EngineName:        ef.currentEngineName,
 					CurrentThroughput: reflect.ValueOf(v).Float(),
-				}
-				endFlag := true
-				for _, eg := range ef.productionSystem {
-					if !eg.FSM.Is("ready") {
-						endFlag = false
-					}
-				}
-				if endFlag {
-					log.Print("\n\n\n\n\nall the engines ready\n\n\n\n\n")
 				}
 			}
 		}

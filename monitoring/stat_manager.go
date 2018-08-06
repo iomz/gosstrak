@@ -54,7 +54,6 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 			var measurement string
 
 			// create a point
-			log.Printf("[StatManager] %v", msg)
 			switch msg.Type {
 			case Traffic:
 				ingress, ok := msg.Value[0].(int64)
@@ -91,6 +90,7 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				fields["selected"] = engineType
 				measurement = "engine"
 			case SimulationStat:
+				log.Printf("[StatManager] SimulationStat from %s", msg.Name)
 				fields["event_per_us"] = msg.Value[0]
 				fields["engine"] = msg.Name
 				measurement = "simulation"
