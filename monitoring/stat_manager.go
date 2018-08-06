@@ -52,9 +52,9 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 			tags := make(map[string]string)
 			fields := make(map[string]interface{})
 			var measurement string
-			log.Printf("[StatManager] %v", msg)
 
 			// create a point
+			log.Printf("[StatManager] %v", msg)
 			switch msg.Type {
 			case Traffic:
 				ingress, ok := msg.Value[0].(int64)

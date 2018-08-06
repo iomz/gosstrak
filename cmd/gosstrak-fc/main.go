@@ -143,6 +143,7 @@ func run() {
 			if !ok {
 				break
 			}
+			log.Printf("[main] ManagementMessage: %v", msg)
 			switch msg.Type {
 			case filtering.TrafficStatus:
 				if *enableStat {

@@ -83,22 +83,15 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 					EventCount:   eg.EventCount,
 					MatchedCount: eg.MatchedCount,
 				}
-				if eg.Name == "NoEngine" {
-					eg.managementChannel <- ManagementMessage{
-						Type:              EngineStatus,
-						EngineName:        eg.Name,
-						CurrentThroughput: float64(0),
-					}
-				} else {
-					throughput := float64(eg.EventCount) / float64(eg.totalTime)
-					if throughput != 0 && !math.IsNaN(throughput) {
-						eg.CurrentThroughput = throughput
-						eg.managementChannel <- ManagementMessage{
-							Type:              EngineStatus,
-							EngineName:        eg.Name,
-							CurrentThroughput: eg.CurrentThroughput,
-						}
-					}
+				throughput := float64(eg.EventCount) / float64(eg.totalTime)
+				if eg.Name == "NoEngine" || math.IsNaN(throughput) {
+					throughput = 0
+				}
+				eg.CurrentThroughput = throughput
+				eg.managementChannel <- ManagementMessage{
+					Type:              EngineStatus,
+					EngineName:        eg.Name,
+					CurrentThroughput: eg.CurrentThroughput,
 				}
 				eg.EventCount = 0
 				eg.MatchedCount = 0
