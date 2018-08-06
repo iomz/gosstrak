@@ -120,18 +120,6 @@ func (ef *EngineFactory) Run() {
 					EngineName:        ef.currentEngineName,
 					CurrentThroughput: reflect.ValueOf(v).Float(),
 				}
-				endFlag := false
-				for _, eg := range ef.productionSystem {
-					if !eg.FSM.Is("ready") {
-						endFlag = true
-					}
-				}
-				if endFlag {
-					go func() {
-						time.Sleep(5 * time.Second)
-						log.Fatal("finishing this simulation")
-					}()
-				}
 			}
 		}
 	}()
@@ -207,8 +195,10 @@ func (ef *EngineFactory) Run() {
 			case TrafficStatus:
 				ef.mainChannel <- msg // bypass the status message from generators to main
 			case EngineStatus:
-				ef.enginePerformance.Store(msg.EngineName, msg.CurrentThroughput)
-				ef.mainChannel <- msg // bypass the status message from generators to main
+				if msg.EngineName != "DummyEngine" {
+					ef.enginePerformance.Store(msg.EngineName, msg.CurrentThroughput)
+					ef.mainChannel <- msg // bypass the status message from generators to main
+				}
 			}
 		}
 		log.Fatalln("mainChannel listener exited in gosstrak-fc")
