@@ -116,7 +116,7 @@ func (ef *EngineFactory) Run() {
 				*/
 				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
 				if !ok {
-					v = reflect.ValueOf(float64(0)).Interface()
+					continue
 				}
 				ef.mainChannel <- ManagementMessage{
 					Type:              SimulationStat,
