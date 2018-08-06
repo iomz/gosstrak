@@ -43,7 +43,7 @@ func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
 			_, _, _ = eg.Search(re)
 		}
 	}
-	if !ef.productionSystem[ef.currentEngineName].FSM.Is("ready") {
+	if !ef.IsActive() || !ef.productionSystem[ef.currentEngineName].FSM.Is("ready") {
 		return "", []string{}, fmt.Errorf("%v is not ready", ef.currentEngineName)
 	}
 	return ef.productionSystem[ef.currentEngineName].Search(re)
