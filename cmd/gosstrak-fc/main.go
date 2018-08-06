@@ -54,6 +54,11 @@ var (
 			Short('f').
 			Default("ecspec.csv").
 			String()
+	ignoreOtherEngine = app.
+				Flag("ignoreOtherEngine", "Ignore other engines when performing search").
+				Short('g').
+				Default("true").
+				Bool()
 
 	// LLRP related values
 	llrpInitialMessageID = app.
@@ -139,31 +144,29 @@ func run() {
 				break
 			}
 			switch msg.Type {
-			/*
-				case filtering.TrafficStatus:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type:  monitoring.Traffic,
-							Value: []interface{}{msg.EventCount, msg.MatchedCount},
-							Name:  msg.EngineName,
-						}
+			case filtering.TrafficStatus:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.Traffic,
+						Value: []interface{}{msg.EventCount, msg.MatchedCount},
+						Name:  msg.EngineName,
 					}
-				case filtering.EngineStatus:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type:  monitoring.EngineThroughput,
-							Value: []interface{}{msg.CurrentThroughput},
-							Name:  msg.EngineName,
-						}
+				}
+			case filtering.EngineStatus:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.EngineThroughput,
+						Value: []interface{}{msg.CurrentThroughput},
+						Name:  msg.EngineName,
 					}
-				case filtering.SelectedEngine:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type: monitoring.SelectedEngine,
-							Name: msg.EngineName,
-						}
+				}
+			case filtering.SelectedEngine:
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type: monitoring.SelectedEngine,
+						Name: msg.EngineName,
 					}
-			*/
+				}
 			case filtering.SimulationStat:
 				if *enableStat {
 					sm.StatMessageChannel <- monitoring.StatMessage{
@@ -179,7 +182,7 @@ func run() {
 
 	// set up an EngineFactory with a management channel
 	log.Println("setting up an engine factory")
-	engineFactory := filtering.NewEngineFactory(sub, *statInterval, mc)
+	engineFactory := filtering.NewEngineFactory(sub, *statInterval, mc, *ignoreOtherEngine)
 	go engineFactory.Run()
 	// wait until the first engine becomes available
 	for !engineFactory.IsActive() {

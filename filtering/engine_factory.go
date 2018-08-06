@@ -6,6 +6,7 @@
 package filtering
 
 import (
+	"errors"
 	"log"
 	"reflect"
 	"sync"
@@ -25,6 +26,7 @@ type EngineFactory struct {
 	enginePerformance    sync.Map
 	currentEngineName    string
 	statInterval         int
+	ignoreOtherEngine    bool
 }
 
 // IsActive returns false if no engine is available
@@ -37,19 +39,25 @@ func (ef *EngineFactory) IsActive() bool {
 
 // Search is a wrapper for Search() with the current EngineGenerator
 func (ef *EngineFactory) Search(re llrp.ReadEvent) (string, []string, error) {
-	for name, eg := range ef.productionSystem {
-		if name != ef.currentEngineName && eg.FSM.Is("ready") {
-			_, _, _ = eg.Search(re)
+	if !ef.IsActive() {
+		return "", []string{}, errors.New("EngineFactory is not active")
+	}
+	if !ef.ignoreOtherEngine {
+		for name, eg := range ef.productionSystem {
+			if name != ef.currentEngineName && eg.FSM.Is("ready") && name != "NoEngine" {
+				_, _, _ = eg.Search(re)
+			}
 		}
 	}
 	return ef.productionSystem[ef.currentEngineName].Search(re)
 }
 
 // NewEngineFactory returns the pointer to a new EngineFactory instance
-func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage) *EngineFactory {
+func NewEngineFactory(sub Subscriptions, statInterval int, mc chan ManagementMessage, ioe bool) *EngineFactory {
 	ef := &EngineFactory{
-		mainChannel:  mc,
-		statInterval: statInterval,
+		mainChannel:       mc,
+		statInterval:      statInterval,
+		ignoreOtherEngine: ioe,
 	}
 
 	// Load saved subscriptions?
