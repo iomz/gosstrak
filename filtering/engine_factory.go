@@ -219,8 +219,10 @@ func (ef *EngineFactory) Run() {
 
 	// initialize the engines
 	log.Println("[EngineFactory] initializing engines")
-	for _, eg := range ef.productionSystem {
-		// pass the cloned subscriptions
-		eg.FSM.Event("init", ef.currentSubscriptions)
-	}
+	go func() {
+		for _, eg := range ef.productionSystem {
+			// pass the cloned subscriptions
+			eg.FSM.Event("init", ef.currentSubscriptions)
+		}
+	}()
 }
