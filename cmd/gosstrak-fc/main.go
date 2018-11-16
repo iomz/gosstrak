@@ -139,37 +139,27 @@ func run() {
 				break
 			}
 			switch msg.Type {
-			/*
-				case filtering.TrafficStatus:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type:  monitoring.Traffic,
-							Value: []interface{}{msg.EventCount, msg.MatchedCount},
-							Name:  msg.EngineName,
-						}
-					}
-				case filtering.EngineStatus:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type:  monitoring.EngineThroughput,
-							Value: []interface{}{msg.CurrentThroughput},
-							Name:  msg.EngineName,
-						}
-					}
-				case filtering.SelectedEngine:
-					if *enableStat {
-						sm.StatMessageChannel <- monitoring.StatMessage{
-							Type: monitoring.SelectedEngine,
-							Name: msg.EngineName,
-						}
-					}
-			*/
-			case filtering.SimulationStat:
+			case filtering.TrafficStatus: // TrafficStatus contains EventCount and MatchedCount
 				if *enableStat {
 					sm.StatMessageChannel <- monitoring.StatMessage{
-						Type:  monitoring.SimulationStat,
+						Type:  monitoring.Traffic,
+						Value: []interface{}{msg.EventCount, msg.MatchedCount},
+						Name:  msg.EngineName,
+					}
+				}
+			case filtering.EngineStatus: // EngineStatus contains CurrentThroughput
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type:  monitoring.EngineThroughput,
 						Value: []interface{}{msg.CurrentThroughput},
 						Name:  msg.EngineName,
+					}
+				}
+			case filtering.SelectedEngine: // SelectedEngine contains the EngineName just selected
+				if *enableStat {
+					sm.StatMessageChannel <- monitoring.StatMessage{
+						Type: monitoring.SelectedEngine,
+						Name: msg.EngineName,
 					}
 				}
 			}

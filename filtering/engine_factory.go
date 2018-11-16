@@ -111,15 +111,12 @@ func (ef *EngineFactory) Run() {
 					Type:       SelectedEngine,
 					EngineName: ef.currentEngineName,
 				}
-				v, ok := ef.enginePerformance.Load(ef.currentEngineName)
-				if !ok {
-					continue
-				}
-				ef.mainChannel <- ManagementMessage{
-					Type:              SimulationStat,
-					EngineName:        ef.currentEngineName,
-					CurrentThroughput: reflect.ValueOf(v).Float(),
-				}
+				/*
+					_, ok := ef.enginePerformance.Load(ef.currentEngineName)
+					if !ok {
+						continue
+					}
+				*/
 			}
 		}
 	}()
@@ -193,7 +190,9 @@ func (ef *EngineFactory) Run() {
 				}
 				log.Printf("[EngineFactory] %s didn't replace the currentEngine %s", msg.EngineGeneratorInstance.Name, ef.currentEngineName)
 			case TrafficStatus:
-				ef.mainChannel <- msg // bypass the status message from generators to main
+				if msg.EngineName == ef.currentEngineName { // if it's from the currentEngine
+					ef.mainChannel <- msg // bypass the status message from generators to main
+				}
 			case EngineStatus:
 				if msg.EngineName != "DummyEngine" {
 					ef.enginePerformance.Store(msg.EngineName, msg.CurrentThroughput)

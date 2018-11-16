@@ -67,14 +67,20 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				}
 				fields["matched_events"] = matches
 				if ingress != 0 {
-					fields["matching_probability"] = float64(matches) / float64(ingress) * 100.0
+					mp := float64(matches) / float64(ingress) * 100.0
+					if mp > 100 {
+						mp = 100
+					}
+					fields["matching_probability"] = mp
 				}
 				tags["engine"] = msg.Name
 				measurement = "traffic"
+				//log.Printf("==> Traffic (incoming, matched) = %v, %v", ingress, matches)
 			case EngineThroughput:
 				fields["event_per_us"] = msg.Value[0]
 				tags["engine"] = msg.Name
 				measurement = "throughput"
+				log.Printf("==> Throughput [%v]: %v", msg.Name, msg.Value[0])
 			case SelectedEngine:
 				engineType := 0
 				switch msg.Name {
@@ -86,13 +92,12 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 					engineType = 2
 				case "SplayTree":
 					engineType = 3
+				case "DummyEngine":
+					engineType = 4
 				}
 				fields["selected"] = engineType
 				measurement = "engine"
-			case SimulationStat:
-				fields["event_per_us"] = msg.Value[0]
-				fields["engine"] = msg.Name
-				measurement = "simulation"
+				log.Printf("==> Engine: %v", msg.Name)
 			}
 			pt, err := client.NewPoint(measurement, tags, fields, time.Now())
 			if err != nil {

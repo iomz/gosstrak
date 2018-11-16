@@ -15,8 +15,6 @@ const (
 	EngineThroughput
 	// SelectedEngine message
 	SelectedEngine
-	// SimulationStat message
-	SimulationStat
 )
 
 // StatMessage carries stat
