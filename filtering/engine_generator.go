@@ -153,7 +153,7 @@ func (eg *EngineGenerator) enterRebuilding(e *fsm.Event) {
 func (eg *EngineGenerator) enterReady(e *fsm.Event) {
 	log.Printf("[EngineGenerator] finished gererating %s engine", eg.Name)
 	eg.managementChannel <- ManagementMessage{
-		Type: OnEngineGenerated,
+		Type:                    OnEngineGenerated,
 		EngineGeneratorInstance: eg,
 	}
 }

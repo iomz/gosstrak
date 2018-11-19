@@ -64,7 +64,7 @@ var (
 	llrpAddr = app.
 			Flag("ip", "LLRP emulator address.").
 			Short('l').
-			Default("127.0.0.1:5084").
+			Default("10.0.234.3:5084").
 			String()
 
 	// ALE related values
@@ -82,9 +82,9 @@ var (
 			Flag("statInterval", "Measurement interval in seconds for the engine throughput.").
 			Default("5").
 			Int()
-	influxAddr = app.
-			Flag("influxAddr", "The endpoint of influxdb.").
-			Default("http://127.0.0.1:8086").
+	influxEndpoint = app.
+			Flag("influxEndpoint", "The endpoint of influxdb.").
+			Default("http://10.0.234.4:8086").
 			String()
 	influxUser = app.
 			Flag("influxUser", "The username for influxdb.").
@@ -122,7 +122,7 @@ func run() {
 	var sm *monitoring.StatManager
 	if *enableStat {
 		log.Println("setting up a stat manager for InfluxDB")
-		sm = monitoring.NewStatManager("master", *influxAddr, *influxUser, *influxPass, *influxDB)
+		sm = monitoring.NewStatManager("master", *influxEndpoint, *influxUser, *influxPass, *influxDB)
 	}
 
 	// load existing subscriptions from file

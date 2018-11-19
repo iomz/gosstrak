@@ -75,12 +75,12 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				}
 				tags["engine"] = msg.Name
 				measurement = "traffic"
-				//log.Printf("==> Traffic (incoming, matched) = %v, %v", ingress, matches)
+				//log.Printf("[StatManager] Traffic (incoming, matched) = %v, %v", ingress, matches)
 			case EngineThroughput:
 				fields["event_per_us"] = msg.Value[0]
 				tags["engine"] = msg.Name
 				measurement = "throughput"
-				log.Printf("==> Throughput [%v]: %v", msg.Name, msg.Value[0])
+				//log.Printf("[StatManager] Throughput [%v]: %v", msg.Name, msg.Value[0])
 			case SelectedEngine:
 				engineType := 0
 				switch msg.Name {
@@ -97,7 +97,7 @@ func NewStatManager(mode string, addr string, user string, pass string, db strin
 				}
 				fields["selected"] = engineType
 				measurement = "engine"
-				log.Printf("==> Engine: %v", msg.Name)
+				//log.Printf("[StatManager] SelectedEngine: %v", msg.Name)
 			}
 			pt, err := client.NewPoint(measurement, tags, fields, time.Now())
 			if err != nil {

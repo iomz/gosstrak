@@ -1,23 +1,6 @@
 version: '2'
 
 services:
-  # gosstrak-fc:
-  #   image: iomz/gosstrak-fc:0.1
-  #   container_name: gosstrak-fc
-  #   hostname: gosstrak-fc
-  #   # volumes:
-  #   # - /opt/gosstrak/fc:/opt/gosstrak/fc
-  #   stop_grace_period: 30s
-  #   links:
-  #   - influxdb:influxdb
-  #   depends_on:
-  #   - influxdb
-  #   # environment:
-  #   # LLRP_PORT
-  #   networks:
-  #     gosstrak:
-  #       ipv4_address: 172.2.234.2
-
   influxdb:
     image: influxdb:latest
     container_name: influxdb
@@ -33,14 +16,6 @@ services:
     networks:
       gosstrak:
         ipv4_address: 172.1.234.2
-
-  # telegraf:
-  #   image: telegraf:latest
-  #   container_name: telegraf
-  #   links:
-  #     - influxdb
-  #   voluems:
-  #     - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
 
   grafana:
     image: grafana/grafana:latest
