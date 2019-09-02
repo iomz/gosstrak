@@ -291,7 +291,7 @@ func run() {
 			conn.Write(llrp.SetReaderConfig(currentMessageID))
 		case llrp.KeepaliveHeader:
 			log.Printf("[LLRP] %v >>> KEEP_ALIVE[%v]", conn.RemoteAddr(), mid)
-			conn.Write(llrp.KeepaliveAck())
+			conn.Write(llrp.KeepaliveAck(currentMessageID))
 		case llrp.SetReaderConfigResponseHeader:
 			log.Printf("[LLRP] %v >>> SET_READER_CONFIG_RESPONSE[%v]", conn.RemoteAddr(), mid)
 		case llrp.ROAccessReportHeader:
