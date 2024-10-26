@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math/rand"
-	"os"
 	"testing"
 
 	"github.com/iomz/go-llrp"
@@ -269,7 +268,7 @@ func Test_core_Translate(t *testing.T) {
 }
 
 func benchmarkTranslateNTags(nTags int, b *testing.B) {
-	largeTagsGOB := os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/bench-100subs-tags.gob"
+	largeTagsGOB := "test/data/bench-100subs-tags.gob"
 	// load up the tags from the file
 	var largeTags llrp.Tags
 	binutil.Load(largeTagsGOB, &largeTags)

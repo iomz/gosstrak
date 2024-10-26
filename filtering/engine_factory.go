@@ -6,6 +6,7 @@
 package filtering
 
 import (
+	"context"
 	"log"
 	"reflect"
 	"sync"
@@ -197,6 +198,6 @@ func (ef *EngineFactory) Run() {
 	log.Println("[EngineFactory] initializing engines")
 	for _, eg := range ef.productionSystem {
 		// pass the cloned subscriptions
-		eg.FSM.Event("init", ef.currentSubscriptions)
+		eg.FSM.Event(context.Background(), "init", ef.currentSubscriptions)
 	}
 }

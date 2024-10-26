@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"os"
 	"reflect"
 	"testing"
 )
@@ -122,10 +121,10 @@ func TestSubscriptions_ToByteSubscriptions(t *testing.T) {
 				"http://localhost:8888/sscc":  []string{"urn:epc:pat:sscc-96:3.00039579721"},
 			},
 			ByteSubscriptions{
-				"0011000001111011110011111100100011011101100101111000101011":                                                                                                                                                               &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sgtin"},
-				"001100010110010000000000010010110111111000001001001":                                                                                                                                                                      &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sscc"},
-				"001100110111100001111000100100000000000000000000000000000100000000000000000000000000000000000001":                                                                                                                         &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/grai"},
-				"0011010001100100000100010000010000111100011000100001010010011100100011110001110010001011000011011":                                                                                                                        &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/giai"},
+				"0011000001111011110011111100100011011101100101111000101011":                                        &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sgtin"},
+				"001100010110010000000000010010110111111000001001001":                                               &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/sscc"},
+				"001100110111100001111000100100000000000000000000000000000100000000000000000000000000000000000001":  &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/grai"},
+				"0011010001100100000100010000010000111100011000100001010010011100100011110001110010001011000011011": &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/giai"},
 				"110010110101010011010101001110000001000010000011110000010100001000000001001110001011110000011001001111010101110000000110001111010010110000010010000101000001000100001001001110000111110000010100001000001001010011110001": &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/17365"},
 				"110111000010001101010100010010": &PartialSubscription{Offset: 0, ReportURI: "http://localhost:8888/17363"},
 			},
@@ -158,7 +157,7 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 	}{
 		{
 			"ecspec_sample.csv",
-			args{os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec_sample.csv"},
+			args{"ecspec_sample.csv"},
 			Subscriptions{
 				"http://localhost:8888/grai":  []string{"urn:epc:pat:grai-96:3.123456.1.1"},
 				"http://localhost:8888/17365": []string{"urn:epc:pat:iso17365:25S.UN.ABC.0THANK0YOU0FOR0READING0THIS1"},
@@ -186,7 +185,7 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 func benchmarkLoadNSubs(nSubs int, b *testing.B) {
 	var sub Subscriptions
 	for i := 0; i < b.N; i++ {
-		sub = LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+		sub = LoadSubscriptionsFromCSVFile(fmt.Sprintf("test/data/bench-%vsubs-ecspec.csv", nSubs))
 	}
 	b.StopTimer()
 

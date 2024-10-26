@@ -10,13 +10,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
-	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/go-llrp/binutil"
+	_ "github.com/iomz/gosstrak/tdt"
 )
 
 func TestList_MarshalBinary(t *testing.T) {
@@ -26,20 +26,20 @@ func TestList_MarshalBinary(t *testing.T) {
 		want    []byte
 		wantErr bool
 	}{
-	/*
-		{
-			"simple marshal",
-			&List{
-				FilterLists{
-					&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
-					&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
+		/*
+			{
+				"simple marshal",
+				&List{
+					FilterLists{
+						ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
+						ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
+					},
+					tdt.NewCore(),
 				},
-				tdt.NewCore(),
+				[]byte{},
+				false,
 			},
-			[]byte{},
-			false,
-		},
-	*/
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -65,22 +65,22 @@ func TestList_UnmarshalBinary(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	/*
-		{
-			"simple unmarshal",
-			&List{
-				FilterLists{
-					&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
-					&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
+		/*
+			{
+				"simple unmarshal",
+				&List{
+					FilterLists{
+						&ExactMatch{NewFilter("0011", 0), "http://localhost:8888/3"},
+						&ExactMatch{NewFilter("00110000", 0), "http://localhost:8888/3-0"},
+					},
+					tdt.NewCore(),
 				},
-				tdt.NewCore(),
+				args{
+					[]byte{},
+				},
+				false,
 			},
-			args{
-				[]byte{},
-			},
-			false,
-		},
-	*/
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -160,11 +160,11 @@ func TestList_Name(t *testing.T) {
 
 func benchmarkFilterListNTagsNSubs(nTags int, nSubs int, b *testing.B) {
 	// build the engine
-	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	sub := LoadSubscriptionsFromCSVFile(fmt.Sprintf("test/data/bench-%vsubs-ecspec.csv", nSubs))
 	listEngine := NewList(sub)
 
 	// prepare the workload
-	largeTagsGOB := os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-tags.gob", nSubs)
+	largeTagsGOB := fmt.Sprintf("test/data/bench-%vsubs-tags.gob", nSubs)
 	var largeTags llrp.Tags
 	binutil.Load(largeTagsGOB, &largeTags)
 
@@ -227,8 +227,8 @@ func BenchmarkFilterList100Tags1000Subs(b *testing.B) { benchmarkFilterListNTags
 
 func benchmarkAddListNSubs(nSubs int, b *testing.B) {
 	// build the engine
-	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
-	extsub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + "/src/github.com/iomz/gosstrak/test/data/ecspec.csv")
+	sub := LoadSubscriptionsFromCSVFile(fmt.Sprintf("test/data/bench-%vsubs-ecspec.csv", nSubs))
+	extsub := LoadSubscriptionsFromCSVFile("test/data/ecspec.csv")
 	listEngine := NewList(sub)
 	rand.Seed(time.Now().UTC().UnixNano())
 	b.ResetTimer()
@@ -258,7 +258,7 @@ func BenchmarkAddList1000Subs(b *testing.B) { benchmarkAddListNSubs(1000, b) }
 
 func benchmarkDeleteListNSubs(nSubs int, b *testing.B) {
 	// build the engine
-	sub := LoadSubscriptionsFromCSVFile(os.Getenv("GOPATH") + fmt.Sprintf("/src/github.com/iomz/gosstrak/test/data/bench-%vsubs-ecspec.csv", nSubs))
+	sub := LoadSubscriptionsFromCSVFile(fmt.Sprintf("test/data/bench-%vsubs-ecspec.csv", nSubs))
 	listEngine := NewList(sub)
 	rand.Seed(time.Now().UTC().UnixNano())
 	b.ResetTimer()

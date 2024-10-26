@@ -1,14 +1,13 @@
-gosstrak-fc
-==
+# gosstrak-fc
 
-[![Build Status](https://travis-ci.org/iomz/gosstrak.svg?branch=master)](https://travis-ci.org/iomz/gosstrak)
-<!---[![Coverage Status](https://coveralls.io/repos/iomz/gosstrak/badge.svg?branch=master)](https://coveralls.io/github/iomz/gosstrak?branch=master)--->
-[![codecov](https://codecov.io/gh/iomz/gosstrak/branch/master/graph/badge.svg)](https://codecov.io/gh/iomz/gosstrak)
+[![Test](https://github.com/iomz/gosstrak/actions/workflows/test.yml/badge.svg)](https://github.com/iomz/gosstrak/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/iomz/gosstrak)](https://goreportcard.com/report/github.com/iomz/gosstrak)
+[![codecov](https://codecov.io/gh/iomz/gosstrak/branch/main/graph/badge.svg?token=fN1tyc6ssX)](https://codecov.io/gh/iomz/gosstrak)
 [![GoDoc](https://godoc.org/github.com/iomz/gosstrak?status.svg)](http://godoc.org/github.com/iomz/gosstrak)
+[![License](https://img.shields.io/github/license/iomz/gosstrak.svg)](https://github.com/iomz/gosstrak/blob/main/LICENSE)
 
-Stat Monitoring
---
+## Stat Monitoring
+
 gosstrak collects statistical metrics and write them to InfluxDB for visualization in Grafana.
 For quick start, use the docker-compose file and initialize the InfluxDB.
 
@@ -22,8 +21,7 @@ For quick start, use the docker-compose file and initialize the InfluxDB.
 
 Then, run `gosstrak-fc` with `--enableStat` flag.
 
-TDT Benchmark
---
+## TDT Benchmark
 
 ```bash
 BenchmarkTranslate100Tags-32               10000            283151 ns/op           34096 B/op       1321 allocs/op
@@ -38,11 +36,10 @@ BenchmarkTranslate900Tags-32                1000           2599413 ns/op        
 BenchmarkTranslate1000Tags-32               1000           2938569 ns/op          342385 B/op      13247 allocs/op
 ```
 
-Author
---
+## Author
 
 Iori Mizutani (iomz)
 
-License
---
+## License
+
 See `LICENSE` file.
