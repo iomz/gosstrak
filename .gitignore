@@ -18,6 +18,7 @@
 test/*
 *.csv
 *.json
+coverage.txt
 
 # exp dir
 exp/

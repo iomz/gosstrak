@@ -15,11 +15,11 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/docker/libchan/spdy"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/iomz/go-llrp"
 	"github.com/iomz/gosstrak/filtering"
 	"github.com/iomz/gosstrak/monitoring"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/moby/spdystream"
 )
 
 // Notification is the struct to send/receive captured ID
@@ -189,27 +189,27 @@ func run() {
 				log.Fatal(err)
 				break
 			}
-			p, err := spdy.NewSpdyStreamProvider(c, true)
+			spdyConn, err := spdystream.NewConnection(c, true)
 			if err != nil {
 				log.Print(err)
 				continue
 			}
-			t := spdy.NewTransport(p)
+			go spdyConn.Serve(spdystream.MirrorStreamHandler)
 
-			receiver, err := t.WaitReceiveChannel()
-			if err != nil {
-				log.Print(err)
-				continue
-			}
+			// receiver, err := t.WaitReceiveChannel()
+			// if err != nil {
+			// 	log.Print(err)
+			// 	continue
+			// }
 
-			mm := &filtering.ManagementMessage{}
-			err = receiver.Receive(mm)
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-			log.Print(mm)
-			mc <- *mm
+			// mm := &filtering.ManagementMessage{}
+			// err = receiver.Receive(mm)
+			// if err != nil {
+			// 	log.Print(err)
+			// 	continue
+			// }
+			// log.Print(mm)
+			// mc <- *mm
 		}
 		log.Fatalln("managementListener closed in gosstrak-fc")
 	}()

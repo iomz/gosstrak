@@ -6,13 +6,12 @@
 package main
 
 import (
-	"io"
 	"log"
 	"net"
 	"os"
 
-	"github.com/docker/libchan/spdy"
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/kingpin/v2"
+	"github.com/moby/spdystream"
 )
 
 // Notification is the struct to send/receive captured ID
@@ -44,35 +43,36 @@ func main() {
 			log.Print(err)
 			break
 		}
-		p, err := spdy.NewSpdyStreamProvider(c, true)
+
+		spdyConn, err := spdystream.NewConnection(c, true)
 		if err != nil {
 			log.Print(err)
-			break
+			continue
 		}
-		t := spdy.NewTransport(p)
+		go spdyConn.Serve(spdystream.MirrorStreamHandler)
 
-		go func() {
-			for {
-				receiver, err := t.WaitReceiveChannel()
-				if err != nil {
-					log.Print(err)
-					break
-				}
+		// go func() {
+		// 	for {
+		// 		receiver, err := t.WaitReceiveChannel()
+		// 		if err != nil {
+		// 			log.Print(err)
+		// 			break
+		// 		}
 
-				go func() {
-					for {
-						noti := &Notification{}
-						err := receiver.Receive(noti)
-						if err != nil {
-							if err != io.EOF {
-								log.Print(err)
-							}
-							break
-						}
-						log.Println(noti.ID)
-					}
-				}()
-			}
-		}()
+		// 		go func() {
+		// 			for {
+		// 				noti := &Notification{}
+		// 				err := receiver.Receive(noti)
+		// 				if err != nil {
+		// 					if err != io.EOF {
+		// 						log.Print(err)
+		// 					}
+		// 					break
+		// 				}
+		// 				log.Println(noti.ID)
+		// 			}
+		// 		}()
+		// 	}
+		// }()
 	}
 }

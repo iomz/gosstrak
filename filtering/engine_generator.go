@@ -6,9 +6,11 @@
 package filtering
 
 import (
+	"context"
 	"log"
 	"math"
 	"time"
+
 	//"reflect"
 
 	"github.com/iomz/go-llrp"
@@ -54,11 +56,11 @@ func NewEngineGenerator(name string, ec EngineConstructor, statInterval int, mc 
 			{Name: "rebuild", Src: []string{"pending"}, Dst: "rebuilding"},
 		},
 		fsm.Callbacks{
-			"enter_state":      func(e *fsm.Event) { eg.enterState(e) },
-			"enter_generating": func(e *fsm.Event) { eg.enterGenerating(e) },
-			"enter_ready":      func(e *fsm.Event) { eg.enterReady(e) },
-			"enter_pending":    func(e *fsm.Event) { eg.enterPending(e) },
-			"enter_rebuilding": func(e *fsm.Event) { eg.enterRebuilding(e) },
+			"enter_state":      func(_ context.Context, e *fsm.Event) { eg.enterState(e) },
+			"enter_generating": func(_ context.Context, e *fsm.Event) { eg.enterGenerating(e) },
+			"enter_ready":      func(_ context.Context, e *fsm.Event) { eg.enterReady(e) },
+			"enter_pending":    func(_ context.Context, e *fsm.Event) { eg.enterPending(e) },
+			"enter_rebuilding": func(_ context.Context, e *fsm.Event) { eg.enterRebuilding(e) },
 		},
 	)
 
@@ -121,7 +123,7 @@ func (eg *EngineGenerator) enterGenerating(e *fsm.Event) {
 		//log.Printf("[EngineGenerator] start generating %s engine", eg.Name)
 		sub := e.Args[0].(Subscriptions)
 		eg.Engine = AvailableEngines[eg.Name](sub)
-		eg.FSM.Event("deploy")
+		eg.FSM.Event(context.Background(), "deploy")
 	}()
 }
 
@@ -147,18 +149,18 @@ func (eg *EngineGenerator) enterRebuilding(e *fsm.Event) {
 			})
 		*/
 	}
-	eg.FSM.Event("deploy")
+	eg.FSM.Event(context.Background(), "deploy")
 }
 
 func (eg *EngineGenerator) enterReady(e *fsm.Event) {
 	log.Printf("[EngineGenerator] finished gererating %s engine", eg.Name)
 	eg.managementChannel <- ManagementMessage{
-		Type: OnEngineGenerated,
+		Type:                    OnEngineGenerated,
 		EngineGeneratorInstance: eg,
 	}
 }
 
 func (eg *EngineGenerator) enterPending(e *fsm.Event) {
 	// Wait until the engine finishes the current execution
-	eg.FSM.Event("rebuild", e.Args[0].(*ManagementMessage))
+	eg.FSM.Event(context.Background(), "rebuild", e.Args[0].(*ManagementMessage))
 }
