@@ -157,7 +157,7 @@ func TestLoadSubscriptionsFromCSVFile(t *testing.T) {
 	}{
 		{
 			"ecspec_sample.csv",
-			args{"ecspec_sample.csv"},
+			args{"../testdata/ecspec_sample.csv"},
 			Subscriptions{
 				"http://localhost:8888/grai":  []string{"urn:epc:pat:grai-96:3.123456.1.1"},
 				"http://localhost:8888/17365": []string{"urn:epc:pat:iso17365:25S.UN.ABC.0THANK0YOU0FOR0READING0THIS1"},
