@@ -1,5 +1,9 @@
 # gosstrak-fc
 
+> [!IMPORTANT]
+> This project has moved to the [tagstrak monorepo](https://github.com/iomz/tagstrak).
+> New development continues there; this repository remains available for historical reference.
+
 [![Test](https://github.com/iomz/gosstrak/actions/workflows/test.yml/badge.svg)](https://github.com/iomz/gosstrak/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/iomz/gosstrak)](https://goreportcard.com/report/github.com/iomz/gosstrak)
 [![codecov](https://codecov.io/gh/iomz/gosstrak/branch/main/graph/badge.svg?token=fN1tyc6ssX)](https://codecov.io/gh/iomz/gosstrak)
